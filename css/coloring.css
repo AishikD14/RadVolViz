@@ -1,0 +1,259 @@
+
+
+body {
+  color: #000000;
+  font-family:Monospace;
+  font-size:13px;
+  text-align:center;
+  font-weight: bold;
+  background-color: #000000;
+  margin: 0px;
+  overflow: hidden;
+}
+
+legend {
+  color : white;
+}
+
+#gbc_mode {
+  color:white;
+}
+
+/* .d3-tip {
+  line-height: 1;
+  padding: 6px;
+  background: rgba(255,0,0,0);
+  border-radius: 4px solid black;
+  font-size: 12px;
+  position: fixed;
+} */
+
+input[type=button] {
+  background-color: #4CAF50; /* Green */
+  border: none;
+  width: auto;
+  border-radius: 80px;
+  color: white;
+  padding: 4px 4px 5px 4px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 14px;
+}
+
+input[type=radio] {
+  -webkit-appearance: none;
+      background-color: #e1e1e1;
+      border: 10px solid #e1e1e1;
+      border-radius: 10px;
+      width: 100%;
+      display: inline-block;
+      position: relative;
+      width: 20px;
+      height: 20px;
+}
+
+input[type=radio]:checked {
+
+  background: grey;
+  border: 4px solid #e1e1e1;
+}
+
+
+#info {
+  position: absolute;
+  top: 0px; width: 100%;
+  padding: 5px;
+}
+
+a {
+  color: #ffffff;
+}
+
+path{
+    fill: lightsalmon;
+    stroke: salmon;
+    stroke-width: 5px;
+}
+
+.line {
+  cursor: crosshair;
+  fill: none;
+  stroke: green;
+  stroke-width: 2px;
+  stroke-linejoin: round;
+}
+
+#controls {
+  position: absolute;
+  text-align:center;
+  top: 40px;
+  left: 5px;
+  padding: 5px;
+}
+.control {
+  margin-bottom: 3px;
+}
+input {
+  width: 85px;
+}
+#oldie a { color:#da0 }
+
+
+.slidecontainer {
+    width: 100%;
+}
+
+#container {
+  background-color: black;
+}
+
+.slider {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 10px;
+    border-radius: 5px;
+    background: #c3d3d3;
+    outline: none;
+    opacity: 0.7;
+    -webkit-transition: .2s;
+    transition: opacity .2s;
+}
+
+input[type=range][orient=vertical]
+{
+    writing-mode: bt-lr; /* IE */
+    -webkit-appearance: slider-vertical; /* WebKit */
+    width: 15px;
+    height: 155px;
+    border-radius: 50%;
+    background: #fff;
+    cursor: pointer;
+
+}
+
+.slider:hover {
+    opacity: 1;
+}
+
+.slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    background: #fff;
+    cursor: pointer;
+}
+
+.slider::-moz-range-thumb {
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    background: #fff;
+    cursor: pointer;
+}
+
+/* #download{
+	position: absolute;
+	z-index: 100000;
+	bottom: 10px;
+	right: 10px;
+	cursor: pointer;
+	height: 30px;
+	padding: 0px 10px 0px 5px;
+	font-size: 16px;
+}
+
+#download > img{
+	height: 100%;
+	padding: 5px;
+	object-fit: contain;
+	filter: drop-shadow(1px 2px 0px #000);
+}
+
+#download > *{
+	vertical-align: middle;
+} */
+
+
+
+
+.parcoords {
+  display: block;
+}
+
+.parcoords svg{
+  position: absolute;
+}
+
+.parcoords canvas {
+  font: 10px sans-serif;
+  opacity: 0.9;
+  pointer-events: none;
+  position:static;
+}
+
+.axis .title {
+  font-size: 15px;
+  transform: rotate(-21deg) translate(-5px,-6px);
+  fill: #ddd;
+}
+
+.axis line,
+.axis path {
+  fill: none;
+  stroke: #ddd;
+  stroke-width: 1px;
+}
+
+.axis .tick text {
+  fill: #ddd;
+  pointer-events: none;
+}
+
+.axis.pl_facility .tick text,
+.axis.st_spstr .tick text {
+  font-size: 6px;
+}
+
+.axis:hover line,
+.axis:hover path,
+.axis.active line,
+.axis.active path {
+  fill: none;
+  stroke: #222;
+  stroke-width: 1px;
+}
+
+.axis:hover .title {
+  font-weight: bold;
+}
+
+.axis:hover .tick text {
+  opacity: 1;
+}
+
+.axis.active .title {
+  font-weight: bold;
+}
+
+.axis.active .tick text {
+  opacity: 1;
+  font-weight: bold;
+}
+
+.brush .extent {
+  fill-opacity: .3;
+  stroke: #fff;
+  stroke-width: 1px;
+}
+
+pre {
+  width: 100%;
+  height: 300px;
+  margin: 6px 12px;
+  tab-size: 40;
+  font-size: 10px;
+  overflow: auto;
+}
