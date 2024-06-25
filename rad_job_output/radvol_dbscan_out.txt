@@ -1,0 +1,428 @@
+No devices were found
+         Ce        Co        Fe        Gd
+0  0.266667  0.266667  0.384314  0.082353
+1  0.603922  0.078431  0.188235  0.129412
+2  0.854902  0.015686  0.062745  0.066667
+3  0.415686  0.176471  0.356863  0.054902
+4  0.525490  0.125490  0.247059  0.101961
+EPS: 0.1, Min Samples: 3
+
+Silhouette Score: -0.665186838733937
+
+EPS: 0.1, Min Samples: 4
+
+Silhouette Score: -0.6496959947791243
+
+EPS: 0.1, Min Samples: 5
+
+Silhouette Score: -0.6480065587534095
+
+EPS: 0.1, Min Samples: 6
+
+Silhouette Score: -0.635920895817923
+
+EPS: 0.1, Min Samples: 7
+
+Silhouette Score: -0.6844788122315022
+
+EPS: 0.1, Min Samples: 8
+
+Silhouette Score: -0.6163801787754327
+
+EPS: 0.1, Min Samples: 9
+
+Silhouette Score: -0.6196358711523041
+
+EPS: 0.2, Min Samples: 3
+
+Silhouette Score: -0.3934829602977282
+
+EPS: 0.2, Min Samples: 4
+
+Silhouette Score: -0.0635219503789198
+
+EPS: 0.2, Min Samples: 5
+
+Silhouette Score: -0.10169835118497725
+
+EPS: 0.2, Min Samples: 6
+
+Silhouette Score: -0.09298815405513268
+
+EPS: 0.2, Min Samples: 7
+
+Silhouette Score: -0.3234436645034324
+
+EPS: 0.2, Min Samples: 8
+
+Silhouette Score: -0.09695782515046784
+
+EPS: 0.2, Min Samples: 9
+
+Silhouette Score: -0.09885077409628332
+
+EPS: 0.3, Min Samples: 3
+
+Silhouette Score: 0.18349138172640708
+
+EPS: 0.3, Min Samples: 4
+
+Silhouette Score: 0.1890787186318205
+
+EPS: 0.3, Min Samples: 5
+
+Silhouette Score: 0.24038442579820243
+
+EPS: 0.3, Min Samples: 6
+
+Silhouette Score: 0.36672995380119544
+
+EPS: 0.3, Min Samples: 7
+
+Silhouette Score: 0.3867440829372534
+
+EPS: 0.3, Min Samples: 8
+
+Silhouette Score: 0.3813160766704672
+
+EPS: 0.3, Min Samples: 9
+
+Silhouette Score: 0.37602613611677205
+
+EPS: 0.4, Min Samples: 3
+
+Silhouette Score: 0.2927514163546284
+
+EPS: 0.4, Min Samples: 4
+
+Silhouette Score: 0.3021409492120718
+
+EPS: 0.4, Min Samples: 5
+
+Silhouette Score: 0.43631160225033755
+
+EPS: 0.4, Min Samples: 6
+
+Silhouette Score: 0.4328849113276519
+
+EPS: 0.4, Min Samples: 7
+
+Silhouette Score: 0.42875683199400855
+
+EPS: 0.4, Min Samples: 8
+
+Silhouette Score: 0.32344493433855503
+
+EPS: 0.4, Min Samples: 9
+
+Silhouette Score: 0.41604354288956263
+
+EPS: 0.5, Min Samples: 3
+
+Silhouette Score: 0.42303856517120264
+
+EPS: 0.5, Min Samples: 4
+
+Silhouette Score: 0.4560344633463555
+
+EPS: 0.5, Min Samples: 5
+
+Silhouette Score: 0.47471252856722906
+
+EPS: 0.5, Min Samples: 6
+
+Silhouette Score: 0.4725502636628529
+
+EPS: 0.5, Min Samples: 7
+
+Silhouette Score: 0.465165321716395
+
+EPS: 0.5, Min Samples: 8
+
+Silhouette Score: 0.45721872435358546
+
+EPS: 0.5, Min Samples: 9
+
+Silhouette Score: 0.44932674222558305
+
+EPS: 0.6, Min Samples: 3
+
+Silhouette Score: 0.4440709782740943
+
+EPS: 0.6, Min Samples: 4
+
+Silhouette Score: 0.47313395577923384
+
+EPS: 0.6, Min Samples: 5
+
+Silhouette Score: 0.47313395577923384
+
+EPS: 0.6, Min Samples: 6
+
+Silhouette Score: 0.4887619691312875
+
+EPS: 0.6, Min Samples: 7
+
+Silhouette Score: 0.4887619691312875
+
+EPS: 0.6, Min Samples: 8
+
+Silhouette Score: 0.4844755644987895
+
+EPS: 0.6, Min Samples: 9
+
+Silhouette Score: 0.48104495124456853
+
+EPS: 0.7, Min Samples: 3
+
+Silhouette Score: 0.429889001617284
+
+EPS: 0.7, Min Samples: 4
+
+Silhouette Score: 0.4467465138378117
+
+EPS: 0.7, Min Samples: 5
+
+Silhouette Score: 0.46410676890789576
+
+EPS: 0.7, Min Samples: 6
+
+Silhouette Score: 0.47575055470205724
+
+EPS: 0.7, Min Samples: 7
+
+Silhouette Score: 0.4843385324679084
+
+EPS: 0.7, Min Samples: 8
+
+Silhouette Score: 0.49844613454892833
+
+EPS: 0.7, Min Samples: 9
+
+Silhouette Score: 0.4990774635938184
+
+EPS: 0.7999999999999999, Min Samples: 3
+
+Silhouette Score: 0.42698860241840286
+
+EPS: 0.7999999999999999, Min Samples: 4
+
+Silhouette Score: 0.47895811196211285
+
+EPS: 0.7999999999999999, Min Samples: 5
+
+Silhouette Score: 0.47895811196211285
+
+EPS: 0.7999999999999999, Min Samples: 6
+
+Silhouette Score: 0.47350948043135516
+
+EPS: 0.7999999999999999, Min Samples: 7
+
+Silhouette Score: 0.47350948043135516
+
+EPS: 0.7999999999999999, Min Samples: 8
+
+Silhouette Score: 0.5032558982837205
+
+EPS: 0.7999999999999999, Min Samples: 9
+
+Silhouette Score: 0.5032558982837205
+
+EPS: 0.8999999999999999, Min Samples: 3
+
+EPS: 0.8999999999999999, Min Samples: 4
+
+EPS: 0.8999999999999999, Min Samples: 5
+
+Silhouette Score: 0.4839043683900064
+
+EPS: 0.8999999999999999, Min Samples: 6
+
+Silhouette Score: 0.4839043683900064
+
+EPS: 0.8999999999999999, Min Samples: 7
+
+Silhouette Score: 0.45629514943993055
+
+EPS: 0.8999999999999999, Min Samples: 8
+
+Silhouette Score: 0.45629514943993055
+
+EPS: 0.8999999999999999, Min Samples: 9
+
+Silhouette Score: 0.45629514943993055
+
+EPS: 0.9999999999999999, Min Samples: 3
+
+EPS: 0.9999999999999999, Min Samples: 4
+
+EPS: 0.9999999999999999, Min Samples: 5
+
+Silhouette Score: 0.4839043683900064
+
+EPS: 0.9999999999999999, Min Samples: 6
+
+Silhouette Score: 0.4839043683900064
+
+EPS: 0.9999999999999999, Min Samples: 7
+
+Silhouette Score: 0.4839043683900064
+
+EPS: 0.9999999999999999, Min Samples: 8
+
+Silhouette Score: 0.4839043683900064
+
+EPS: 0.9999999999999999, Min Samples: 9
+
+Silhouette Score: 0.4839043683900064
+
+EPS: 1.0999999999999999, Min Samples: 3
+
+EPS: 1.0999999999999999, Min Samples: 4
+
+EPS: 1.0999999999999999, Min Samples: 5
+
+EPS: 1.0999999999999999, Min Samples: 6
+
+EPS: 1.0999999999999999, Min Samples: 7
+
+EPS: 1.0999999999999999, Min Samples: 8
+
+EPS: 1.0999999999999999, Min Samples: 9
+
+EPS: 1.2, Min Samples: 3
+
+EPS: 1.2, Min Samples: 4
+
+EPS: 1.2, Min Samples: 5
+
+EPS: 1.2, Min Samples: 6
+
+EPS: 1.2, Min Samples: 7
+
+EPS: 1.2, Min Samples: 8
+
+EPS: 1.2, Min Samples: 9
+
+EPS: 1.3, Min Samples: 3
+
+EPS: 1.3, Min Samples: 4
+
+EPS: 1.3, Min Samples: 5
+
+EPS: 1.3, Min Samples: 6
+
+EPS: 1.3, Min Samples: 7
+
+EPS: 1.3, Min Samples: 8
+
+EPS: 1.3, Min Samples: 9
+
+EPS: 1.4, Min Samples: 3
+
+EPS: 1.4, Min Samples: 4
+
+EPS: 1.4, Min Samples: 5
+
+EPS: 1.4, Min Samples: 6
+
+EPS: 1.4, Min Samples: 7
+
+EPS: 1.4, Min Samples: 8
+
+EPS: 1.4, Min Samples: 9
+
+EPS: 1.5, Min Samples: 3
+
+EPS: 1.5, Min Samples: 4
+
+EPS: 1.5, Min Samples: 5
+
+EPS: 1.5, Min Samples: 6
+
+EPS: 1.5, Min Samples: 7
+
+EPS: 1.5, Min Samples: 8
+
+EPS: 1.5, Min Samples: 9
+
+EPS: 1.5999999999999999, Min Samples: 3
+
+EPS: 1.5999999999999999, Min Samples: 4
+
+EPS: 1.5999999999999999, Min Samples: 5
+
+EPS: 1.5999999999999999, Min Samples: 6
+
+EPS: 1.5999999999999999, Min Samples: 7
+
+EPS: 1.5999999999999999, Min Samples: 8
+
+EPS: 1.5999999999999999, Min Samples: 9
+
+EPS: 1.7, Min Samples: 3
+
+EPS: 1.7, Min Samples: 4
+
+EPS: 1.7, Min Samples: 5
+
+EPS: 1.7, Min Samples: 6
+
+EPS: 1.7, Min Samples: 7
+
+EPS: 1.7, Min Samples: 8
+
+EPS: 1.7, Min Samples: 9
+
+EPS: 1.8, Min Samples: 3
+
+EPS: 1.8, Min Samples: 4
+
+EPS: 1.8, Min Samples: 5
+
+EPS: 1.8, Min Samples: 6
+
+EPS: 1.8, Min Samples: 7
+
+EPS: 1.8, Min Samples: 8
+
+EPS: 1.8, Min Samples: 9
+
+EPS: 1.9, Min Samples: 3
+
+EPS: 1.9, Min Samples: 4
+
+EPS: 1.9, Min Samples: 5
+
+EPS: 1.9, Min Samples: 6
+
+EPS: 1.9, Min Samples: 7
+
+EPS: 1.9, Min Samples: 8
+
+EPS: 1.9, Min Samples: 9
+
+EPS: 2.0, Min Samples: 3
+
+EPS: 2.0, Min Samples: 4
+
+EPS: 2.0, Min Samples: 5
+
+EPS: 2.0, Min Samples: 6
+
+EPS: 2.0, Min Samples: 7
+
+EPS: 2.0, Min Samples: 8
+
+EPS: 2.0, Min Samples: 9
+
+Best EPS: 0.7999999999999999
+Best Min Samples: 8
+Best Silhouette Score: 0.5032558982837205
+         Ce        Co        Fe        Gd  Cluster
+0  0.266667  0.266667  0.384314  0.082353        0
+1  0.603922  0.078431  0.188235  0.129412        0
+2  0.854902  0.015686  0.062745  0.066667        0
+3  0.415686  0.176471  0.356863  0.054902        0
+4  0.525490  0.125490  0.247059  0.101961        0
