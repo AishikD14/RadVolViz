@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH --job-name=radvol
-#SBATCH --output=/home/aideb/RadVolViz/rad_job_output/radvol_dbscan_out.txt
-#SBATCH --error=/home/aideb/RadVolViz/rad_job_output/radvol_dbscan_err.txt
-#SBATCH --time=3-00:00
+#SBATCH --output=/home/aideb/RadVolViz/rad_job_output/radvol_region_out.txt
+#SBATCH --error=/home/aideb/RadVolViz/rad_job_output/radvol_region_err.txt
+#SBATCH --time=5-00:00
 #SBATCH --mem=50000
 
 # Test CUDA compiler (not needed by deep learning people, we just use the python libraries)
@@ -12,4 +12,4 @@
 nvidia-smi
 
 # Test Python conda environment
-/home/aideb/miniconda3/bin/python -u /home/aideb/RadVolViz/scripts/dbscan.py
+/home/aideb/miniconda3/bin/python -u /home/aideb/RadVolViz/scripts/region_growing.py
