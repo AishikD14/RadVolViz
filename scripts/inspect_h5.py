@@ -41,3 +41,25 @@ print(non_zero_coords.shape)  # Print the shape of the resulting array
 # Print the value at any 5 coordinates
 for i in range(5):
     print(volume[non_zero_coords[i][0], non_zero_coords[i][1], non_zero_coords[i][2]])
+
+# Find coordinates where all elements in the 4-element vector is not equal to 0
+non_zero_coords1 = np.argwhere(np.all(volume != 0, axis=-1))
+
+# Print the coordinates
+print(non_zero_coords1)
+print(non_zero_coords1.shape)  # Print the shape of the resulting
+
+# Print the value at any 5 coordinates
+for i in range(5):
+    print(volume[non_zero_coords1[i][0], non_zero_coords1[i][1], non_zero_coords1[i][2]])
+
+# Find coordinates where 2 elements in the 4-element vector is not equal to 0
+non_zero_coords2 = np.argwhere(np.sum(volume != 0, axis=-1) == 2)
+
+# Print the coordinates
+print(non_zero_coords2)
+print(non_zero_coords2.shape)  # Print the shape of the resulting
+
+# Print the value at any 5 coordinates
+for i in range(5):
+    print(volume[non_zero_coords2[i][0], non_zero_coords2[i][1], non_zero_coords2[i][2]])

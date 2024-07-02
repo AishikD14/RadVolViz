@@ -1,3 +1,4 @@
 *.h5
 xray_volume.npy
 label_volume.npy
+/scripts/data10.csv
