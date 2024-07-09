@@ -50,4 +50,4 @@ plt.ylabel('Y axis')
 # plt.show()
 
 # Save the 2D slice scatter plot
-plt.savefig("../images/label_slice0.png")
+plt.savefig("../images/label_slice_175.png")
