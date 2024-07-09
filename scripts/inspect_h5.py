@@ -1,5 +1,7 @@
-import h5py
-import numpy as np
+# Creating a 3D volume from the multivariate data
+
+# import h5py
+# import numpy as np
 
 # file_path = '../Gd_Ce_Fe_Co.h5'  # Update this path to your local file
 
@@ -25,6 +27,9 @@ import numpy as np
 
 # np.save('../xray_volume.npy', combined_data)
 
+# --------------------------------------------------------------------------------------------
+
+# Visualizing the 3D volume
 
 import numpy as np
 
