@@ -111,6 +111,16 @@ def region_growing_3d_multivariate(volume, k=1.0, min_region_size=10):
     
     return labeled_volume
 
+# Example 3D volume with multivariate data (depth, height, width, channels)
+volume = np.load("../xray_volume.npy")
+labeled_volume = region_growing_3d_multivariate(volume, k=1.0, min_region_size=10)
+
+# Save the labeled volume
+print("Labeled Volume Shape:", labeled_volume.shape)
+np.save('../label_volume.npy', labeled_volume)
+
+# --------------------------------------------------------------------------------------------
+
 def calculate_threshold_2d(volume, k=1.0):
     """
     Calculate threshold using statistical method for 2D data.
@@ -213,20 +223,12 @@ def region_growing_2d_multivariate(volume, k=1.0, min_region_size=10):
 
     return labeled_volume
 
-# Example usage
-# Example 3D volume with multivariate data (depth, height, width, channels)
-# volume = np.load("../xray_volume.npy")
-# labeled_volume = region_growing_3d_multivariate(volume, k=1.0, min_region_size=10)
-
-# # Save the labeled volume
-# print("Labeled Volume Shape:", labeled_volume.shape)
-# np.save('../label_volume.npy', labeled_volume)
 
 # Example 2D slice with multivariate data (height, width, channels)
-volume = np.load("../xray_volume.npy")
-slice_data = volume[175]
-labeled_slice = region_growing_2d_multivariate(slice_data, k=1.0, min_region_size=10)
+# volume = np.load("../xray_volume.npy")
+# slice_data = volume[175]
+# labeled_slice = region_growing_2d_multivariate(slice_data, k=1.0, min_region_size=10)
 
-# Save the labeled volume
-print("Labeled Slice Shape:", labeled_slice.shape)
-np.save('../label_slice.npy', labeled_slice)
+# # Save the labeled volume
+# print("Labeled Slice Shape:", labeled_slice.shape)
+# np.save('../label_slice.npy', labeled_slice)
