@@ -112,12 +112,12 @@ def region_growing_3d_multivariate(volume, k=1.0, min_region_size=10):
     return labeled_volume
 
 # Example 3D volume with multivariate data (depth, height, width, channels)
-volume = np.load("../xray_volume.npy")
-labeled_volume = region_growing_3d_multivariate(volume, k=1.0, min_region_size=10)
+# volume = np.load("../xray_volume.npy")
+# labeled_volume = region_growing_3d_multivariate(volume, k=1.0, min_region_size=10)
 
-# Save the labeled volume
-print("Labeled Volume Shape:", labeled_volume.shape)
-np.save('../label_volume.npy', labeled_volume)
+# # Save the labeled volume
+# print("Labeled Volume Shape:", labeled_volume.shape)
+# np.save('../label_volume.npy', labeled_volume)
 
 # --------------------------------------------------------------------------------------------
 
@@ -140,16 +140,27 @@ def calculate_threshold_2d(volume, k=1.0):
     
     for y in range(height):
         for x in range(width):
+            if np.all(volume[y, x] == 0):  # Skip voxels with value 0
+                continue
             for dy, dx in directions:
                 ny, nx = y + dy, x + dx
                 if 0 <= ny < height and 0 <= nx < width:
+                    if np.all(volume[ny, nx] == 0):  # Skip adjacent voxels with value 0
+                        continue
                     diff = np.linalg.norm(volume[y, x] - volume[ny, nx])
                     diffs.append(diff)
     
-    mean_diff = np.mean(diffs)
-    std_diff = np.std(diffs)
+    # mean_diff = np.mean(diffs)
+    # std_diff = np.std(diffs)
     
-    return mean_diff + k * std_diff
+    # return mean_diff + k * std_diff
+
+    if diffs:  # Check if diffs is not empty
+        mean_diff = np.mean(diffs)
+        std_diff = np.std(diffs)
+        return mean_diff + k * std_diff
+    else:
+        return 0  # Return a default value if no valid differences are found
 
 def region_growing_2d_multivariate(volume, k=1.0, min_region_size=10):
     """
@@ -183,13 +194,20 @@ def region_growing_2d_multivariate(volume, k=1.0, min_region_size=10):
     
     region_label = 1
     voxels_to_process = set((y, x) for y in range(height) for x in range(width))
+
+    # Parse the voxels in the volume and assign label -2 to voxels having value 0
+    for y in range(height):
+        for x in range(width):
+            if volume[y, x].all() == 0:
+                labeled_volume[y, x] = -2
+                voxels_to_process.discard((y, x))
     
     while voxels_to_process:
         seed = random.choice(list(voxels_to_process))
         queue = Queue()
         queue.put(seed)
 
-        print("Seed:", seed)
+        # print("Seed:", seed)
         
         seed_value = volume[seed]
         region_voxels = []
@@ -225,10 +243,12 @@ def region_growing_2d_multivariate(volume, k=1.0, min_region_size=10):
 
 
 # Example 2D slice with multivariate data (height, width, channels)
-# volume = np.load("../xray_volume.npy")
-# slice_data = volume[175]
-# labeled_slice = region_growing_2d_multivariate(slice_data, k=1.0, min_region_size=10)
+volume = np.load("../xray_volume.npy")
+slice_data = volume[199]
+print("Unique Values:", np.unique(slice_data))
+labeled_slice = region_growing_2d_multivariate(slice_data, k=1.0, min_region_size=10)
 
-# # Save the labeled volume
-# print("Labeled Slice Shape:", labeled_slice.shape)
-# np.save('../label_slice.npy', labeled_slice)
+# Save the labeled volume
+print("Unique Labels:", np.unique(labeled_slice))
+print("Labeled Slice Shape:", labeled_slice.shape)
+np.save('../label_slice.npy', labeled_slice)
