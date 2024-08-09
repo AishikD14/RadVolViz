@@ -91,16 +91,40 @@ norm = BoundaryNorm(bounds, newcmap.N)
 scatter = plt.scatter(x, y, c=values, cmap=newcmap, norm=norm)
 
 # Add color bar
-colorbar = plt.colorbar(scatter)
+# colorbar = plt.colorbar(scatter)
 
 # Label color bar
-colorbar.set_label('Region Label')
+# colorbar.set_label('Region Label')
 
 # Labels
-plt.xlabel('X axis')
-plt.ylabel('Y axis')
+# plt.xlabel('X axis')
+# plt.ylabel('Y axis')
+
+# --------------------------------------------------------------------------------------------
+
+# Remove the bounding box (spines)
+plt.gca().spines['top'].set_color('none')
+plt.gca().spines['right'].set_color('none')
+plt.gca().spines['bottom'].set_color('none')
+plt.gca().spines['left'].set_color('none')
+
+# Remove the tick marks
+plt.gca().xaxis.set_ticks([])
+plt.gca().yaxis.set_ticks([])
+
+# Optionally, remove the tick labels
+plt.gca().set_xticklabels([])
+plt.gca().set_yticklabels([])
+
+# Remove the background color
+plt.gca().set_facecolor('none')
+plt.gcf().patch.set_facecolor('none')
+
+plt.savefig("../SinGAN/slice_100.png")
+
+# --------------------------------------------------------------------------------------------
 
 # plt.show()
 
 # Save the 2D slice scatter plot
-plt.savefig("../images/label_slice_199.png")
+# plt.savefig("../images/label_slice_199.png")

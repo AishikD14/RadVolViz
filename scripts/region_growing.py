@@ -244,7 +244,7 @@ def region_growing_2d_multivariate(volume, k=1.0, min_region_size=10):
 
 # Example 2D slice with multivariate data (height, width, channels)
 volume = np.load("../xray_volume.npy")
-slice_data = volume[199]
+slice_data = volume[100]
 print("Unique Values:", np.unique(slice_data))
 labeled_slice = region_growing_2d_multivariate(slice_data, k=1.0, min_region_size=10)
 
