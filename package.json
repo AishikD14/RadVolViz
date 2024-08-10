@@ -1,0 +1,10 @@
+{
+  "scripts": {
+    "serve": "http-server -p 5000",
+    "dev": "nodemon --watch . --exec \"npx http-server -p 5000\" -e js"
+  },
+  "dependencies": {
+    "http-server": "^14.1.1",
+    "nodemon": "^3.1.4"
+  }
+}
