@@ -195,36 +195,6 @@ function helloWorld() {
       .attr("width", colorSpaceWidth)
       .attr("height", colorSpaceHeight);
 
-    // var startAngle = startAng * (Math.PI/180.0);
-    // var endAngle = arcWidth;
-    // var s_x = Math.cos(startAngle);
-    // var s_y = Math.sin(startAngle);
-    // var e_x = Math.cos(arcWidth);
-    // var e_y = Math.sin(arcWidth);
-    //
-    //   if (endAngle < startAng)
-    //   {
-    //     endAngle = endAngle + 2.0 * Math.PI;
-    //   }
-    //
-    //   // document.getElementById('#tipDiv').innerHTML = "";
-    //
-    //   var half_angle = (endAngle - startAng) / 2.0;
-    //   var mid_angle  = (endAngle + startAng) / 2.0;
-    //   var cos_half_angle = Math.cos(half_angle);
-
-    // var tool_tip = d3.tip()
-    //  .attr("class", "d3-tip")
-    //   .offset([20, 120])
-    //   // .rootElement(document.getElementById('tools'))
-    //   .html("<div id='tipDiv'></div>");
-    // console.log("For Filtering Val", need_val);
-    // console.log("For Filtering Key", need_keys);
-    // console.log("All IDE points", Q);
-    // var filtered = arr.filter(function (dataRow) {
-    //   return dataRow[2] === 'Red';
-    // });
-
     // Ce: x[2],
     // Co: x[3],
     // Fe: x[4],
