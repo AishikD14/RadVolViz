@@ -47,6 +47,7 @@ function ObjtoArrPC(d) {
   return arr1_pc;
 }
 
+// Loads CSV file during body load of HTML
 function drawInitialchart(file) {
   //var fileName = "myDatawo0.csv";fullmyDatawo0 "halfmyDatawo0_CoAlTiDpc" "halfmy3Datawo0CoAlDpc""fullmy6Datawo0CoAlDpCMag.csv" fullmyDatawo0CeCoFeGd
   // d3.csv("new2_channel4.csv", function(d){

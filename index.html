@@ -21,21 +21,14 @@
 		<div class="row ">
 			<div class="col-md-6 special" align="center">
 				<fieldset id="controls">
-					<!-- <div style="color:white; display: none" >
-				Load CSV File:  <input type="file" id="input-files" onchange=" drawInitialchart(this.file)" >
-		</div> -->
 
 					<div style="color:white">
 						<div id="my-gui-container2">
 						</div>
-						<!--		Load Image:  <input type="file" id="input-files-image" onchange=" " >-->
 					</div>
 
 					<hr>
 					<legend>2D - ColorMap</legend>
-					<div id="testGLSLJS">
-					</div>
-
 
 					<!--	Angle : <input type="range" id="wait" min="0" max="360" value="0" class="slider"orient="vertical" onchange=" radioOnChange()">-->
 					<div class="row">
@@ -2062,6 +2055,7 @@ if (stDev == 1.0)
 		var guiControls;
 
 		var materialSecondPass;
+		// Call wedgeShader_weight_brushing.js init function
 		init();
 		animate();
 		// helloWorld();

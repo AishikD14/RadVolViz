@@ -1,6 +1,8 @@
+// Respond to call from index.html
 function init() {
 
 	var rotateVarN = 0.0;
+	// Set intial values of all GUI controls
 	//Parameters that can be modified.
 	guiControls = new function () {
 		this.model = 'Default';
@@ -65,6 +67,7 @@ function init() {
 		this.minGd = 0.0;
 		this.maxGd = 1.0;
 
+		// Define the colors to be used for manual clustering
 		this.color1 = "#e41a1a";
 		this.color2 = "#0E8BF0";
 		this.color3 = "#18E134";
@@ -72,6 +75,7 @@ function init() {
 		this.color5 = "#984EA3";
 		this.color6 = "#ff7f00";
 
+		// Define the default HSL values to be used for manual clustering
 		this.hslh1 = 0.0;
 		this.hslh2 = 270.0;
 		this.hslh3 = 128.0;
@@ -83,7 +87,8 @@ function init() {
 		this.hsls4 = 0.8;
 		this.hsls5 = 0.5;
 		this.hsll = 0.5;
-
+		
+		// Deafult no of maunal cluters is 2
 		this.clusters = 2.0;
 
 		this.defaultLens = false;
@@ -254,15 +259,23 @@ function init() {
 
 	var gui = new dat.GUI();
 
+	// ############################################################################################################
 
-	//	var modelSelected = gui.add(guiControls, 'model', [ 'Default'] );
+	// Create the Right Side menu panel
+
+	// ############################################################################################################
+
+	// Add first  collapsible folder into the GUI
 	var f2 = gui.addFolder("3D-2D-COLORMAP")
 	var colorS = f2.add(guiControls, 'steps', 0.0, 2000.0).name('STEPS');
 	f2.add(guiControls, 'alphaCorrection', 0.00, 1.0).step(0.01).name('OPACITY');
 	f2.add(guiControls, 'rangeVal', 0.00, 1.0).step(0.01).name('MIN VALUE DISPLAY');
 	f2.add(guiControls, 'maxrangeVal', 0.00, 1.0).step(0.01).name('MAX VALUE DISPLAY');
-	//f2.add(guiControls, "axishow").onChange(showAxis).name('AXIS');
+	f2.domElement.classList.add('red');
 
+	// --------------------------------------------------------------------------------------------
+
+	// Add second collapsible folder into the GUI
 	var f3 = gui.addFolder("HELPER")
 	f3.add(guiControls, "axishow").name('AXIS-HELPER').onChange(function (newValue) {
 		showAxis(newValue)
@@ -280,7 +293,6 @@ function init() {
 		changeSDV(newValueSD)
 	});
 
-
 	function changeSDV(newValueSD) {
 		if (newValueSD == false) {
 			guiControls.stDev = 0.0;
@@ -290,40 +302,40 @@ function init() {
 		}
 	}
 
-	//
-	// f2.add(guiControls, "axisClipping").name('AXIS CLIPPING').onChange(function(newValue) {
-	// 	//guiControls.axisClipping = 1.0;
-	// 	planeClipping(newValue)});
+	// --------------------------------------------------------------------------------------------
 
-
-
+	// Add third collapsible folder into the GUI
 	var controllerColor1, controllerColor2, controllerColor3, controllerColor4, controllerColor5;
 
-	var ColorMap = gui.addFolder("2D-COLORMAP");
-	gui.add(guiControls, 'points', 0.0, 22500.0).step(10.0).name('POINTS');
-	gui.add(guiControls, 'binValue', 0.0, 100).step(2).name('BIN');
-	gui.add(guiControls, 'rotateVar3D', 0.0, 360.0).step(0.01).name('ROTATE');
-	// gui.add(guiControls, 'radialValue', 0.0, 200).step(2).name('RADIAL');
+	var f4 = gui.addFolder("2D-COLORMAP");
+	f4.add(guiControls, 'points', 0.0, 22500.0).step(10.0).name('POINTS');
+	f4.add(guiControls, 'binValue', 0.0, 100).step(2).name('BIN');
+	f4.add(guiControls, 'rotateVar3D', 0.0, 360.0).step(0.01).name('ROTATE');
+	// f4.add(guiControls, 'radialValue', 0.0, 200).step(2).name('RADIAL');
+	f4.add(guiControls, 'modeGBC', { NORMAL: 0.0, GBC: 1.0, DGBC: 2.0, PC: 3.0 }).name('MODE');
+	// f4.add(guiControls,'blend',{AVERAGE:1.0,NORMAL:0.0}).name('BLEND-MODE');
+	// f4.add(guiControls,'modeARC',{WEDGE:0.0,LENS:1.0}).name('WEDGE / LENS');
 
-	gui.add(guiControls, 'modeGBC', { NORMAL: 0.0, GBC: 1.0, DGBC: 2.0, PC: 3.0 }).name('MODE');
-	// gui.add(guiControls,'blend',{AVERAGE:1.0,NORMAL:0.0}).name('BLEND-MODE');
-	// gui.add(guiControls,'modeARC',{WEDGE:0.0,LENS:1.0}).name('WEDGE / LENS');
+	// --------------------------------------------------------------------------------------------
 
+	// ############################################################################################################
 
+	// Create the Left Side menu panel
+
+	// ############################################################################################################
+
+	// Add collapsible folder into the GUI
 	var PAINT = gui.addFolder("PAINT_Clusters");
 	PAINT.add(guiControls, 'clusters', { ONE: 1.0, TWO: 2.0, THREE: 3.0, FOUR: 4.0, FIVE: 5.0 }).name('No of Clusters').onChange(function (newValue) {
 		changeCLusterNo(newValue)
 	});
 	PAINT.add(guiControls, 'polySide', { FOUR: 5.0, FIVE: 6.0, SIX: 7.0, SEVEN: 8.0, EIGHT: 9.0 }).name('Polygon Shape');
 
-
-
-
 	function changeCLusterNo(newValue) {
 
 		guiControls.clusters = newValue;
 		if (guiControls.clusters == 1.0) {
-
+			// Remove data for unwanted clusters
 			if (controllerColor2 != undefined) {
 				PAINT.remove(controllerColor2);
 				controllerColor2 = undefined;
@@ -344,6 +356,7 @@ function init() {
 				controllerColor5 = undefined;
 			}
 
+			// Give color to required clusters
 			if (controllerColor1 == undefined) {
 				controllerColor1 = PAINT.addColor(guiControls, 'color1').name('Cluster-1');
 			}
@@ -351,7 +364,7 @@ function init() {
 		}
 
 		else if (guiControls.clusters == 2.0) {
-
+			// Remove data for unwanted clusters
 			if (controllerColor3 != undefined) {
 				PAINT.remove(controllerColor3);
 				controllerColor3 = undefined;
@@ -367,6 +380,7 @@ function init() {
 				controllerColor5 = undefined;
 			}
 
+			// Give color to required clusters
 			if (controllerColor1 == undefined) {
 				controllerColor1 = PAINT.addColor(guiControls, 'color1').name('Cluster-1');
 			}
@@ -377,7 +391,7 @@ function init() {
 			controllerColor2.onChange(changeColors)
 		}
 		else if (guiControls.clusters == 3.0) {
-
+			// Remove data for unwanted clusters
 			if (controllerColor4 != undefined) {
 				PAINT.remove(controllerColor4);
 				controllerColor4 = undefined;
@@ -388,6 +402,7 @@ function init() {
 				controllerColor5 = undefined;
 			}
 
+			// Give color to required clusters
 			if (controllerColor1 == undefined) {
 				controllerColor1 = PAINT.addColor(guiControls, 'color1').name('Cluster-1');
 			}
@@ -398,19 +413,19 @@ function init() {
 				controllerColor3 = PAINT.addColor(guiControls, 'color3').name('Cluster-3');
 			}
 
-
 			controllerColor2.onChange(changeColors)
 			controllerColor1.onChange(changeColors)
 			controllerColor3.onChange(changeColors)
 		}
 
 		else if (guiControls.clusters == 4.0) {
-
+			// Remove data for unwanted clusters
 			if (controllerColor5 != undefined) {
 				PAINT.remove(controllerColor5);
 				controllerColor5 = undefined;
 			}
 
+			// Give color to required clusters
 			if (controllerColor1 == undefined) {
 				controllerColor1 = PAINT.addColor(guiControls, 'color1').name('Cluster-1');
 			}
@@ -424,7 +439,6 @@ function init() {
 				controllerColor4 = PAINT.addColor(guiControls, 'color4').name('Cluster-4');
 			}
 
-
 			controllerColor2.onChange(changeColors)
 			controllerColor1.onChange(changeColors)
 			controllerColor3.onChange(changeColors)
@@ -432,7 +446,7 @@ function init() {
 		}
 
 		else if (guiControls.clusters == 5.0) {
-
+			// Give color to required clusters
 			if (controllerColor1 == undefined) {
 				controllerColor1 = PAINT.addColor(guiControls, 'color1').name('Cluster-1');
 			}
@@ -458,25 +472,26 @@ function init() {
 
 	}
 
+	// Trigger chnage cluster number function with intial value of 2 as defined above
 	changeCLusterNo(guiControls.clusters);
-	// var controllerColor2 = PAINT.addColor(guiControls, 'color2').name('Cluster-2');
-	// controllerColor2.onChange(changeColors)
-	// var controllerColor3 = PAINT.addColor(guiControls, 'color3').name('Cluster-3');
-	// controllerColor3.onChange(changeColors)
 
+	// Add the created PAINT folder to the GUI by targeting the container id in index.html
 	var customContainer2 = document.getElementById('my-gui-container2');
 	customContainer2.appendChild(PAINT.domElement);
 
+	// ############################################################################################################
 
+	// Create the Right Side menu panel
+
+	// ############################################################################################################
+
+	// Add fourth collapsible folder into the GUI
 	var LENS = gui.addFolder("LENS");
 	LENS.add(guiControls, 'defaultLens').name('LENS').onChange(function (newValueLens) {
 		changeLensPar(newValueLens)
 	});
-
-
-
-	//.onChange(function (value){ init();         });
 	LENS.add(guiControls, 'radiusR', 0.0, 156.0).step(1.0).name('LENS RADIUS');
+	LENS.add(guiControls, 'lensMode', { INSIDE_VIEW: 0.0, OUTSIDE_VIEW: 1.0 }).name('LENS MODE');
 
 	function changeLensPar(newValueLens) {
 		if (newValueLens == false) {
@@ -485,30 +500,26 @@ function init() {
 			guiControls.radiusR = 155.1;
 		}
 	}
+
 	// LENS.add(guiControls,'xValue',-140.0,140.0).step(1.0).name('MOVE-X');
 	// LENS.add(guiControls,'yValue',-140.0,140.0).step(1.0).name('MOVE-Y');
 	// LENS.add(guiControls,'lensAng',0.0,6.3).step(0.1).name('ROTATE LENS');
-	LENS.add(guiControls, 'lensMode', { INSIDE_VIEW: 0.0, OUTSIDE_VIEW: 1.0 }).name('LENS MODE');
 	// LENS.add(guiControls,'lensMove',{ROTATIONAL:0.0,TRANSLATIONAL:1.0}).name('LENS MOVEMENT');
 	// var WEDGE = gui.addFolder("WEDGE");
 	// gui.add(guiControls,'startAng',0.0,360.0).step(1.0).name('START ANGLE');
 	// gui.add(guiControls,'arcWidth',0.0,6.3).step(0.01).name('END ANGLE');
 
-	f2.domElement.classList.add('red');
+	// --------------------------------------------------------------------------------------------
 
+	// Add fifth collapsible folder into the GUI
 	var Clip = gui.addFolder("CLIPPING");
-	// Clip.add(guiControls, 'views', {XY:0.0,YX:1.0,XZ:2.0,ZX:3.0,YZ:4.0,ZY:5.0}).name('VIEWS').onChange(function(newValue) {
-	// ChangeView(newValue)});
 
 	Clip.add(guiControls, 'axisClipping', { AXIS: 1.0, PLANAR: 0.0 }).name('CLIPPING')
 	Clip.add(guiControls, 'xClippingPlaneMin', 0.00001, 0.999).step(0.001).name('X CLIP').onChange(function (newValue) {
-
-		// console.log(guiControls.axisClipping);
 		if (guiControls.axisClipping == 0.0) {
 			changeMousePositionX(newValue)
 		}
 	});
-	//		gui.add(guiControls, 'xClippingPlaneMin2', -0.99, 0.99).step(0.01);
 	Clip.add(guiControls, 'xClippingPlaneMax', 0.0001, 0.999).step(0.01).name(' - X CLIP');
 	Clip.add(guiControls, 'yClippingPlaneMin', 0.0001, 0.999).step(0.001).name('Y CLIP').onChange(function (newValue) {
 		if (guiControls.axisClipping == 0.0) {
@@ -520,16 +531,15 @@ function init() {
 	Clip.add(guiControls, 'zClippingPlaneMax', 0.0001, 0.999).step(0.01).name('- Z CLIP');
 	Clip.add(guiControls, 'wClippingPlane', -2.001, 3.001).step(0.0001).name('PLANE');
 
+	// --------------------------------------------------------------------------------------------
 
-
-	// var customContainer = document.getElementById('my-gui-container');
-	// customContainer.appendChild(LENS.domElement);
-
+	// Open the collapsible folders by default
 	f2.open();
+	f3.open();
+	f4.open();
 	LENS.open();
 	Clip.open();
 	PAINT.open();
-	f3.open();
 
 	/*****************************************************************************************
 			LOAD THE IMAGE TEXTURE TO BE USED FOR RENDERING
