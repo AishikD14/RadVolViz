@@ -1,6 +1,5 @@
 // Respond to call from index.html
 function init() {
-
 	var rotateVarN = 0.0;
 	// Set intial values of all GUI controls
 	//Parameters that can be modified.
@@ -210,9 +209,6 @@ function init() {
 
 	container = document.getElementById('container');
 	var canvas = document.getElementById("canvas");
-
-	// var downloadButton = document.getElementById("download");
-
 
 	camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.001, 30000.0);
 
@@ -572,8 +568,6 @@ cubeTextures['Default'].generateMipmaps = false;
 	cubeTextures['Default'].minFilter = THREE.LinearFilter; //THREE.LinearFilter;
 	cubeTextures['Default'].magFilter = THREE.LinearFilter; //THREE.LinearFilter;
 
-
-
 	//	var transferTexture = updateTransferFunction();
 
 	var screenSize = new THREE.Vector2(window.innerWidth / 2, window.innerHeight / 2);
@@ -752,10 +746,8 @@ cubeTextures['Default'].generateMipmaps = false;
 		}
 	});
 
-
 	sceneFirstPass = new THREE.Scene();
 	sceneSecondPass = new THREE.Scene();
-
 
 	var boxGeometry = new THREE.BoxGeometry(1.0, 1.0, 1.0);
 	boxGeometry.doubleSided = true;
@@ -765,8 +757,6 @@ cubeTextures['Default'].generateMipmaps = false;
 
 	sceneFirstPass.add(meshFirstPass);
 	sceneSecondPass.add(meshSecondPass);
-
-
 
 	// add 3D text
 	var materialFront = new THREE.MeshBasicMaterial({ color: 0xff0000 });
@@ -825,7 +815,6 @@ cubeTextures['Default'].generateMipmaps = false;
 	}
 	//textMesh.rotation.x = -Math.PI / 4;
 
-
 	// wireframe helper
 	wireframeHelper = new THREE.WireframeHelper(meshSecondPass, 0xffffff);
 
@@ -848,7 +837,6 @@ cubeTextures['Default'].generateMipmaps = false;
 		else
 			sceneSecondPass.remove(meshAxis);
 	}
-
 
 	renderer = new THREE.WebGLRenderer({ alpha: true });
 	container.appendChild(renderer.domElement);
@@ -923,14 +911,4 @@ cubeTextures['Default'].generateMipmaps = false;
 		// camera.position.y = 1.0;
 		// camera.position.z = 1.0;
 	}
-	//axisClipping =
-	// function planeClipping(newValue){
-	// 	if (newValue == null){
-	// 		guiControls.axisClipping = 0.0
-	// 	}
-	// 	else{
-	// 		guiControls.axisClipping = 1.0
-	// 	}
-	// 	console.log(guiControls.axisClipping);
-	// }
 }

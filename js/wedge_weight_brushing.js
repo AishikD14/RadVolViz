@@ -7,8 +7,8 @@ pp6 = [];
 
 need_val = [];
 need_keys = [];
-selected_datapoints = [];
 
+// Clearing the brush on Parallel Coordinates
 function clearBrush() {
   need_val = [];
   guiControls.minCe = 0.0;
@@ -21,19 +21,22 @@ function clearBrush() {
   guiControls.maxGd = 1.0;
 }
 
+// Being called on nearly every interaction with dashboard
 function helloWorld() {
+  console.log("Hello World");
+
   var seed = 1;
   function random() {
     var x = Math.sin(seed++) * 10000;
     return x - Math.floor(x);
   }
+
   // console.log(data);
   var rowName = rowHeader(data);
   //console.log(guiControls.defaultLens);
   rotateVar = guiControls.rotateVar3D / 57.32;
   binNum = guiControls.binValue;
   radialVal = guiControls.radialValue;
-  // moveCradius = guiControls.radiusR;
   // moveXCord = guiControls.xValue;
   // moveYCord = guiControls.yValue;
   modeARC = guiControls.modeARC;
@@ -42,29 +45,20 @@ function helloWorld() {
   angleofLens = guiControls.lensAng;
   lensMovement = guiControls.lensMove;
   embedMode = guiControls.modeGBC;
-
   moveCradius = guiControls.radiusR;
 
   var ss = 0;
-  // console.log(data);
   var datum = ObjtoArr(data);
-  // console.log(datum);
 
   if (embedMode == 1 || embedMode == 3) {
     ss = GBC(datum, rotateVar);
-    // console.log(ss);
   }
   else if (embedMode == 2) {
-    // console.log("Hello DGBC11");
     ss = DGBC(datum, rotateVar);
-    // console.log("Hello DGBC22");
   }
-  var x = d3.scale.linear()
-    .domain([-1, 1]);
 
-  var y = d3.scale.linear()
-    .domain([-1, 1]);
-
+  var x = d3.scale.linear().domain([-1, 1]);
+  var y = d3.scale.linear().domain([-1, 1]);
 
   var row = ss.length;
   var col = ss[0].length;
@@ -139,9 +133,6 @@ function helloWorld() {
       }
     }
 
-
-
-
     for (ij = 0, T; ij < 4; ij++, T++) {
       Q[T] = vararr[ij];
     }
@@ -154,7 +145,6 @@ function helloWorld() {
     for (var i = 0; i < n; i++) {
       varPoints.push(new Object());
     }
-
 
     for (var i = 0; i < n; i++) {
       varPoints[i].GBCX = ss[m - n + i][0];
@@ -169,8 +159,6 @@ function helloWorld() {
     var radiusC = diameter / 2;
     // console.log(radiusC);
 
-
-
     var xoffset = (colorSpaceWidth - diameter) / 2;
     var yoffset = (colorSpaceHeight - diameter) / 2;
     var centerX = xoffset + radiusC;
@@ -181,7 +169,6 @@ function helloWorld() {
     d3.select("#hello")
       .selectAll("svg").remove();
 
-
     // draw color space
     var canvas = document.createElement("canvas");
     d3.select(canvas)
@@ -189,7 +176,6 @@ function helloWorld() {
       .attr("height", colorSpaceHeight);
 
     var context = canvas.getContext("2d");
-
 
     for (let i = xoffset; i < xoffset + diameter; i++) {
       for (let j = yoffset; j < yoffset + diameter; j++) {
@@ -289,14 +275,10 @@ function helloWorld() {
 
           return scaleGBC2Canvas(d[1]);
         }
-
-
       })
       .attr("r", function (d, i) {
         return 2.5;
-
       })
-
 
       .style("fill", function (d) {
         //  var angleArc = Math.atan2(scaleGBC2Canvas(d[1])-centerY,scaleGBC2Canvas(d[0])-centerX);//*180.0/Math.PI;
@@ -681,6 +663,7 @@ function helloWorld() {
     if (guiControls.brushMode == 1.0) {
       brushingCode();
     }
+
     /// Parallel Coordinate
 
     var margin = { top: 18, right: 20, bottom: 0, left: 50 },
@@ -933,6 +916,7 @@ function helloWorld() {
   }
 }
 
+// Control Parallel Coordinate functions 
 function brushedPC() {
   console.log(need_val);
   // console.log(selected);
