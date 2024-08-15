@@ -1,4 +1,3 @@
-
 pp1 = [];
 pp2 = [];
 pp3 = [];
@@ -9,6 +8,7 @@ pp6 = [];
 need_val = [];
 need_keys = [];
 selected_datapoints = [];
+
 function clearBrush() {
   need_val = [];
   guiControls.minCe = 0.0;
@@ -19,11 +19,9 @@ function clearBrush() {
   guiControls.maxCo = 1.0;
   guiControls.maxFe = 1.0;
   guiControls.maxGd = 1.0;
-
 }
 
 function helloWorld() {
-
   var seed = 1;
   function random() {
     var x = Math.sin(seed++) * 10000;
@@ -658,9 +656,7 @@ function helloWorld() {
       }
 
       function toCartesianX(x) {
-
         return x - centerX;
-
       }
 
       function toCartesianY(y) {
@@ -680,15 +676,11 @@ function helloWorld() {
           .attr("cx", d3.event.x)
           .attr("cy", d3.event.y);
       }
-
     }
 
     if (guiControls.brushMode == 1.0) {
       brushingCode();
     }
-
-
-    // console.log(Q);
     /// Parallel Coordinate
 
     var margin = { top: 18, right: 20, bottom: 0, left: 50 },
@@ -740,15 +732,6 @@ function helloWorld() {
         type: types["Number"],
         description: "Gd"
       }
-
-      /*
-      {
-        key: "Total lipid (fat) (g)",
-        type: types["Number"],
-        scale: d3.scale.sqrt().range([innerHeight, 0])
-      },
-      */
-
     ];
 
     var pc_data = Q.map(function (x) {
@@ -770,11 +753,6 @@ function helloWorld() {
       .orient("left");
 
     document.getElementById('pcDiv').innerHTML = "";
-
-
-    // console.log("Hell Enter");
-    // console.log(need_val.length);
-
 
     var containerPC = d3.select("#pcDiv").append("div")
       .attr("class", "parcoords")
@@ -801,17 +779,12 @@ function helloWorld() {
     ctxPC.lineWidth = 1.5;
     ctxPC.scale(devicePixelRatio, devicePixelRatio);
 
-
     var axesPC = svgPC.selectAll(".axis")
       .data(dimensions)
       .enter().append("g")
       .attr("class", function (d) { return "axis " + d.key.replace(/ /g, "_"); })
       .attr("transform", function (d, i) { return "translate(" + xscalePC(i) + ")"; });
 
-    // d3.csv("planets.csv", function(error, dataPC) {
-    //   if (error) throw error;
-    // console.log(dataPC);
-    // console.log(pc_data);
     dataPC = pc_data;
 
     dataPC.forEach(function (d) {
@@ -849,7 +822,6 @@ function helloWorld() {
       renderPC(selected);
     }
 
-
     axesPC.append("g")
       .each(function (d) {
         var renderAxis = "axis" in d
@@ -861,7 +833,6 @@ function helloWorld() {
       .attr("class", "title")
       .attr("text-anchor", "start")
       .text(function (d) { return "description" in d ? d.description : d.key; });
-
 
     // Add and store a brush for each axis.
     axesPC.append("g")
@@ -877,10 +848,6 @@ function helloWorld() {
       .attr("width", 16);
 
     d3.selectAll(".axis.Ce .tick text");
-    // .style("fill", color);
-
-
-    // output.text(d3.tsv.format(data.slice(0,24)));
 
     function project(d) {
       return dimensions.map(function (p, i) {
@@ -893,7 +860,6 @@ function helloWorld() {
         return [xscalePC(i), p.scale(d[p.key])];
       });
     };
-
 
     function draw(d) {
       // console.log(d);
@@ -939,13 +905,10 @@ function helloWorld() {
       d3.event.sourceEvent.stopPropagation();
     }
 
-
     // Handles a brush event, toggling the display of foreground lines.
-
     function brush() {
       var actives = dimensions.filter(function (p) { return !p.brush.empty(); }),
         extents = actives.map(function (p) { return p.brush.extent(); });
-
 
       selected = dataPC.filter(function (d) {
         if (actives.every(function (dim, i) {
@@ -959,51 +922,16 @@ function helloWorld() {
 
         // console.log(extents);
       });
-      // console.log(selected);
 
-
-      // if (need_val.length == 0) {
       ctxPC.clearRect(0, 0, width, height);
       ctxPC.globalAlpha = d3.min([0.85 / Math.pow(selected.length, 0.3), 1]);
       renderPC(selected);
-      // }
 
-      // console.log(extents);
-      // console.log(actives);
-      // need_val.push([extents, actives])
-
-      // output.text(d3.tsv.format(selected.slice(0,24)));
-      // console.log(need_val[(need_val.length)-1]);
-      //     for (var i = 0; i < actives.length; i++) {
-      //         // console.log(actives[i].key);
-      //         if (actives[i].key == "Ce"){
-      //           // guiControls.minCe = extents[i][1];
-      //           // guiControls.maxFe = extents[i][1];
-      //           console.log("CE Brushing");
-      //           console.log(guiControls.minCe);
-      //         }
-      // }
-      // console.log(extents[0]);
-      //   console.log(extents[i][1]);
-      // }
       need_keys = actives;
       need_val = extents;
-
     }
-
-    // }
-
-
-    // });
-
-    // console.log(guiControls.minCe);
-
   }
-
-
-
 }
-
 
 function brushedPC() {
   console.log(need_val);

@@ -82,7 +82,9 @@ function rowHeader(data) {
   return rowName;
 }
 
+// Not serving any purpose right now
 function radioOnChange() {
+  console.log("Interaction")
   helloWorld();
 }
 
@@ -100,18 +102,3 @@ function newArray(A, B) {
   }
   return C;
 }
-//
-// From Will Harrison to Everyone:  04:58 PM
-// I’m just turning off my camera while I eat my breakfast :D
-// From Will Harrison to Everyone:  05:07 PM
-// Australian trivia: we call it “Where’s Wally”!
-// From Alexandre Reynaud to Everyone:  05:07 PM
-// He is called Charlie in France
-// From Will Harrison to Everyone:  05:09 PM
-// Ha!
-// From Jan Skerswetat to Everyone:  05:09 PM
-// Walter in German
-// From Peter Bex to Everyone:  05:10 PM
-// In the UK it's called "Nobody gives a shit"
-// From Will Harrison to Everyone:  05:11 PM
-// 😅

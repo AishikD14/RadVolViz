@@ -2042,7 +2042,6 @@ if (stDev == 1.0)
 	<script>
 		//Detec.js was here
 
-
 		if (!Detector.webgl) Detector.addGetWebGLMessage();
 
 		var container, stats;
@@ -2053,24 +2052,11 @@ if (stDev == 1.0)
 		var cubeTextures = ['Default'];
 		var histogram = [];
 		var guiControls;
-
 		var materialSecondPass;
+
 		// Call wedgeShader_weight_brushing.js init function
 		init();
 		animate();
-		// helloWorld();
-
-		// downloadButton.addEventListener("click", function(e){
-		// 		canvas.toBlob(
-		// 			function(blob){
-		// 				var a = document.createElement("a");
-		// 				a.download = "volume.png";
-		// 				a.href = URL.createObjectURL(blob);
-		// 				a.dispatchEvent(new MouseEvent(`click`, {bubbles: true, cancelable: true, view: window}));
-		// 			},
-		// 			"image/png"
-		// 		);
-		// 	});
 
 		function onWindowResize(event) {
 
@@ -2088,7 +2074,6 @@ if (stDev == 1.0)
 			render();
 			stats.update();
 
-
 			if (newObj == undefined) {
 				newObj = {}
 			}
@@ -2100,16 +2085,9 @@ if (stDev == 1.0)
 				Object.assign(newObj, guiControls)
 				helloWorld();
 			}
-
-
-
 		}
 
 		function render() {
-
-
-
-
 			//	helloWorld();
 			var delta = clock.getDelta();
 			//Render first pass and store the world space coords of the back face fragments into the texture.

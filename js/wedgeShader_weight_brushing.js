@@ -890,8 +890,6 @@ cubeTextures['Default'].generateMipmaps = false;
 		guiControls.hsll = steelblue1.l;
 	}
 
-
-
 	function changeMousePositionX(newValue) {
 		if (newValue == null && guiControls.axisClipping == 0.0) {
 			camera.position.x = 1.0;
@@ -935,6 +933,4 @@ cubeTextures['Default'].generateMipmaps = false;
 	// 	}
 	// 	console.log(guiControls.axisClipping);
 	// }
-
-
 }
