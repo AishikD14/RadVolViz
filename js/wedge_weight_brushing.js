@@ -31,14 +31,10 @@ function helloWorld() {
     return x - Math.floor(x);
   }
 
-  // console.log(data);
   var rowName = rowHeader(data);
-  //console.log(guiControls.defaultLens);
   rotateVar = guiControls.rotateVar3D / 57.32;
   binNum = guiControls.binValue;
   radialVal = guiControls.radialValue;
-  // moveXCord = guiControls.xValue;
-  // moveYCord = guiControls.yValue;
   modeARC = guiControls.modeARC;
   startAng = guiControls.startAng;
   arcWidth = guiControls.arcWidth;
@@ -46,6 +42,9 @@ function helloWorld() {
   lensMovement = guiControls.lensMove;
   embedMode = guiControls.modeGBC;
   moveCradius = guiControls.radiusR;
+
+  // moveXCord = guiControls.xValue;
+  // moveYCord = guiControls.yValue;
 
   var ss = 0;
   var datum = ObjtoArr(data);
@@ -62,16 +61,12 @@ function helloWorld() {
 
   var row = ss.length;
   var col = ss[0].length;
-  // console.log(col);
+
   var newarr = [];
   for (var i = 0; i < row - 4; i++) {
     newarr[i] = [];
     for (var j = 0; j < col; j++) {
       newarr[i][j] = ss[i][j];
-      // newarr[i][j] = ss[i][j];
-      // newarr[i][j] = ss[i][j];
-      // newarr[i][j] = ss[i][j];
-      // newarr[i][j] = ss[i][j];
     }
   }
 
@@ -81,8 +76,6 @@ function helloWorld() {
     vararr[j][0] = ss[i][0];
     vararr[j][1] = ss[i][1];
   }
-
-  //var binNum = 25;
 
   var hist2d;
   hist2d = d3.hist2d()
@@ -95,6 +88,9 @@ function helloWorld() {
   var r = [];
   var filterdata = [];
 
+  // ##########################################################
+  // Function to create the Information Display
+  // ##########################################################
   function draw(hist) {
     histN = hist;
 
@@ -138,7 +134,6 @@ function helloWorld() {
     }
 
     var m = (ss).length;
-
     var n = Object.keys(datum[0]).length;
 
     var varPoints = new Array();
@@ -157,7 +152,6 @@ function helloWorld() {
     var colorSpaceHeight = 400;//this.colorSpaceWidth;
     var diameter = Math.round(colorSpaceHeight * 2.4 / 3.1);
     var radiusC = diameter / 2;
-    // console.log(radiusC);
 
     var xoffset = (colorSpaceWidth - diameter) / 2;
     var yoffset = (colorSpaceHeight - diameter) / 2;
@@ -186,24 +180,20 @@ function helloWorld() {
           context.fillStyle = CoordToColor(scaleGBC2Canvas.invert(j), scaleGBC2Canvas.invert(i), false);
         }
         context.fillRect(j, i, 1, 1);
-        //  context.fillStyle = CoordToColor(scaleGBC2Canvas.invert(j), scaleGBC2Canvas.invert(i), false);
       }
     }
-
-    // d3.select("#tipDiv")
-    //   .selectAll("svg").remove();
 
     svgColorSpace = d3.select("#hello")
       .append("svg")
       .attr("width", colorSpaceWidth)
       .attr("height", colorSpaceHeight);
+
     svgColorSpace.append("image")
       .attr("xlink:href", canvas.toDataURL("image/png"))
       .attr("x", 0)
       .attr("y", 0)
       .attr("width", colorSpaceWidth)
       .attr("height", colorSpaceHeight);
-
 
     // var startAngle = startAng * (Math.PI/180.0);
     // var endAngle = arcWidth;
@@ -250,10 +240,8 @@ function helloWorld() {
         });
       }
     }
-    // console.log(Q);
-    // svgColorSpace.call(tool_tip);
+    
     var numCh = n;
-    // console.log(varPoints[0].NAME);
     var main = svgColorSpace.append('g');
     var g = main.append("svg:g");
 
@@ -279,54 +267,17 @@ function helloWorld() {
       .attr("r", function (d, i) {
         return 2.5;
       })
-
       .style("fill", function (d) {
-        //  var angleArc = Math.atan2(scaleGBC2Canvas(d[1])-centerY,scaleGBC2Canvas(d[0])-centerX);//*180.0/Math.PI;
-        //  console.log(mid_angle);
-        //    var d_x = (scaleGBC2Canvas(d[0]) - centerX);
-        //    var d_y = (scaleGBC2Canvas(d[1]) - centerY);
-        //  if( ((s_x * d_y) - (s_y * d_x) >= 0.0)  && ((e_x * d_y) - (e_y * d_x) <= 0.0))
-        //  if(Math.cos(angleArc - mid_angle) >= cos_half_angle)
-        //  {
         return GBCtoHCL_ring(d[0], d[1]);
-        //  }
-        //  else {
-        //    return "white";
-        //  }
-
       })
-
-      // .style("fill", function(d){
-      //   if (embedMode != 3.0)
-      //   {
-      //     // console.log(d);
-      //    return GBCtoHCL2(d[0],d[1])
-      //    }
-      //    else {
-      //      return PC_Color(d);
-      //    }
-      //  })
-
       .style("stroke", "black")
       .style("stroke-opacity", 0.5)
-      //   .style("opacity", function (d) {
-      //
-      //   dist = Math.sqrt((scaleGBC2Canvas(d[0]) - centerX)*(scaleGBC2Canvas(d[0])- centerX) + (scaleGBC2Canvas(d[1])-centerY)*(scaleGBC2Canvas(d[1])-centerY));
-      //   if(dist < radialVal)
-      //   return 0.1;
-      //   else {
-      //     return guiControls.alphaCorrection;
-      //   }
-      // })
+
       //ADDING TOOLTIP TO SHOW OTHER FOUR VALUES
       .on('mouseover', function (d) {
-        // var ip = {};
-
         var ip = new Array(4);
-
         var vari = []
         var varNew = []
-
         var ip1 = [];
         var ip2 = [];
         var ip3 = [];
@@ -337,16 +288,11 @@ function helloWorld() {
         std2 = 0;
         std3 = 0;
         std4 = 0;
-        //document.getElementsByClassName('d3-tip').innerHTML = "";
-        // svgColorSpace.call(tool_tip);
-        // tool_tip.show();
         selectedX = d[0]
         selectedY = d[1]
 
         document.getElementById('tipDiv').innerHTML = "";
 
-        // d3.select("#tipDiv")
-        //   .selectAll("svg").remove();
         var tipSVG = d3.select("#tipDiv")
           .append("svg")
           .attr("width", 300)
@@ -367,7 +313,6 @@ function helloWorld() {
               return (i - 2) * (60 / numCh + 2) + 1
             }
           })
-          // .attr("width", 0)
           .attr("height", 60 / numCh)
           .transition()
           .duration(10)
@@ -383,11 +328,9 @@ function helloWorld() {
             .attr('x', 2)
             .attr('dy', '1.0em')
             .attr('text-anchor', 'left')
-            // .text('Hello World How are you?')
             .text(varPoints[i].NAME)
             .style('fill', "#ffffff");
         }
-        // tipSVG.
 
         if (guiControls.defaultLens == true) {
 
@@ -510,15 +453,6 @@ function helloWorld() {
           //   .duration(10)
           //   .attr("x",  scaleGBC2Canvas(d[1])/3)
         }
-        // tipSVG.append("text")
-        //   .text(d[0])
-        //   .attr("x", 10)
-        //   .attr("y", 25)
-        //   .transition()
-        //   .duration(10)
-        //   .attr("x",   function(d,i){
-        //     return scaleGBC2Canvas(d[i])/3
-        //   })
 
         // tipSVG.append("rect")
         //   .attr("fill", "red")
@@ -528,15 +462,6 @@ function helloWorld() {
         //   .transition()
         //   .duration(10)
         //   .attr("width", scaleGBC2Canvas(d[1]));
-        //
-        // tipSVG.append("text")
-        //   .text(d[0])
-        //   .attr("x", 20)
-        //   .attr("y", 45)
-        //   .transition()
-        //   .duration(10)
-        //   .attr("x",  scaleGBC2Canvas(d[1])/3)
-
       });
     // .on('mouseout', tool_tip.hide);
 
@@ -553,12 +478,10 @@ function helloWorld() {
       .attr("cx", function (d, i) { return scaleGBC2Canvas(d.GBCX * 0.997); })
       .attr("cy", function (d) { return scaleGBC2Canvas(d.GBCY * 0.997); })
       .attr("r", function (d, i) { return 6; })
-      //.style("fill","white")
       .style("fill", function (d) { return GBCtoHCL_ring(d.GBCX * 0.997, d.GBCY * 0.997) });
     // .style("stroke","red")
     // .style("stroke-opacity",1)
     // .style("opacity", 1);
-
 
     var variablePoints = svgColorSpace.append('g');
     var g = variablePoints.append("svg:g");
@@ -581,7 +504,6 @@ function helloWorld() {
         else
           return ".531em";
       })
-
       .attr("dx", function (d, i) {
         if (d.GBCX < 0) {
           return "-1.40em";
@@ -595,7 +517,6 @@ function helloWorld() {
       .style("stroke", "white")
       .style("stroke-opacity", 1)
       .style("opacity", 1);
-
 
     //CIRCLE for using it as a Selection Parameters
     // lensMovement = 1 = TRANSLATIONAL
@@ -623,10 +544,6 @@ function helloWorld() {
           .subject(function (d) { return { x: fromCartesianX(d.x, d.y, moveCradius), y: fromCartesianY(d.x, d.y, moveCradius) }; })
           .on("drag", dragged)
         );
-      /*                           .call(d3.drag()
-                                 .subject(function(d) { return {x: fromCartesianX(d.x), y: fromCartesianY(d.y)}; })
-                                 .on("drag", dragged)
-                               );*/
 
       function fromCartesianX(x, y, moveCradius) {
         //  console.log(x);
@@ -646,8 +563,6 @@ function helloWorld() {
         return y - centerY - 230;
       }
       function dragged(d) {
-        //console.log("hello");
-
         d.x = toCartesianX(d3.event.x);
         d.y = toCartesianY(d3.event.y);
         guiControls.xValue = d.x;//-2*centerX;
@@ -672,7 +587,6 @@ function helloWorld() {
       innerHeight = height - 2;
 
     var devicePixelRatio = window.devicePixelRatio || 1;
-    // console.log(devicePixelRatio);
     var color = d3.scale.linear()
       // .range(['#1b9e77','#d95f02','#7570b3','#e7298a']);
       .range(['#e66101', '#2c7bb6']);
