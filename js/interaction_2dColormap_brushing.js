@@ -25,25 +25,16 @@ function ObjtoArr(data) {
     for (dd in d) {
       arr.push(d[dd]);
     }
-
     arr1.push(arr);
   });
-
   return arr1;
 }
 
 function ObjtoArrPC(d) {
-  // console.log(data);
   var arr1_pc = new Array();
-  // data.map(function(d){
-  // var arr_pc = new Array();
   for (dd in d) {
     arr1_pc.push(d[dd]);
   }
-
-  // arr1_pc.push(arr_pc);
-  // });
-
   return arr1_pc;
 }
 
@@ -61,15 +52,16 @@ function drawInitialchart(file) {
 
 }
 
+// Copy the entire CSV data to a new array named data to be used in other places
 function updateData() {
   num_points = guiControls.points;
   data = new Array();
   for (var i = 0; i < num_points; i++) {
     data.push(dataS[i]);//s = d[i];
-
   }
 }
 
+// Extract the header of the CSV file
 function rowHeader(data) {
   var rowNum = 1;
   var rowName = [];

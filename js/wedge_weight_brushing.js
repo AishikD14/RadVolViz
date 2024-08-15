@@ -31,7 +31,7 @@ function helloWorld() {
     return x - Math.floor(x);
   }
 
-  var rowName = rowHeader(data);
+  var rowName = rowHeader(data);  // // Extract the header of the CSV file
   rotateVar = guiControls.rotateVar3D / 57.32;
   binNum = guiControls.binValue;
   radialVal = guiControls.radialValue;
@@ -86,11 +86,11 @@ function helloWorld() {
 
   var n = 0;
   var r = [];
-  var filterdata = [];
 
   // ##########################################################
   // Function to create the Information Display
   // ##########################################################
+  
   function draw(hist) {
     histN = hist;
 
@@ -147,7 +147,6 @@ function helloWorld() {
       varPoints[i].NAME = rowName[0][i];
     }
 
-    let This = this;
     var colorSpaceWidth = 400;//document.getElementById(this.iconColorSpaceContainerId).clientWidth;
     var colorSpaceHeight = 400;//this.colorSpaceWidth;
     var diameter = Math.round(colorSpaceHeight * 2.4 / 3.1);
@@ -220,19 +219,10 @@ function helloWorld() {
       .enter()
       .append("circle")
       .attr("cx", function (d, i) {
-        if (embedMode != 3)
-          return scaleGBC2Canvas(d[0]);
-        else {
-          return scaleGBC2Canvas(d[0]);
-        }
+        return scaleGBC2Canvas(d[0]);
       })
       .attr("cy", function (d) {
-        if (embedMode != 3)
-          return scaleGBC2Canvas(d[1]);
-        else {
-
-          return scaleGBC2Canvas(d[1]);
-        }
+        return scaleGBC2Canvas(d[1]);
       })
       .attr("r", function (d, i) {
         return 2.5;
@@ -433,10 +423,6 @@ function helloWorld() {
         //   .duration(10)
         //   .attr("width", scaleGBC2Canvas(d[1]));
       });
-    // .on('mouseout', tool_tip.hide);
-
-
-    //lensAng = Math.atan(moveYCord/moveXCord);
 
     var variablePoints = svgColorSpace.append('g');
     var g = variablePoints.append("svg:g");
@@ -461,13 +447,10 @@ function helloWorld() {
       .enter()
       .append("text")
       .attr("x", function (d, i) {
-
         return scaleGBC2Canvas(d.GBCX * 0.997);
       })
       .attr("y", function (d) { return scaleGBC2Canvas(d.GBCY * 0.997); })
       .attr("dy", function (d, i) {
-
-        // console.log(d);
         if (d.GBCY < 0) {
           return "-.230em";
         }
@@ -489,7 +472,6 @@ function helloWorld() {
       .style("opacity", 1);
 
     //CIRCLE for using it as a Selection Parameters
-    // lensMovement = 1 = TRANSLATIONAL
     if (modeARC == 1 && guiControls.defaultLens == true) {
       moveXCord = guiControls.xValue;
       moveYCord = guiControls.yValue;
@@ -502,8 +484,6 @@ function helloWorld() {
         .attr("cy", function (d) { return fromCartesianY(d.x, d.y, moveCradius); })
         .attr("r", moveCradius)
         .style("fill", function (d) {
-          // dist = Math.sqrt((scaleGBC2Canvas(d[0]) - fromCartesianX(d.x,d.y,moveCradius))*(scaleGBC2Canvas(d[0])- fromCartesianX(d.x,d.y,moveCradius)) + (scaleGBC2Canvas(d[1])-fromCartesianY(d.x,d.y,moveCradius))*(scaleGBC2Canvas(d[1])-fromCartesianY(d.x,d.y,moveCradius)));
-          // console.log(dist);
           return "none"
         })
         .style("opacity", 0.5)
@@ -516,7 +496,6 @@ function helloWorld() {
         );
 
       function fromCartesianX(x, y, moveCradius) {
-        //  console.log(x);
         return centerX + x;
       }
 
@@ -529,7 +508,6 @@ function helloWorld() {
       }
 
       function toCartesianY(y) {
-
         return y - centerY - 230;
       }
       function dragged(d) {
@@ -537,7 +515,6 @@ function helloWorld() {
         d.y = toCartesianY(d3.event.y);
         guiControls.xValue = d.x;//-2*centerX;
         guiControls.yValue = d.y;//-2*centerY;
-        //  console.log(guiControls.xValue,guiControls.yValue);
 
         d3.select(this)
           .attr("cx", d3.event.x)

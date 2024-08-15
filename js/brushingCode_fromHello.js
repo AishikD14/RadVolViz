@@ -7,7 +7,7 @@ function brushingCode() {
 
   var points = []
   svgColorSpace.on('mouseup', function () {
-    // console.log("Mouse Up ENtering");
+    console.log("Mouse Up Entering");
     if (dragging) return;
     drawing = true;
     startPoint = [d3.mouse(this)[0], d3.mouse(this)[1]];
@@ -22,8 +22,7 @@ function brushingCode() {
     };
     points.push(d3.mouse(this));
 
-
-
+    // console.log(points);
 
     g4.select('polyline').remove();
     var polyline = svgColorSpace.append('polyline')
@@ -41,7 +40,7 @@ function brushingCode() {
     }
   });
   function closePolygon() {
-    // console.log("EMter PolygonClose");
+    console.log("Enter PolygonClose");
     polyG.select('g.drawPoly').remove();
     var g = polyG.append('g');
     g.append('polygon')
@@ -160,7 +159,6 @@ function brushingCode() {
     }
 
   }
-
 
   if (guiControls.polySide == 6.0) {
 
@@ -465,10 +463,10 @@ function brushingCode() {
     }
 
   }
-
 }
 
 function ClearSVGPoints() {
+  console.log("ClearSVGPoints");
   guiControls.startX = 0.0;
   guiControls.startY = 0.0;
 
@@ -595,7 +593,7 @@ function ClearSVGPoints() {
 
 }
 
-
+// Called on radio button change between data driven and manual coloring
 function radioOnChange(value) {
   if (value == 'brush') {
     guiControls.brushMode = 1.0
@@ -604,5 +602,4 @@ function radioOnChange(value) {
     guiControls.brushMode = 0.0
     ClearSVGPoints();
   }
-  //  console.log(guiControls.brushMode);
 }

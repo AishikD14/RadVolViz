@@ -4,17 +4,13 @@
 	<title>3D ColorMap </title>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-	<style>
-
-	</style>
+	<style></style>
 </head>
 
 <body onload="drawInitialchart()">
 	<div class="row" id="container">
-
 		<!--0.0<img id="transferFunctionImg" style="align:right"/>1.0-->
 	</div>
-
 
 	<div>
 
@@ -35,23 +31,20 @@
 						<div class=" col-md-8">
 							<input type="button" value="Clear Region" onclick="ClearSVGPoints();">
 
-							<div id="hello">
-							</div>
+							<div id="hello"></div>
 						</div>
 						<div class="col-md-4">
 						</div>
 					</div>
 					<div id="gbc_mode" style="font-size: 12px;">
-						<input type="radio" id="autocolor" name="rate" value="autocolor" checked="checked"
-							onchange=" radioOnChange(value)"> DATA-DRIVEN COLORING</input>
-						<input type="radio" id="brush" name="rate" value="brush" onchange=" radioOnChange(value)">
-						MANUAL COLORING</input>
+						<input type="radio" id="autocolor" name="rate" value="autocolor" checked="checked" onchange=" radioOnChange(value)"> DATA-DRIVEN COLORING</input>
+						<input type="radio" id="brush" name="rate" value="brush" onchange=" radioOnChange(value)">MANUAL COLORING</input>
 						<hr>
 					</div>
 
 					<!-- <div id = 'tipDiv'>
-					<h3 style="color:white"> Variation </h3>
-				</div> -->
+						<h3 style="color:white"> Variation </h3>
+					</div> -->
 
 					<hr>
 					<!-- Parallel Coordinate Section -->
@@ -63,34 +56,21 @@
 						</div>
 					</div>
 
-
-					<div id="my-gui-container">
-
-					</div>
-
-
+					<div id="my-gui-container"></div>
 
 				</fieldset>
-
-
-
 			</div>
-
 		</div>
-
 
 		<!-- <button id="download" title="Download image" style="margin">
 					<img src="./css/download.svg" alt="Download">
 					<span>Download image</span>
-</button> -->
+		</button> -->
 
 	</div>
 
-
-
 	<!-- DEFAULT FILES WHICH DO NOT NEED ANY CHANGE-->
 	<script src="https://d3js.org/d3.v3.min.js"></script>
-	<!-- <script src="https://d3js.org/d3.v4.min.js"></script> -->
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/d3-tip/0.7.1/d3-tip.min.js"></script>
 
 	<script src="./js/three.min.js"></script>
@@ -111,30 +91,18 @@
 	<script src="./js/interaction_2dColormap_brushing.js"></script>
 	<script src="./js/interact_GBC_brushing.js">  </script>
 	<script src="./js/interactDebugDGBC_weight.js"></script>
-	<!-- <script src="./js/wedge_weight.js"></script> -->
 	<script src="./js/wedge_weight_brushing.js"></script>
 	<script src="./js/circleLineOnSvg_brushing.js"></script>
 	<script src="./js/pc_color.js"></script>
-	<!-- <script src="./js/detec.js"></script> -->
-	<!-- <script src="./js/brushingSVG.js"></script> -->
 	<script src="./js/simplify.js"></script>
 	<script type="text/javascript" src="./js/brushingCode_fromHello.js"></script>
 	<script src="./js/render-queue.js"></script>
-	<!-- <script type="text/javascript" src="./js/drawpoly.js"> -->
-	<!-- <script src="https://bl.ocks.org/syntagmatic/raw/3341641/render-queue.js"></script> -->
-	<!-- <script src="https://gist.githubusercontent.com/peatroot/67b92b3874a5b7bb2788d41b4ab21fc5/raw/73276afd900bd9950c45ff0846ed49f287d00cf3/render-queue.js"></script> -->
 
 	</script>
-	<!-- <script src="./js/drawingSVG.js"></script> -->
-	<!-- <script src="js/Volume.js"></script>
-		<script src="js/VolumeSlice.js"></script>
-		<script src="js/TrackballControls.js"></script> -->
-	<!-- load fonts -->
 
+	<!-- load fonts -->
 	<script src="./js/helvetiker_bold.typeface.js"></script>
 	<script src="./js/helvetiker_regular.typeface.js"></script>
-
-
 
 	<link rel="stylesheet" href="./css/coloring.css">
 
@@ -148,7 +116,8 @@
 				gl_FragColor = vec4( worldSpaceCoords.x , worldSpaceCoords.y, worldSpaceCoords.z, 1 );
 				// gl_FragColorJ = vec4( worldSpaceCoords.x , worldSpaceCoords.y, worldSpaceCoords.z, 1 );
 			}
-		</script>
+	</script>
+	
 	<script id="vertexShaderFirstPass" type="x-shader/x-vertex">
 			varying vec3 worldSpaceCoords;
 
@@ -158,7 +127,8 @@
 				worldSpaceCoords = position + vec3(0.5, 0.5, 0.5); //move it from [-0.5;0.5] to [0,1]
 				gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
 			}
-		</script>
+	</script>
+
 	<script id="fragmentShaderSecondPass" type="x-shader/x-fragment">
 			varying vec3 worldSpaceCoords;
 			varying vec4 projectedCoords;
@@ -2023,7 +1993,7 @@ if (stDev == 1.0)
 
 
 			}
-		</script>
+	</script>
 
 	<script id="vertexShaderSecondPass" type="x-shader/x-vertex">
 			varying vec3 worldSpaceCoords;
@@ -2038,11 +2008,9 @@ if (stDev == 1.0)
 			}
 
 
-		</script>
+	</script>
 
 	<script>
-		//Detec.js was here
-
 		if (!Detector.webgl) Detector.addGetWebGLMessage();
 
 		var container, stats;
@@ -2057,18 +2025,19 @@ if (stDev == 1.0)
 
 		// Call wedgeShader_weight_brushing.js init function
 		init();
+
 		animate();
 
+		// Update display on window resize
 		function onWindowResize(event) {
-
 			camera.aspect = window.innerWidth / window.innerHeight;
 			camera.updateProjectionMatrix();
 			renderer.setSize(window.innerWidth, window.innerHeight);
 		}
 
 		var newObj;
+		// Recursively called to render latest display
 		function animate() {
-
 			requestAnimationFrame(animate);
 
 			updateData();
@@ -2079,17 +2048,18 @@ if (stDev == 1.0)
 				newObj = {}
 			}
 			if (JSON.stringify(guiControls) === JSON.stringify(newObj)) {
-				// console.log("Now Equal");
+				// GUI controls have not changed, dont do anything
 			}
 			else {
-				// console.log("Not equal so came here");
+				// GUI controls have changed, perform necessary operations
 				Object.assign(newObj, guiControls)
 				helloWorld();
 			}
 		}
 
+		// Called to render the latest display using the Three.js library
+		// Variables taken from wedgeShader_weight_brushing.js
 		function render() {
-			//	helloWorld();
 			var delta = clock.getDelta();
 			//Render first pass and store the world space coords of the back face fragments into the texture.
 			renderer.render(sceneFirstPass, camera, rtTexture, true);
@@ -2243,12 +2213,12 @@ if (stDev == 1.0)
 			// materialSecondPass.uniforms.passingB.value = guiControls.passB;
 			// materialSecondPass.uniforms.passingC.value = guiControls.passC;
 			// materialSecondPass.uniforms.passingD.value = guiControls.passD;
-
 		}
 
 	</script>
 
 </body>
+
 <script src="./js/detec.js"></script>
 
 </html>
