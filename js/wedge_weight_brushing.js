@@ -404,7 +404,7 @@ function helloWorld() {
       .style("stroke-opacity", 1)
       .style("opacity", 1);
 
-    //CIRCLE for using it as a Selection Parameters
+    //LENS CIRCLE for using it as a Selection Parameters
     if (modeARC == 1 && guiControls.defaultLens == true) {
       moveXCord = guiControls.xValue;
       moveYCord = guiControls.yValue;
@@ -461,7 +461,7 @@ function helloWorld() {
       brushingCode();
     }
 
-    /// Parallel Coordinate
+    /// Parallel Coordinate Starts Here
     var margin = { top: 18, right: 20, bottom: 0, left: 50 },
       width = 300,
       height = 135 - margin.top - margin.bottom,
@@ -469,7 +469,6 @@ function helloWorld() {
 
     var devicePixelRatio = window.devicePixelRatio || 1;
     var color = d3.scale.linear()
-      // .range(['#1b9e77','#d95f02','#7570b3','#e7298a']);
       .range(['#e66101', '#2c7bb6']);
 
     var types = {
@@ -640,12 +639,9 @@ function helloWorld() {
     };
 
     function draw(d) {
-      // console.log(d);
       if (d.Ce) {
-        // console.log(PC_Color(ObjtoArrPC(d)));
         ctxPC.strokeStyle = PC_Color(ObjtoArrPC(d));
       }
-      // ctxPC.strokeStyle = color(d.Ce);
       ctxPC.beginPath();
       var coords = project(d);
       coords.forEach(function (p, i) {
