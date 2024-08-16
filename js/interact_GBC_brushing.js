@@ -1,13 +1,9 @@
 function GBC(datam, rotateVar) {
-
     var m = datam.length;
-
     var n = (datam[0]).length;
 
     var angle = new Array(n)
     angle[0] = Math.PI / 2 + rotateVar;
-
-
 
     var GBCL = new Array();
 
@@ -15,7 +11,6 @@ function GBC(datam, rotateVar) {
         GBCL[i] = new Array();
         for (j = 0; j < 2; j++) {
             GBCL[i][j] = 0;
-            // GBCL[i][2] = parseFloat(datam[i][0]);
         }
         for (k = 2; k < 2 + n; k++) {
             if (i < m) {
@@ -23,23 +18,14 @@ function GBC(datam, rotateVar) {
             }
         }
     }
-    //   for i = 0; i<m; i++){
-    //   for(k=2;k<4;k++){
-    //     GBCL[i][k] = parseFloat(datam[i][k-2]);
-    //   }
-    // }
-    // console.log(GBCL);
 
     GBCL[m][0] = Math.cos(angle[0]);
     GBCL[m][1] = Math.sin(angle[0]);
-
-
 
     for (var i = 1; i < n; i++) {
         angle[i] = angle[i - 1] - 2 * Math.PI / n;
         GBCL[m + i][0] = Math.cos(angle[i]) * 0.997;
         GBCL[m + i][1] = Math.sin(angle[i]) * 0.997;
-
     }
 
     for (var i = 0; i < n; i++) {
@@ -51,16 +37,12 @@ function GBC(datam, rotateVar) {
         }
     }
 
-
     angle.sort();
-
 
     for (var i = 0; i < m; i++) {
         var tempsum = 0;
         for (var j = 0; j < n; j++) {
             tempsum = tempsum + parseFloat(datam[i][j]);
-
-
         }
 
         if (tempsum == 0) {
@@ -95,22 +77,16 @@ function GBC(datam, rotateVar) {
             var lth = (Math.sqrt(GBCL[i][0] * GBCL[i][0] + GBCL[i][1] * GBCL[i][1]) / Math.cos((tempA - tempB) / 2) * Math.cos(-(tempA + tempB) / 2 + tempangle));
             GBCL[i][0] = (lth * Math.cos(tempangle));
             GBCL[i][1] = (lth * Math.sin(tempangle));
-
         }
     }
-
 
     var dimorder = new Array(n)
     for (var i = 0; i < n; i++) {
         dimorder[i] = i;
     }
 
-    // for (var i = 0, j = 4)
-
     return GBCL;
 };
-
-var ppp = 0;
 
 function GBCtoHCL2(CX, CY) {
     if (CX * CX + CY * CY > 0.999999) {
@@ -139,7 +115,6 @@ function GBCtoHCL2(CX, CY) {
 
 };
 
-
 function GBCtoHCL_ring(CX, CY) {
     if (CX * CX + CY * CY > 0.999999) {
         return d3.rgb(0, 0, 0).toString();
@@ -163,6 +138,4 @@ function GBCtoHCL_ring(CX, CY) {
 
     h = h * 360;
     return d3.color("#C7D9E8")
-    //return d3.hsl(h, s, l).toString();
-
 };

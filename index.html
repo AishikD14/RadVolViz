@@ -7,7 +7,9 @@
 	<style></style>
 </head>
 
+<!-- Loads the CSV data after body is loaded -->
 <body onload="drawInitialchart()">
+
 	<div class="row" id="container">
 		<!--0.0<img id="transferFunctionImg" style="align:right"/>1.0-->
 	</div>
@@ -19,8 +21,8 @@
 				<fieldset id="controls">
 
 					<div style="color:white">
-						<div id="my-gui-container2">
-						</div>
+						<!-- The left menu panel will be populated below -->
+						<div id="my-gui-container2"></div>
 					</div>
 
 					<hr>
@@ -30,12 +32,15 @@
 					<div class="row">
 						<div class=" col-md-8">
 							<input type="button" value="Clear Region" onclick="ClearSVGPoints();">
-
+							
+							<!-- The information display will be populated below -->
 							<div id="hello"></div>
 						</div>
 						<div class="col-md-4">
 						</div>
 					</div>
+
+					<!-- Buttons to choose between data driven and manual coloring -->
 					<div id="gbc_mode" style="font-size: 12px;">
 						<input type="radio" id="autocolor" name="rate" value="autocolor" checked="checked" onchange=" radioOnChange(value)"> DATA-DRIVEN COLORING</input>
 						<input type="radio" id="brush" name="rate" value="brush" onchange=" radioOnChange(value)">MANUAL COLORING</input>
@@ -47,15 +52,16 @@
 					</div> -->
 
 					<hr>
+
 					<!-- Parallel Coordinate Section -->
 					<div>
 						<input type="button" value="Submit" onclick="brushedPC();">
 						<input type="button" value="Clear" onclick="clearBrush();">
-						<div id='pcDiv'>
 
-						</div>
+						<div id='pcDiv'></div>
 					</div>
 
+					<!-- Right side menu panel will be populated below -->
 					<div id="my-gui-container"></div>
 
 				</fieldset>
@@ -117,7 +123,7 @@
 				// gl_FragColorJ = vec4( worldSpaceCoords.x , worldSpaceCoords.y, worldSpaceCoords.z, 1 );
 			}
 	</script>
-	
+
 	<script id="vertexShaderFirstPass" type="x-shader/x-vertex">
 			varying vec3 worldSpaceCoords;
 

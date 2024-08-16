@@ -1,4 +1,4 @@
-
+// Maps geometric coordinate to color space
 function CoordToColor(CX, CY) {
   [CX, CY] = ConstrainInUnit(CX, CY);
   return GBCtoHCL2(CX, CY);

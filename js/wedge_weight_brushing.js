@@ -90,7 +90,7 @@ function helloWorld() {
   // ##########################################################
   // Function to create the Information Display
   // ##########################################################
-  
+
   function draw(hist) {
     histN = hist;
 
@@ -159,6 +159,7 @@ function helloWorld() {
     var scaleGBC2Canvas = d3.scale.linear().domain([-1, 1]).range([xoffset, xoffset + diameter]);
     var scaleGBC2Canvas = d3.scale.linear().domain([-1, 1]).range([yoffset, yoffset + diameter]);
 
+    // Select DOM element to populate information display and remove existing image
     d3.select("#hello")
       .selectAll("svg").remove();
 
@@ -172,9 +173,11 @@ function helloWorld() {
 
     for (let i = xoffset; i < xoffset + diameter; i++) {
       for (let j = yoffset; j < yoffset + diameter; j++) {
+        // Inititate the information display for manual coloring
         if (guiControls.brushMode == 1.0) {
           context.fillStyle = CoordToColor_ring(scaleGBC2Canvas.invert(j), scaleGBC2Canvas.invert(i), false);
         }
+        // Inititate the information display for data driven coloring
         else {
           context.fillStyle = CoordToColor(scaleGBC2Canvas.invert(j), scaleGBC2Canvas.invert(i), false);
         }
@@ -182,11 +185,13 @@ function helloWorld() {
       }
     }
 
+    // Select DOM element to populate information display
     svgColorSpace = d3.select("#hello")
       .append("svg")
       .attr("width", colorSpaceWidth)
       .attr("height", colorSpaceHeight);
 
+    // Append image to the DOM element
     svgColorSpace.append("image")
       .attr("xlink:href", canvas.toDataURL("image/png"))
       .attr("x", 0)
@@ -510,6 +515,7 @@ function helloWorld() {
       function toCartesianY(y) {
         return y - centerY - 230;
       }
+
       function dragged(d) {
         d.x = toCartesianX(d3.event.x);
         d.y = toCartesianY(d3.event.y);
