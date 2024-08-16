@@ -202,6 +202,7 @@ function helloWorld() {
       .attr("width", colorSpaceWidth)
       .attr("height", colorSpaceHeight);
 
+    // Get the values for the scatter dots to be printed in the color space
     for (var i = 0; i < need_keys.length; i++) {
       if (need_keys[i].key == "Ce") {
         Q = Q.filter(function (dataRow) {
@@ -219,6 +220,7 @@ function helloWorld() {
 
     console.log(Q);
 
+    // Plot the scatter dots on the color space
     g.selectAll("scatter-dots")
       .data(Q)
       .enter()
@@ -238,7 +240,7 @@ function helloWorld() {
       .style("stroke", "black")
       .style("stroke-opacity", 0.5)
 
-      //ADDING TOOLTIP TO SHOW OTHER FOUR VALUES
+      //ADDING TOOLTIP TO SHOW MULTIVARIATE VALUES OF THE SCATTER DOTS
       .on('mouseover', function (d) {
         var ip = new Array(4);
         var vari = []
@@ -359,6 +361,7 @@ function helloWorld() {
     var variablePoints = svgColorSpace.append('g');
     var g = variablePoints.append("svg:g");
 
+    // Plot the big dots corresponding to the material names on the color space edge
     g.selectAll("scatter-dots")
       .data(varPoints)
       .enter()
@@ -371,6 +374,7 @@ function helloWorld() {
     var variablePoints = svgColorSpace.append('g');
     var g = variablePoints.append("svg:g");
 
+    // Plot the text corresponding to the material names on the color space edge
     g.selectAll("g")
       .data(varPoints)
       .enter()
