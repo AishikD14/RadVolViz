@@ -1,3 +1,4 @@
+// Call from wedge_weight_brushing.js
 function GBC(datam, rotateVar) {
     var m = datam.length;
     var n = (datam[0]).length;

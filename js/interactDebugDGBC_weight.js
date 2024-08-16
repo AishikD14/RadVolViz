@@ -76,6 +76,7 @@ function getShortestHamiltonianCycle(dist) {
     return order;
 };
 
+// Call from wedge_weight_brushing.js
 function DGBC(datam, rotateVar) {
     var m = datam.length;
     var n = (datam[0]).length;

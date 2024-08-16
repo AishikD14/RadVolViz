@@ -49,6 +49,7 @@ function helloWorld() {
   var ss = 0;
   var datum = ObjtoArr(data);
 
+  // Apply some transformation to the data based on the selected embedding mode
   if (embedMode == 1 || embedMode == 3) {
     ss = GBC(datum, rotateVar);
   }
@@ -147,6 +148,8 @@ function helloWorld() {
       varPoints[i].NAME = rowName[0][i];
     }
 
+    console.log(varPoints);
+
     var colorSpaceWidth = 400;//document.getElementById(this.iconColorSpaceContainerId).clientWidth;
     var colorSpaceHeight = 400;//this.colorSpaceWidth;
     var diameter = Math.round(colorSpaceHeight * 2.4 / 3.1);
@@ -173,11 +176,11 @@ function helloWorld() {
 
     for (let i = xoffset; i < xoffset + diameter; i++) {
       for (let j = yoffset; j < yoffset + diameter; j++) {
-        // Inititate the information display for manual coloring
+        // Inititate the information display for manual coloring (colorful display)
         if (guiControls.brushMode == 1.0) {
           context.fillStyle = CoordToColor_ring(scaleGBC2Canvas.invert(j), scaleGBC2Canvas.invert(i), false);
         }
-        // Inititate the information display for data driven coloring
+        // Inititate the information display for data driven coloring (colorless display)
         else {
           context.fillStyle = CoordToColor(scaleGBC2Canvas.invert(j), scaleGBC2Canvas.invert(i), false);
         }
@@ -199,11 +202,6 @@ function helloWorld() {
       .attr("width", colorSpaceWidth)
       .attr("height", colorSpaceHeight);
 
-    // Ce: x[2],
-    // Co: x[3],
-    // Fe: x[4],
-    // Gd: x[5]
-
     for (var i = 0; i < need_keys.length; i++) {
       if (need_keys[i].key == "Ce") {
         Q = Q.filter(function (dataRow) {
@@ -218,6 +216,8 @@ function helloWorld() {
     var numCh = n;
     var main = svgColorSpace.append('g');
     var g = main.append("svg:g");
+
+    console.log(Q);
 
     g.selectAll("scatter-dots")
       .data(Q)
@@ -302,77 +302,36 @@ function helloWorld() {
           tipSVG.selectAll("rect")
             .data(Q)
             .enter()
-
-            // tipSVG
             .append('rect')
-            // .attr("fill", "yellow")
             .attr('fill', function (d, i) {
-              // console.log(d);
               dist = Math.sqrt((scaleGBC2Canvas(d[0]) - (moveXCord + 200)) * (scaleGBC2Canvas(selectedX) - (moveXCord + 200)) + (scaleGBC2Canvas(selectedY) - (moveYCord + 200)) * (scaleGBC2Canvas(selectedY) - (moveYCord + 200)));
               dd = moveCradius * moveCradius - dist * dist
               dist2 = Math.sqrt((scaleGBC2Canvas(d[0]) - (moveXCord + 200)) * (scaleGBC2Canvas(d[0]) - (moveXCord + 200)) + (scaleGBC2Canvas(d[1]) - (moveYCord + 200)) * (scaleGBC2Canvas(d[1]) - (moveYCord + 200)));
-
               dd2 = moveCradius * moveCradius - dist2 * dist2
+              
               if (dd2 > 0) {
-                // console.log("Inside");
-                // for (var i = 2; i < n+2; i++) {
-                // ip[0].push(d[2])
-
-                //  for (ii=0;ii<n;ii++) {
-                //   ip[ii]=new Array();
-                //   for (j=2;j<n+2;j++) {
-                //    ip[i].push(d[j]);
-                //   }
-                // }
-                // console.log(ip[1].push(d[2]));
-                // console.log(d[5]);
                 ip1.push(d[2])
                 ip2.push(d[3])
                 ip3.push(d[4])
+
                 if (d[5] != undefined) {
-                  // console.log(ip4);
                   ip4.push(d[5])
                 }
+
                 if (d[6] != undefined) {
-                  // console.log(ip5);
                   ip5.push(d[6])
                 }
 
-                // console.log(ip3);
                 std12 = d3.variance(ip1)
                 std22 = d3.variance(ip2)
                 std32 = d3.variance(ip3)
                 std42 = d3.variance(ip4)
                 std52 = d3.variance(ip5)
                 std = [std12, std22, std32, std42, std52]
-                // }
-                // for (var i = 2; i < n; i++) {
-                //   array[i]
-                // }
-                // console.log(ip1);
-                // console.log(std);
               }
-              // else{
-              //   // console.log("outside");
-              // }
+
               return '#f4af1b'
-              // console.log(scaleGBC2Canvas(selectedX), Math.floor(dist), moveXCord);
-              //   if(dist < moveCradius){
-              //     j = i
-              //   // console.log(j);
-              //   return 'yellow';
-              // }
-              //   else {
-              //     // console.log("Coloring Section");
-              //     // console.log(std);
-              //     return 'blue';
-              //   }
             })
-            // .attr("y", function (d,i) {
-            //   if (i >1) {
-            //   return (i-4)*12+1;
-            //   }
-            // })
             .attr('x', 20)
             .attr('y', 4)
             .attr("width", 0)
@@ -383,50 +342,18 @@ function helloWorld() {
             .transition()
             .duration(10)
             .attr('width', 2000 * std[0]);
-          // .attr("width", function(d,i){
-          //   if (i >1){
-          //   return 500*d;
-          // }
-          // });
+
           for (var i = 1; i < n; i++) {
             tipSVG.append("rect")
               .attr("fill", "#f4af1b")
               .attr('x', 20)
               .attr("y", i * (60 / numCh + 2) + 5)
-              // .attr("width", 0)
               .attr("height", 30 / numCh)
               .transition()
               .duration(10)
               .attr("width", 2000 * std[i]);
           }
-
-
-          // tipSVG.append("rect")
-          //   .attr("fill", "yellow")
-          //   .attr("y", 38)
-          //   // .attr("width", 0)
-          //   .attr("height", 30/numCh)
-          //   .transition()
-          //   .duration(10)
-          //   .attr("width", 5000*std[2]);
-
-          // tipSVG.append("text")
-          //   .text(d[0])
-          //   .attr("x", 20)
-          //   .attr("y", 45)
-          //   .transition()
-          //   .duration(10)
-          //   .attr("x",  scaleGBC2Canvas(d[1])/3)
         }
-
-        // tipSVG.append("rect")
-        //   .attr("fill", "red")
-        //   .attr("y", 32)
-        //   // .attr("width", 0)
-        //   .attr("height", 20)
-        //   .transition()
-        //   .duration(10)
-        //   .attr("width", scaleGBC2Canvas(d[1]));
       });
 
     var variablePoints = svgColorSpace.append('g');
@@ -440,9 +367,6 @@ function helloWorld() {
       .attr("cy", function (d) { return scaleGBC2Canvas(d.GBCY * 0.997); })
       .attr("r", function (d, i) { return 6; })
       .style("fill", function (d) { return GBCtoHCL_ring(d.GBCX * 0.997, d.GBCY * 0.997) });
-    // .style("stroke","red")
-    // .style("stroke-opacity",1)
-    // .style("opacity", 1);
 
     var variablePoints = svgColorSpace.append('g');
     var g = variablePoints.append("svg:g");
