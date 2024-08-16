@@ -20,7 +20,9 @@ function brushingCode() {
 
     if (polyG.select('g.drawPoly').empty()) g4 = polyG.append('g').attr('class', 'drawPoly');
 
+    // Not getting used as of now
     if (d3.event.target.hasAttribute('is-handle')) {
+      console.log("Call polygon close");
       closePolygon();
       return;
     };
@@ -45,6 +47,7 @@ function brushingCode() {
     }
   });
 
+  // Not getting accessed as of now
   function closePolygon() {
     console.log("Enter PolygonClose");
     polyG.select('g.drawPoly').remove();
@@ -73,7 +76,6 @@ function brushingCode() {
   svgColorSpace.on('mousemove', function () {
     // console.log("Enter Mouse Move");
 
-    // console.log(guiControls.pointy6);
     if (!drawing) return;
     var g = d3.select('g.drawPoly');
     g.select('line').remove();
