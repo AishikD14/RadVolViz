@@ -239,8 +239,6 @@ function init() {
 	changeMousePositionX();
 	changeMousePositionY();
 
-
-
 	// camera.target = new THREE.Vector3(0, 0, 0);
 	// camera.lookAt(camera.target);
 

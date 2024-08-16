@@ -528,12 +528,12 @@ function helloWorld() {
       }
     }
 
+    // Define interaction with the color space when manual coloring is selected
     if (guiControls.brushMode == 1.0) {
       brushingCode();
     }
 
     /// Parallel Coordinate
-
     var margin = { top: 18, right: 20, bottom: 0, left: 50 },
       width = 300,
       height = 135 - margin.top - margin.bottom,

@@ -2,6 +2,8 @@ function GBC(datam, rotateVar) {
     var m = datam.length;
     var n = (datam[0]).length;
 
+    console.log(m, n);
+
     var angle = new Array(n)
     angle[0] = Math.PI / 2 + rotateVar;
 

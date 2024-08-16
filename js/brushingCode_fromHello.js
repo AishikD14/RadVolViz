@@ -1,3 +1,4 @@
+// Called from wedge_weight_brushing.js when manual data coloring is selected
 function brushingCode() {
 
   pointLineonCir();
@@ -8,27 +9,31 @@ function brushingCode() {
   var points = []
   svgColorSpace.on('mouseup', function () {
     console.log("Mouse Up Entering");
+
     if (dragging) return;
+
     drawing = true;
     startPoint = [d3.mouse(this)[0], d3.mouse(this)[1]];
 
-
     guiControls.startX = startPoint[0];
     guiControls.startY = startPoint[1];
+
     if (polyG.select('g.drawPoly').empty()) g4 = polyG.append('g').attr('class', 'drawPoly');
+
     if (d3.event.target.hasAttribute('is-handle')) {
       closePolygon();
       return;
     };
+
     points.push(d3.mouse(this));
 
-    // console.log(points);
-
     g4.select('polyline').remove();
+
     var polyline = svgColorSpace.append('polyline')
       .attr('points', points)
       .style('fill', 'none')
       .attr('stroke', '#000');
+
     for (var i = 0; i < points.length; i++) {
       polyline.append('circle')
         .attr('cx', points[i][0])
@@ -39,6 +44,7 @@ function brushingCode() {
         .style({ cursor: 'pointer' });
     }
   });
+
   function closePolygon() {
     console.log("Enter PolygonClose");
     polyG.select('g.drawPoly').remove();
@@ -63,6 +69,7 @@ function brushingCode() {
     points.splice(0);
     drawing = false;
   }
+
   svgColorSpace.on('mousemove', function () {
     // console.log("Enter Mouse Move");
 
@@ -467,19 +474,16 @@ function brushingCode() {
 
 function ClearSVGPoints() {
   console.log("ClearSVGPoints");
+
   guiControls.startX = 0.0;
   guiControls.startY = 0.0;
 
   for (i = 0; i < guiControls.polySide + 2; i++) {
-    // console.log(i);
     pp1.pop();
-    // console.log(pp1);
   }
 
   for (i = 0; i < guiControls.polySide + 2; i++) {
-    // console.log(i);
     pp2.pop();
-    // console.log(pp2);
   }
 
   for (i = 0; i < guiControls.polySide + 1; i++) {
@@ -489,9 +493,11 @@ function ClearSVGPoints() {
   for (i = 0; i < guiControls.polySide + 1; i++) {
     pp4.pop();
   }
+
   for (i = 0; i < guiControls.polySide + 1; i++) {
     pp5.pop();
   }
+
   // for (i=0;i<guiControls.polySide+1;i++){
   //   pp6.pop();
   // }
@@ -590,7 +596,6 @@ function ClearSVGPoints() {
   // guiControls.y63 = 0.0;
   // guiControls.y64 = 0.0;
   // guiControls.y65 = 0.0;
-
 }
 
 // Called on radio button change between data driven and manual coloring
