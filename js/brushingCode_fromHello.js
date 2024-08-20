@@ -18,7 +18,10 @@ function brushingCode() {
     guiControls.startX = startPoint[0];
     guiControls.startY = startPoint[1];
 
-    if (polyG.select('g.drawPoly').empty()) g4 = polyG.append('g').attr('class', 'drawPoly');
+    if (polyG.select('g.drawPoly').empty()) {
+      console.log("drawpoly")
+      g4 = polyG.append('g').attr('class', 'drawPoly');
+    }
 
     // Not getting used as of now
     if (d3.event.target.hasAttribute('is-handle')) {
@@ -31,6 +34,7 @@ function brushingCode() {
 
     g4.select('polyline').remove();
 
+    // Code after this seems to be not getting accessed as of now
     var polyline = svgColorSpace.append('polyline')
       .attr('points', points)
       .style('fill', 'none')
@@ -120,7 +124,6 @@ function brushingCode() {
       guiControls.y15 = pp2[5][1];
     }
 
-
     if (pp3.length > 0) {
 
       guiControls.x31 = pp3[1][0];
@@ -135,7 +138,6 @@ function brushingCode() {
       guiControls.y34 = pp3[4][1];
       guiControls.y35 = pp3[5][1];
     }
-
 
     if (pp4.length > 0) {
 
@@ -208,7 +210,6 @@ function brushingCode() {
       guiControls.y16 = pp2[6][1];
     }
 
-
     if (pp3.length > 0) {
 
       guiControls.x31 = pp3[1][0];
@@ -225,7 +226,6 @@ function brushingCode() {
       guiControls.y35 = pp3[5][1];
       guiControls.y36 = pp3[6][1];
     }
-
 
     if (pp4.length > 0) {
 
@@ -303,7 +303,6 @@ function brushingCode() {
       guiControls.y17 = pp2[7][1];
     }
 
-
     if (pp3.length > 0) {
 
       guiControls.x31 = pp3[1][0];
@@ -322,7 +321,6 @@ function brushingCode() {
       guiControls.y36 = pp3[6][1];
       guiControls.y37 = pp3[7][1];
     }
-
 
     if (pp4.length > 0) {
 
@@ -406,7 +404,6 @@ function brushingCode() {
       guiControls.y18 = pp2[8][1];
     }
 
-
     if (pp3.length > 0) {
 
       guiControls.x31 = pp3[1][0];
@@ -427,7 +424,6 @@ function brushingCode() {
       guiControls.y37 = pp3[7][1];
       guiControls.y38 = pp3[8][1];
     }
-
 
     if (pp4.length > 0) {
 

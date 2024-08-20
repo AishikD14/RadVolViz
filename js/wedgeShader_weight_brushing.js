@@ -811,7 +811,6 @@ cubeTextures['Default'].generateMipmaps = false;
 			sceneSecondPass.remove(textMesh3);
 		}
 	}
-	//textMesh.rotation.x = -Math.PI / 4;
 
 	// wireframe helper
 	wireframeHelper = new THREE.WireframeHelper(meshSecondPass, 0xffffff);
@@ -837,10 +836,10 @@ cubeTextures['Default'].generateMipmaps = false;
 	}
 
 	renderer = new THREE.WebGLRenderer({ alpha: true });
+	// Create the volume rendering space in the dashboard
 	container.appendChild(renderer.domElement);
 
 	stats = new Stats();
-	// stats.showPanel( 0 );
 	stats.domElement.style.position = 'absolute';
 	stats.domElement.style.top = '10px';
 	stats.domElement.style.left = '1000px';

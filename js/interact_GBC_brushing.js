@@ -1,4 +1,5 @@
 // Call from wedge_weight_brushing.js
+// Performs geometric transformation on the supplied data
 function GBC(datam, rotateVar) {
     var m = datam.length;
     var n = (datam[0]).length;
@@ -91,6 +92,7 @@ function GBC(datam, rotateVar) {
     return GBCL;
 };
 
+// Return steelblue color for colorless information display during manual coloring
 function GBCtoHCL2(CX, CY) {
     if (CX * CX + CY * CY > 0.999999) {
         return d3.rgb(0, 0, 0).toString();
@@ -118,6 +120,7 @@ function GBCtoHCL2(CX, CY) {
 
 };
 
+// Return white color for dots on information display
 function GBCtoHCL_ring(CX, CY) {
     if (CX * CX + CY * CY > 0.999999) {
         return d3.rgb(0, 0, 0).toString();

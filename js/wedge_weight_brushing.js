@@ -148,8 +148,6 @@ function helloWorld() {
       varPoints[i].NAME = rowName[0][i];
     }
 
-    console.log(varPoints);
-
     var colorSpaceWidth = 400;//document.getElementById(this.iconColorSpaceContainerId).clientWidth;
     var colorSpaceHeight = 400;//this.colorSpaceWidth;
     var diameter = Math.round(colorSpaceHeight * 2.4 / 3.1);
@@ -218,7 +216,10 @@ function helloWorld() {
     var main = svgColorSpace.append('g');
     var g = main.append("svg:g");
 
+    // ##########################################################
+    console.log(Q.length);
     console.log(Q);
+    // ##########################################################
 
     // Plot the scatter dots on the color space
     g.selectAll("scatter-dots")
@@ -235,6 +236,7 @@ function helloWorld() {
         return 2.5;
       })
       .style("fill", function (d) {
+        // Get color for white dots
         return GBCtoHCL_ring(d[0], d[1]);
       })
       .style("stroke", "black")
@@ -461,7 +463,10 @@ function helloWorld() {
       brushingCode();
     }
 
+    // ##########################################################
     /// Parallel Coordinate Starts Here
+    // ##########################################################
+    
     var margin = { top: 18, right: 20, bottom: 0, left: 50 },
       width = 300,
       height = 135 - margin.top - margin.bottom,

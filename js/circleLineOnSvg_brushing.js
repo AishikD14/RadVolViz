@@ -1,9 +1,7 @@
 // Called from brushingCode_fromHello.js
 function pointLineonCir() {
    if (guiControls.clusters == 1.0) {
-
       if (guiControls.startY != 0 && guiControls.startX != 0) {
-
          if (pp1.length == 0) {
             // console.log("First Entry");
             pp1.push([guiControls.startX, guiControls.startY])
@@ -48,7 +46,6 @@ function pointLineonCir() {
                   .attr("stroke", guiControls.color1);
             }
          }
-
       }
    }
 

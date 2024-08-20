@@ -77,6 +77,7 @@ function getShortestHamiltonianCycle(dist) {
 };
 
 // Call from wedge_weight_brushing.js
+// Performs geometric transformation on the supplied data
 function DGBC(datam, rotateVar) {
     var m = datam.length;
     var n = (datam[0]).length;
