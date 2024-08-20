@@ -210,8 +210,10 @@ function init() {
 	container = document.getElementById('container');
 	var canvas = document.getElementById("canvas");
 
+	// THREE.PerspectiveCamera(fov, aspect, near, far);
 	camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.001, 30000.0);
 
+	// Move the camera a little bit towards ourselves so that we can see the object at the origin, we usually look down the Z axis
 	camera.position.z = 2.0;
 
 	// camera.position.x = 1.1;
@@ -744,22 +746,27 @@ cubeTextures['Default'].generateMipmaps = false;
 		}
 	});
 
+	// Create a scene in THREE.js and then add the mesh (Geometry + Material) to the scene
 	sceneFirstPass = new THREE.Scene();
 	sceneSecondPass = new THREE.Scene();
 
+	// Create the gemoeetry for the cube to be used for volume ray casting
+	// THREE.BoxGeometry(boxWidth, boxHeight, boxDepth)
 	var boxGeometry = new THREE.BoxGeometry(1.0, 1.0, 1.0);
 	boxGeometry.doubleSided = true;
 
+	// Create a mesh using the geometry and material to render the voume using 2 passes
 	var meshFirstPass = new THREE.Mesh(boxGeometry, materialFirstPass);
 	var meshSecondPass = new THREE.Mesh(boxGeometry, materialSecondPass);
 
+	// Add the mesh to the scene one after the another
 	sceneFirstPass.add(meshFirstPass);
 	sceneSecondPass.add(meshSecondPass);
 
-	// add 3D text
-	var materialFront = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-	var materialSide = new THREE.MeshBasicMaterial({ color: 0x0000ff });
-	var materialArray = [materialFront, materialSide];
+	// --------------------------------------------------------------------------------------------
+	// Add 3D text to mark axis labels
+
+	// Create a geometry for the text labels
 	var textGeom1 = new THREE.TextGeometry("X -- Y ",
 		{
 			size: 0.1, height: 0.0, curveSegments: 0,
@@ -771,40 +778,42 @@ cubeTextures['Default'].generateMipmaps = false;
 	var textGeom2 = new THREE.TextGeometry("Y -- Z ",
 		{
 			size: 0.1, height: 0.0, curveSegments: 0,
-			//	font: "helvetiker_regular", weight: "bold", style: "normal",
 			bevelThickness: 0.001, bevelSize: 0, bevelEnabled: true,
 			material: 0, extrudeMaterial: 1
 		});
-	var textGeom3 = new THREE.TextGeometry("Y -- X ",
+		
+	var textGeom3 = new THREE.TextGeometry("Z -- X ",
 		{
 			size: 0.1, height: 0.0, curveSegments: 0,
-			//	font: "helvetiker_regular", weight: "bold", style: "normal",
 			bevelThickness: 0.001, bevelSize: 0, bevelEnabled: true,
 			material: 0, extrudeMaterial: 1
 		});
-	// font: helvetiker, gentilis, droid sans, droid serif, optimer
-	// weight: normal, bold
 
+	// Create a material for the text labels
+	var materialFront = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+	var materialSide = new THREE.MeshBasicMaterial({ color: 0x0000ff });
+	var materialArray = [materialFront, materialSide];
 	var textMaterial = new THREE.MeshFaceMaterial(materialArray);
+
+	// Create a Mesh using Geometry and Material
 	var textMesh1 = new THREE.Mesh(textGeom1, textMaterial);
 	var textMesh2 = new THREE.Mesh(textGeom2, textMaterial);
 	var textMesh3 = new THREE.Mesh(textGeom3, textMaterial);
 
-	textGeom1.computeBoundingBox();
-	textGeom2.computeBoundingBox();
-	textGeom3.computeBoundingBox();
-
-	var textWidth = textGeom1.boundingBox.max.x - textGeom1.boundingBox.min.x;
-	var textWidth2 = 10
+	// Set the position of the text labels
 	textMesh1.position.set(-0.15, 0.5, 0.5);
 	textMesh2.position.set(0.5, 0.5, 0.0);
+	textMesh3.position.set(0.5, 0.0, 0.5);
 
+	// Function to add Axis labels when selected in right panel of GUI or remove when unselected
 	function showTEXT(newValue) {
+		// Add the mesh to the scene one after the another
 		if (newValue) {
 			sceneSecondPass.add(textMesh1);
 			sceneSecondPass.add(textMesh2);
 			sceneSecondPass.add(textMesh3);
 		}
+		// Remove the mesh from the scene
 		else {
 			sceneSecondPass.remove(textMesh1);
 			sceneSecondPass.remove(textMesh2);
@@ -812,9 +821,12 @@ cubeTextures['Default'].generateMipmaps = false;
 		}
 	}
 
-	// wireframe helper
+	// --------------------------------------------------------------------------------------------
+
+	// Build the wireframe helper
 	wireframeHelper = new THREE.WireframeHelper(meshSecondPass, 0xffffff);
 
+	// Function to show the wireframe when selected in right panel of GUI or remove when unselected
 	function showBOX(newValue) {
 		if (newValue) {
 			sceneSecondPass.add(wireframeHelper);
@@ -823,10 +835,11 @@ cubeTextures['Default'].generateMipmaps = false;
 			sceneSecondPass.remove(wireframeHelper);
 	}
 
-	//sceneSecondPass.add(wireframeHelper);
-
+	// --------------------------------------------------------------------------------------------
+	// Build the axis helper
 	meshAxis = new THREE.AxisHelper(1);
 
+	// Function to show the axis when selected in right panel of GUI or remove when unselected
 	function showAxis(newValue) {
 		if (newValue) {
 			sceneSecondPass.add(meshAxis);
@@ -834,11 +847,15 @@ cubeTextures['Default'].generateMipmaps = false;
 		else
 			sceneSecondPass.remove(meshAxis);
 	}
+	// --------------------------------------------------------------------------------------------
 
+	// Since we dont pass the specific div having id canvas, it automatically creates a canvas element
 	renderer = new THREE.WebGLRenderer({ alpha: true });
-	// Create the volume rendering space in the dashboard
+	// We append the canvas present in the renderer to the container div
 	container.appendChild(renderer.domElement);
 
+	// --------------------------------------------------------------------------------------------
+	// Create the stats panel to show the performance of the rendering
 	stats = new Stats();
 	stats.domElement.style.position = 'absolute';
 	stats.domElement.style.top = '10px';
@@ -846,6 +863,7 @@ cubeTextures['Default'].generateMipmaps = false;
 	stats.domElement.style.width = '200px';
 	stats.domElement.style.height = '200px';
 	container.appendChild(stats.domElement);
+	// --------------------------------------------------------------------------------------------
 
 	onWindowResize();
 
