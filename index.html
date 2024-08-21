@@ -444,13 +444,13 @@
 			bool c = false;
 			if ( (( polyY14[0] > testy) != ( polyY14[3] > testy)) && (testx < ( polyX14[3] - polyX14[0] ) * (testy - polyY14[3] ) / (polyY14[3] - polyY14[0]) + polyX14[0]) )
 			{
-					c = !c;
+				c = !c;
 			}
 			for (int i = 1; i < 4;i++) {
 				if ( (( polyY14[i] > testy) != ( polyY14[i-1] > testy)) && (testx < ( polyX14[i-1] - polyX14[i] ) * (testy - polyY14[i] ) / (polyY14[i-1] - polyY14[i]) + polyX14[i]) )
 				{
-						c = !c;
-					}
+					c = !c;
+				}
 			}
 			return c;
 		}
@@ -464,13 +464,13 @@
 			bool c = false;
 			if ( (( polyY15[0] > testy) != ( polyY15[4] > testy)) && (testx < ( polyX15[4] - polyX15[0] ) * (testy - polyY15[4] ) / (polyY15[4] - polyY15[0]) + polyX15[0]) )
 			{
-					c = !c;
+				c = !c;
 			}
 			for (int i = 1; i < 5;i++) {
 				if ( (( polyY15[i] > testy) != ( polyY15[i-1] > testy)) && (testx < ( polyX15[i-1] - polyX15[i] ) * (testy - polyY15[i] ) / (polyY15[i-1] - polyY15[i]) + polyX15[i]) )
 				{
-						c = !c;
-					}
+					c = !c;
+				}
 			}
 			return c;
 		}
@@ -483,13 +483,13 @@
 			bool c = false;
 			if ( (( polyY16[0] > testy) != ( polyY16[5] > testy)) && (testx < ( polyX16[5] - polyX16[0] ) * (testy - polyY16[5] ) / (polyY16[5] - polyY16[0]) + polyX16[0]) )
 			{
-					c = !c;
+				c = !c;
 			}
 			for (int i = 1; i < 6;i++) {
 				if ( (( polyY16[i] > testy) != ( polyY16[i-1] > testy)) && (testx < ( polyX16[i-1] - polyX16[i] ) * (testy - polyY16[i] ) / (polyY16[i-1] - polyY16[i]) + polyX16[i]) )
 				{
-						c = !c;
-					}
+					c = !c;
+				}
 			}
 			return c;
 		}
@@ -502,13 +502,13 @@
 			bool c = false;
 			if ( (( polyY17[0] > testy) != ( polyY17[6] > testy)) && (testx < ( polyX17[6] - polyX17[0] ) * (testy - polyY17[6] ) / (polyY17[6] - polyY17[0]) + polyX17[0]) )
 			{
-					c = !c;
+				c = !c;
 			}
 			for (int i = 1; i < 7;i++) {
 				if ( (( polyY17[i] > testy) != ( polyY17[i-1] > testy)) && (testx < ( polyX17[i-1] - polyX17[i] ) * (testy - polyY17[i] ) / (polyY17[i-1] - polyY17[i]) + polyX17[i]) )
 				{
-						c = !c;
-					}
+					c = !c;
+				}
 			}
 			return c;
 		}
@@ -518,252 +518,265 @@
 			float newRadius;
 			float positionX;
 			float positionY;
-
 			float datam[4];
 			float normV = sqrt(colorSample.r*colorSample.r + colorSample.g*colorSample.g + colorSample.b*colorSample.b + colorSample2.r*colorSample2.r);
-			if(normV != 0.0){
-			datam[0] = colorSample.r/normV;
-			datam[1] = colorSample.g/normV;
-			datam[2] = colorSample.b/normV;
-			datam[3] = colorSample2.r/normV;
-		}
-		else {
-			datam[0] = colorSample.r;
-			datam[1] = colorSample.g;
-			datam[2] = colorSample.b;
-			datam[3] = colorSample2.r;
-		}
-
-		corrV[0] = vec4(0.0, 0.7950340093834131, 0.8762606761779697, 0.651604013569835);
-		corrV[1] = vec4(0.7950340093834131, 0.0, 0.33909500723823477, 0.564133011221424);
-		corrV[2] = vec4(0.8762606761779697, 0.33909500723823477, 0.0, 0.6369433058377262);
-		corrV[3] = vec4(0.651604013569835, 0.564133011221424, 0.6369433058377262, 0.0);
-
-		int dimorder[4];
-		dimorder[0] = 0;
-		dimorder[1] = 3;
-		dimorder[2] = 2;
-		dimorder[3] = 1;
-
-		float PI = 3.14;
-
-		float CX = 0.0;
-		float CY = 0.0;
-		float GBCXL = 0.0;
-		float GBCYL = 0.0;
-		//  float rorateVar = 0.65;
-		const int n = 4;
-
-		float corr[4];
-
-		float sumcorr = 0.0;
-		//corr = new Array(n);
-
-		corr[0] = corrV[0][3];
-		corr[1] = corrV[3][2];
-		corr[2] = corrV[2][3];
-		corr[3] = corrV[1][0];
-
-		sumcorr = 1.0;
-
-		float angle[4];// = new double[n];
-		float GBCX[4];
-		float GBCY[4];
-		angle[0] = 0.0 + rotateVar3D/57.32;
-
-		GBCX[0] = cos(angle[0]);
-		GBCY[0] = sin(angle[0]);
-
-		for ( int i = 1; i < n; i++)
-		{
-			angle[i] = angle[i - 1] + 2.0 * PI * (corr[i-1] / sumcorr) ;
-			GBCX[i] = cos(angle[i]) * 0.997;
-			GBCY[i] = sin(angle[i]) * 0.997;
-		}
-
-		float tempsumXY = 0.0;
-		for (int j = 0; j < n; j++)
-		{
-			tempsumXY = tempsumXY + datam[j];
-
-		}
-		if (tempsumXY == 0.0)
-		{
-			GBCXL = 0.0;
-			GBCYL = 0.0;
-		}
-		else
-		{
-			for (int k = 0; k < n; k++)
+			if(normV != 0.0)
 			{
-
-				GBCXL = GBCXL + ((datam[0] / tempsumXY) * GBCX[0]) + ((datam[3] / tempsumXY) * GBCX[1]) + ((datam[2] / tempsumXY) * GBCX[2]) + ((datam[1] / tempsumXY) * GBCX[3]);
-				GBCYL = GBCYL + ((datam[0] / tempsumXY) * GBCY[0]) + ((datam[3] / tempsumXY) * GBCY[1]) + ((datam[2] / tempsumXY) * GBCY[2]) + ((datam[1] / tempsumXY) * GBCY[3]);
-
+				datam[0] = colorSample.r/normV;
+				datam[1] = colorSample.g/normV;
+				datam[2] = colorSample.b/normV;
+				datam[3] = colorSample2.r/normV;
 			}
-		}
-
-		for (int i = 0; i < n; i++)
-		{
-			if (angle[i] < 0.0)
+			else 
 			{
-					angle[i] = angle[i] + PI * 2.0;
+				datam[0] = colorSample.r;
+				datam[1] = colorSample.g;
+				datam[2] = colorSample.b;
+				datam[3] = colorSample2.r;
 			}
-			if (angle[i] > PI * 2.0)
-			{
-					angle[i] = angle[i] - PI * 2.0;
-			}
-		}
 
-		float temp = 0.0;
-		for (int write = 0; write < n; write++)
-		{
-			for (int sort = 0; sort < n - 1; sort++)
+			corrV[0] = vec4(0.0, 0.7950340093834131, 0.8762606761779697, 0.651604013569835);
+			corrV[1] = vec4(0.7950340093834131, 0.0, 0.33909500723823477, 0.564133011221424);
+			corrV[2] = vec4(0.8762606761779697, 0.33909500723823477, 0.0, 0.6369433058377262);
+			corrV[3] = vec4(0.651604013569835, 0.564133011221424, 0.6369433058377262, 0.0);
+
+			int dimorder[4];
+			dimorder[0] = 0;
+			dimorder[1] = 3;
+			dimorder[2] = 2;
+			dimorder[3] = 1;
+
+			float PI = 3.14;
+
+			float CX = 0.0;
+			float CY = 0.0;
+			float GBCXL = 0.0;
+			float GBCYL = 0.0;
+			const int n = 4;
+
+			float corr[4];
+
+			float sumcorr = 0.0;
+
+			corr[0] = corrV[0][3];
+			corr[1] = corrV[3][2];
+			corr[2] = corrV[2][3];
+			corr[3] = corrV[1][0];
+
+			sumcorr = 1.0;
+
+			float angle[4];
+			float GBCX[4];
+			float GBCY[4];
+			angle[0] = 0.0 + rotateVar3D/57.32;
+
+			GBCX[0] = cos(angle[0]);
+			GBCY[0] = sin(angle[0]);
+
+			for ( int i = 1; i < n; i++)
 			{
-				if (angle[sort] > angle[sort + 1])
+				angle[i] = angle[i - 1] + 2.0 * PI * (corr[i-1] / sumcorr) ;
+				GBCX[i] = cos(angle[i]) * 0.997;
+				GBCY[i] = sin(angle[i]) * 0.997;
+			}
+
+			float tempsumXY = 0.0;
+			for (int j = 0; j < n; j++)
+			{
+				tempsumXY = tempsumXY + datam[j];
+			}
+
+			if (tempsumXY == 0.0)
+			{
+				GBCXL = 0.0;
+				GBCYL = 0.0;
+			}
+			else
+			{
+				for (int k = 0; k < n; k++)
 				{
-					temp = angle[sort + 1];
-					angle[sort + 1] = angle[sort];
-					angle[sort] = temp;
+					GBCXL = GBCXL + ((datam[0] / tempsumXY) * GBCX[0]) + ((datam[3] / tempsumXY) * GBCX[1]) + ((datam[2] / tempsumXY) * GBCX[2]) + ((datam[1] / tempsumXY) * GBCX[3]);
+					GBCYL = GBCYL + ((datam[0] / tempsumXY) * GBCY[0]) + ((datam[3] / tempsumXY) * GBCY[1]) + ((datam[2] / tempsumXY) * GBCY[2]) + ((datam[1] / tempsumXY) * GBCY[3]);
 				}
 			}
-		}
 
-		float tempangleXY = atan(GBCYL, GBCXL);
-		if (tempangleXY < 0.0)
-		{ tempangleXY = tempangleXY + PI * 2.0; }
-		bool flag = false;
-		float tempA = 0.0;
-		float tempB = 0.0;
-		for (int j = 0; j < n - 1; j++)
-		{
-			if ((tempangleXY > angle[j] || tempangleXY == angle[j]) && (tempangleXY < angle[j + 1]))
+			for (int i = 0; i < n; i++)
 			{
-				tempA = angle[j + 1];
-				tempB = angle[j];
-				flag = true;
+				if (angle[i] < 0.0)
+				{
+					angle[i] = angle[i] + PI * 2.0;
+				}
+				if (angle[i] > PI * 2.0)
+				{
+					angle[i] = angle[i] - PI * 2.0;
+				}
 			}
-			if (flag == true)
-				break;
-		}
-		if (flag == false)
-		{
-			tempA = angle[0] + PI * 2.0;
-			tempB = angle[n - 1];
-		}
-		float lthXY = (sqrt((GBCXL * GBCXL) + (GBCYL * GBCYL)) / cos((tempA - tempB) / 2.0) * cos(-(tempA + tempB) / 2.0 + tempangleXY));
-		GBCXL = (lthXY * cos(tempangleXY));
-		GBCYL = (lthXY * sin(tempangleXY));
 
-		CX = GBCXL;
-		CY = GBCYL;
+			float temp = 0.0;
+			for (int write = 0; write < n; write++)
+			{
+				for (int sort = 0; sort < n - 1; sort++)
+				{
+					if (angle[sort] > angle[sort + 1])
+					{
+						temp = angle[sort + 1];
+						angle[sort + 1] = angle[sort];
+						angle[sort] = temp;
+					}
+				}
+			}
 
-		float rr = sqrt(pow(CX, 2.0) + pow(CY, 2.0));
-		if (rr >= 1.0) {
+			float tempangleXY = atan(GBCYL, GBCXL);
+
+			if (tempangleXY < 0.0)
+			{ 
+				tempangleXY = tempangleXY + PI * 2.0;
+			}
+
+			bool flag = false;
+			float tempA = 0.0;
+			float tempB = 0.0;
+
+			for (int j = 0; j < n - 1; j++)
+			{
+				if ((tempangleXY > angle[j] || tempangleXY == angle[j]) && (tempangleXY < angle[j + 1]))
+				{
+					tempA = angle[j + 1];
+					tempB = angle[j];
+					flag = true;
+				}
+				if (flag == true)
+					break;
+			}
+
+			if (flag == false)
+			{
+				tempA = angle[0] + PI * 2.0;
+				tempB = angle[n - 1];
+			}
+
+			float lthXY = (sqrt((GBCXL * GBCXL) + (GBCYL * GBCYL)) / cos((tempA - tempB) / 2.0) * cos(-(tempA + tempB) / 2.0 + tempangleXY));
+			GBCXL = (lthXY * cos(tempangleXY));
+			GBCYL = (lthXY * sin(tempangleXY));
+
+			CX = GBCXL;
+			CY = GBCYL;
+
+			float rr = sqrt(pow(CX, 2.0) + pow(CY, 2.0));
+			if (rr >= 1.0) 
+			{
 				CX /= rr;
 				CY /= rr;
-		}
+			}
 
-		float newCX = 0.0;
-		float newCY = 0.0;
-		float centerX = 200.0;
-		float centerY = 200.0;
+			float newCX = 0.0;
+			float newCY = 0.0;
+			float centerX = 200.0;
+			float centerY = 200.0;
 
-		newCX = (CX+1.0)/2.0 * (310.0) + 45.0;
-		newCY = (CY+1.0)/2.0 * (310.0) + 45.0;
+			newCX = (CX+1.0)/2.0 * (310.0) + 45.0;
+			newCY = (CY+1.0)/2.0 * (310.0) + 45.0;
 
-		float dist = sqrt((newCX - centerX)*(newCX- centerX) + (newCY-centerY)*(newCY-centerY));
+			float dist = sqrt((newCX - centerX)*(newCX- centerX) + (newCY-centerY)*(newCY-centerY));
 
-		vec3 HSL2IN = vec3(0.0);
-		vec3 HSL2OUT = vec3(0.0);
+			vec3 HSL2IN = vec3(0.0);
+			vec3 HSL2OUT = vec3(0.0);
 
-		float h = atan(CY, CX) + PI / 2.0;
-		if (h < 0.0) {
+			float h = atan(CY, CX) + PI / 2.0;
+			if (h < 0.0) 
+			{
 				h = h + PI * 2.0;
-		}
-		if (h > PI * 2.0) {
+			}
+			if (h > PI * 2.0) 
+			{
 				h = h - PI * 2.0;
-		}
+			}
 
-		h = h / PI * 180.0;
-		float s = sqrt(pow(CX, 2.0) + pow(CY, 2.0));
-		float l =0.55;
+			h = h / PI * 180.0;
+			float s = sqrt(pow(CX, 2.0) + pow(CY, 2.0));
+			float l =0.55;
 
-		if (lensMove == 1.0){
-			positionX = xValue + centerX;
-			positionY = yValue + centerY;
+			if (lensMove == 1.0)
+			{
+				positionX = xValue + centerX;
+				positionY = yValue + centerY;
 
-			newRadius = sqrt((newCX - positionX)*(newCX - positionX) + (newCY - positionY)*(newCY - positionY) );
-		}
+				newRadius = sqrt((newCX - positionX)*(newCX - positionX) + (newCY - positionY)*(newCY - positionY) );
+			}
+			else
+			{
+				float rr = sqrt(xValue*xValue + yValue*yValue);
+				positionX = rr*cos(lensAng) + centerX;
+				positionY = rr*sin(lensAng) + centerY;
 
-		else{
-			float rr = sqrt(xValue*xValue + yValue*yValue);
-			positionX = rr*cos(lensAng) + centerX;
-			positionY = rr*sin(lensAng) + centerY;
+				newRadius = sqrt((newCX - positionX)*(newCX - positionX) + (newCY - positionY)*(newCY - positionY) );
+			}
 
-			newRadius = sqrt((newCX - positionX)*(newCX - positionX) + (newCY - positionY)*(newCY - positionY) );
-		}
+			// NEED TO CHANGE HERE FOR INVERSE EFFECT OF LENS
+			if (lensMode == 0.0)
+			{
+				if (newRadius >  radiusR) 
+				{
+					l = 0.0;
+				}
+				else 
+				{
+					l=0.55;
+				}
+			}
+			else 
+			{
+				if (newRadius <  radiusR) 
+				{
+					l = 0.0;
+				}
+				else 
+				{
+					l=0.55;
+				}
+			}
 
-		// NEED TO CHANGE HERE FOR INVERSE EFFECT OF LENS
-		if (lensMode == 0.0)
-		{
-			if (newRadius >  radiusR) {
+			if(radialValue > dist)
+			{
 				l = 0.0;
 			}
-			else {
-					l=0.55;
+
+			//WHETHER POINT LIES WITHIN THE ARC OR NOT
+			float angleArc = atan(newCY-centerY,newCX-centerX);
+
+			float startAng = startAng * (PI/180.0);
+			float endAngle = arcWidth;
+			float s_x = cos(startAng);
+			float s_y = sin(startAng);
+			float e_x = cos(arcWidth);
+			float e_y = sin(arcWidth);
+
+			if (endAngle < startAng)
+			{
+				endAngle = endAngle + 2.0 * PI;
 			}
-		}
-		else {
-			if (newRadius <  radiusR) {
-				l = 0.0;
+
+			float half_angle = (endAngle - startAng) / 2.0;
+			float mid_angle  = (endAngle + startAng) / 2.0;
+			float cos_half_angle = cos(half_angle);
+
+			if (cos(angleArc - mid_angle) >= cos_half_angle)
+			{
+				l=l;
 			}
-			else {
-					l=0.55;
+			else 
+			{
+				l=0.0;
 			}
-		}
 
-		if(radialValue > dist)
-		{
-			l = 0.0;
-		}
+			float d_x = (newCX - centerX);
+			float d_y = (newCY - centerY);
 
-		//WHETHER POINT LIES WITHIN THE ARC OR NOT
-		float angleArc = atan(newCY-centerY,newCX-centerX);
+			HSL2IN.s = h/360.0;
+			HSL2IN.t = s;
+			HSL2IN.p = l;
 
-		float startAng = startAng * (PI/180.0);
-		float endAngle = arcWidth;
-		float s_x = cos(startAng);
-		float s_y = sin(startAng);
-		float e_x = cos(arcWidth);
-		float e_y = sin(arcWidth);
-
-		if (endAngle < startAng)
-		{
-			endAngle = endAngle + 2.0 * PI;
-		}
-
-		float half_angle = (endAngle - startAng) / 2.0;
-		float mid_angle  = (endAngle + startAng) / 2.0;
-		float cos_half_angle = cos(half_angle);
-
-		if (cos(angleArc - mid_angle) >= cos_half_angle)
-		{
-			l=l;
-		}
-		else {
-			l=0.0;
-		}
-
-		float d_x = (newCX - centerX);
-		float d_y = (newCY - centerY);
-
-
-		HSL2IN.s = h/360.0;
-		HSL2IN.t = s;
-		HSL2IN.p = l;
-
-		return HslToRgb(HSL2IN);
+			return HslToRgb(HSL2IN);
 		}
 
 		vec3 GBCtoHCL (vec4 colorSample, vec4 colorSample2, float rotateVar3D, float radialValue, float lensMode)
