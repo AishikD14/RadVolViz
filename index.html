@@ -117,7 +117,6 @@
 			{
 				//The fragment's world space coordinates as fragment output.
 				gl_FragColor = vec4( worldSpaceCoords.x , worldSpaceCoords.y, worldSpaceCoords.z, 1 );
-				// gl_FragColorJ = vec4( worldSpaceCoords.x , worldSpaceCoords.y, worldSpaceCoords.z, 1 );
 			}
 	</script>
 
@@ -130,6 +129,19 @@
 				worldSpaceCoords = position + vec3(0.5, 0.5, 0.5); //move it from [-0.5;0.5] to [0,1]
 				gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
 			}
+	</script>
+
+	<script id="vertexShaderSecondPass" type="x-shader/x-vertex">
+		varying vec3 worldSpaceCoords;
+		varying vec4 projectedCoords;
+
+		void main()
+		{
+			worldSpaceCoords = (modelMatrix * vec4(position + vec3(0.5, 0.5,0.5), 1.0 )).xyz;
+			gl_Position = projectionMatrix *  modelViewMatrix * vec4( position, 1.0 );
+			projectedCoords =  projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+		}
+
 	</script>
 
 	<script id="fragmentShaderSecondPass" type="x-shader/x-fragment">
@@ -282,13 +294,11 @@
 		uniform float stDev;
 		const int MAX_POLY = 4;
 		uniform int rayMarch2;
-		// vec4 polyX;
-		// vec4 polyY;
 
-    	//  uniform rorateVar1;
 		// The maximum distance through our rendering volume is sqrt(3).
 		// The maximum number of steps we take to travel a distance of 1 is 512.
 		// ceil( sqrt(3) * 512 ) = 887
+
 		// This prevents the back of the image from getting cut off when steps=512 & viewing diagonally.
 		const int MAX_STEPS = 887;
 
@@ -423,7 +433,6 @@
 			HUESample.t = g;
 			HUESample.p = b;
 
-
 			return HUESample;
 		}
 
@@ -465,7 +474,6 @@
 			}
 			return c;
 		}
-
 
 		float polyX16[6];
 		float polyY16[6];
@@ -656,7 +664,6 @@
 				CY /= rr;
 		}
 
-
 		float newCX = 0.0;
 		float newCY = 0.0;
 		float centerX = 200.0;
@@ -736,7 +743,6 @@
 			endAngle = endAngle + 2.0 * PI;
 		}
 
-
 		float half_angle = (endAngle - startAng) / 2.0;
 		float mid_angle  = (endAngle + startAng) / 2.0;
 		float cos_half_angle = cos(half_angle);
@@ -767,8 +773,6 @@
 			float positionY;
 
 			float datam[8];
-			// colorSample.a = colorSample.r;
-
 
 			if (colorSample.r < minCe){
 				colorSample.r = 0.0;
@@ -785,12 +789,6 @@
 			if (colorSample2.r < minGd){
 				colorSample2.r = 0.0;
 			}
-			// if (colorSample2.g < rangeVal){
-			// 	colorSample2.g = 0.0;
-			// }
-			// if (colorSample2.b < rangeVal){
-			// 	colorSample2.b = 0.0;
-			// }
 
 			if (colorSample.r > maxCe){
 				colorSample.r = 0.0;
@@ -849,22 +847,6 @@
 
 			float normV = sqrt(colorSample.r*colorSample.r + colorSample.g*colorSample.g + colorSample.b*colorSample.b + colorSample2.r*colorSample2.r );//+ colorSample2.g*colorSample2.g);
 
-			//   if(normV != 0.0){
-			//   datam[0] = colorSample.r/normV;
-			//   datam[1] = colorSample.g/normV;
-			//   datam[2] = colorSample.b/normV;
-			//   datam[3] = colorSample2.r/normV;
-			//   datam[4] = colorSample2.g/normV;
-			// }
-			// else {
-			//   datam[0] = colorSample.r;
-						//   datam[1] = colorSample.g;
-						//   datam[2] = colorSample.b;
-						//   datam[3] = colorSample2.r;
-			//   datam[4] = colorSample2.g;
-						//
-			// }
-
 			datam[0] = colorSample.r;
 			datam[1] = colorSample.g;
 			datam[2] = colorSample.b;
@@ -881,10 +863,9 @@
 			float GBCXL = 0.0;
 			float GBCYL = 0.0;
 
-			//  float rorateVar = 0.65;
 			const int n = 4;
 
-			float angle[4];// = new double[n];
+			float angle[4];
 			float GBCX[4];
 			float GBCY[4];
 			angle[0] = PI / 2.0 + rotateVar3D/57.32;
@@ -930,8 +911,8 @@
 			for (int j = 0; j < n; j++)
 			{
 				tempsumXY = tempsumXY + datam[j];
-
 			}
+
 			if (tempsumXY == 0.0)
 			{
 				GBCXL = 0.0;
@@ -947,11 +928,14 @@
 				}
 
 				float tempangleXY = atan(GBCYL, GBCXL);
+
 				if (tempangleXY < 0.0)
 				{ tempangleXY = tempangleXY + PI * 2.0; }
+
 				bool flag = false;
 				float tempA = 0.0;
 				float tempB = 0.0;
+
 				for (int j = 0; j < n - 1; j++)
 				{
 					if ((tempangleXY > angle[j] || tempangleXY == angle[j]) && (tempangleXY < angle[j + 1]))
@@ -982,7 +966,6 @@
 				CY /= rr;
 			}
 
-
 			float newCX = 0.0;
 			float newCY = 0.0;
 			float centerX = 200.0;
@@ -997,9 +980,11 @@
 			vec3 HSL2OUT = vec3(0.0);
 
 			float h = atan(CY, CX) + PI / 2.0;
+
 			if (h < 0.0) {
 				h = h + PI * 2.0;
 			}
+
 			if (h > PI * 2.0) {
 				h = h - PI * 2.0;
 			}
@@ -1008,15 +993,16 @@
 			float s = sqrt(pow(CX, 2.0) + pow(CY, 2.0));
 			float l =0.55;
 
-			if (lensMove == 1.0){
+			if (lensMove == 1.0)
+			{
 				positionX = xValue + centerX;
 				positionY = yValue + centerY;
 
 				newRadius = sqrt((newCX - positionX)*(newCX - positionX) + (newCY - positionY)*(newCY - positionY) );
-
 			}
 
-			else{
+			else
+			{
 				float rr = sqrt(xValue*xValue + yValue*yValue);
 				positionX = rr*cos(lensAng) + centerX;
 				positionY = rr*sin(lensAng) + centerY;
@@ -1027,31 +1013,32 @@
 			// NEED TO CHANGE HERE FOR INVERSE EFFECT OF LENS
 			if (lensMode == 0.0 )
 			{
-				if (newRadius >  radiusR) {
+				if (newRadius >  radiusR) 
+				{
 					l = 0.0;
 				}
 
-				else {
-						l=0.55;//55;
-					//	h = 0.0;
-					//	s = 5.0;
+				else 
+				{
+					l=0.55;
 				}
 			}
-			else  {
-				if (newRadius <  radiusR) {
+			else  
+			{
+				if (newRadius <  radiusR) 
+				{
 					l = 0.0;
 				}
-				else {
-						l=0.55;
+				else 
+				{
+					l=0.55;
 				}
 			}
-
 
 			if(radialValue > dist)
 			{
 				l = 0.0;
 			}
-
 
 			//WHETHER POINT LIES WITHIN THE ARC OR NOT
 			float angleArc = atan(newCY-centerY,newCX-centerX);
@@ -1067,7 +1054,6 @@
 			{
 				endAngle = endAngle + 2.0 * PI;
 			}
-
 
 			float half_angle = (endAngle - startAng) / 2.0;
 			float mid_angle  = (endAngle + startAng) / 2.0;
@@ -1145,37 +1131,41 @@
 				polyYY5[2] = y53;
 				polyYY5[3] = y54;
 
-
-				bool pointIO1	=	pnpoly4(polyXX1, polyYY1, newCX, newCY);
-				if (pointIO1){
+				bool pointIO1 =	pnpoly4(polyXX1, polyYY1, newCX, newCY);
+				if (pointIO1)
+				{
 					h = hslh1;
 					s = hsls1;
 					l = hsll;
 				}
 
-				bool pointIO2	=	pnpoly4(polyXX2, polyYY2, newCX, newCY);
-				if (pointIO2){
+				bool pointIO2 =	pnpoly4(polyXX2, polyYY2, newCX, newCY);
+				if (pointIO2)
+				{
 					h = hslh2;
 					s = hsls2;
 					l = hsll;
 				}
 
-				bool pointIO3	=	pnpoly4(polyXX3, polyYY3, newCX, newCY);
-				if (pointIO3){
+				bool pointIO3 =	pnpoly4(polyXX3, polyYY3, newCX, newCY);
+				if (pointIO3)
+				{
 					h = hslh3;
 					s = hsls3;
 					l = hsll;
 				}
 
-				bool pointIO4	=	pnpoly4(polyXX4, polyYY4, newCX, newCY);
-				if (pointIO4){
+				bool pointIO4 =	pnpoly4(polyXX4, polyYY4, newCX, newCY);
+				if (pointIO4)
+				{
 					h = hslh4;
 					s = hsls4;
 					l = hsll;
 				}
 
-				bool pointIO5	=	pnpoly4(polyXX5, polyYY5, newCX, newCY);
-				if (pointIO5){
+				bool pointIO5 =	pnpoly4(polyXX5, polyYY5, newCX, newCY);
+				if (pointIO5)
+				{
 					h = hslh5;
 					s = hsls5;
 					l = hsll;
@@ -1183,8 +1173,8 @@
 
 			}
 
-			if (polySide == 6.0 && brushMode == 1.0){
-
+			if (polySide == 6.0 && brushMode == 1.0)
+			{
 				h = 0.0;
 				s = 0.0;
 				l = 0.0;
@@ -1255,46 +1245,49 @@
 				polyYY5[3] = y54;
 				polyYY5[4] = y55;
 
-				bool pointIO1	=	pnpoly5(polyXX1, polyYY1, newCX, newCY);
-				if (pointIO1){
+				bool pointIO1 =	pnpoly5(polyXX1, polyYY1, newCX, newCY);
+				if (pointIO1)
+				{
 					h = hslh1;
 					s = hsls1;
 					l = hsll;
 				}
 
-
-				bool pointIO2	=	pnpoly5(polyXX2, polyYY2, newCX, newCY);
-				if (pointIO2){
+				bool pointIO2 =	pnpoly5(polyXX2, polyYY2, newCX, newCY);
+				if (pointIO2)
+				{
 					h = hslh2;
 					s = hsls2;
 					l = hsll;
 				}
 
-				bool pointIO3	=	pnpoly5(polyXX3, polyYY3, newCX, newCY);
-				if (pointIO3){
+				bool pointIO3 =	pnpoly5(polyXX3, polyYY3, newCX, newCY);
+				if (pointIO3)
+				{
 					h = hslh3;
 					s = hsls3;
 					l = hsll;
 				}
 
-				bool pointIO4	=	pnpoly5(polyXX4, polyYY4, newCX, newCY);
-				if (pointIO4){
+				bool pointIO4 =	pnpoly5(polyXX4, polyYY4, newCX, newCY);
+				if (pointIO4)
+				{
 					h = hslh4;
 					s = hsls4;
 					l = hsll;
 				}
 
-				bool pointIO5	=	pnpoly5(polyXX5, polyYY5, newCX, newCY);
-				if (pointIO5){
+				bool pointIO5 =	pnpoly5(polyXX5, polyYY5, newCX, newCY);
+				if (pointIO5)
+				{
 					h = hslh5;
 					s = hsls5;
 					l = hsll;
 				}
-
 			}
 
-			if (polySide == 7.0 && brushMode == 1.0){
-
+			if (polySide == 7.0 && brushMode == 1.0)
+			{
 				h = 0.0;
 				s = 0.0;
 				l = 0.0;
@@ -1374,39 +1367,41 @@
 				polyYY5[4] = y55;
 				polyYY5[5] = y56;
 
-
-
-				bool pointIO1	=	pnpoly6(polyXX1, polyYY1, newCX, newCY);
-				if (pointIO1){
+				bool pointIO1 =	pnpoly6(polyXX1, polyYY1, newCX, newCY);
+				if (pointIO1)
+				{
 					h = hslh1;
 					s = hsls1;
 					l = hsll;
 				}
 
-
-				bool pointIO2	=	pnpoly6(polyXX2, polyYY2, newCX, newCY);
-				if (pointIO2){
+				bool pointIO2 =	pnpoly6(polyXX2, polyYY2, newCX, newCY);
+				if (pointIO2)
+				{
 					h = hslh2;
 					s = hsls2;
 					l = hsll;
 				}
 
-				bool pointIO3	=	pnpoly6(polyXX3, polyYY3, newCX, newCY);
-				if (pointIO3){
+				bool pointIO3 =	pnpoly6(polyXX3, polyYY3, newCX, newCY);
+				if (pointIO3)
+				{
 					h = hslh3;
 					s = hsls3;
 					l = hsll;
 				}
 
-				bool pointIO4	=	pnpoly6(polyXX4, polyYY4, newCX, newCY);
-				if (pointIO4){
+				bool pointIO4 =	pnpoly6(polyXX4, polyYY4, newCX, newCY);
+				if (pointIO4)
+				{
 					h = hslh4;
 					s = hsls4;
 					l = hsll;
 				}
 
-				bool pointIO5	=	pnpoly6(polyXX5, polyYY5, newCX, newCY);
-				if (pointIO5){
+				bool pointIO5 =	pnpoly6(polyXX5, polyYY5, newCX, newCY);
+				if (pointIO5)
+				{
 					h = hslh5;
 					s = hsls5;
 					l = hsll;
@@ -1414,8 +1409,8 @@
 
 			}
 
-			if (polySide == 8.0 && brushMode == 1.0){
-
+			if (polySide == 8.0 && brushMode == 1.0)
+			{
 				h = 0.0;
 				s = 0.0;
 				l = 0.0;
@@ -1505,38 +1500,41 @@
 				polyYY5[5] = y56;
 				polyYY5[6] = y57;
 
-
-				bool pointIO1	=	pnpoly7(polyXX1, polyYY1, newCX, newCY);
-				if (pointIO1){
+				bool pointIO1 =	pnpoly7(polyXX1, polyYY1, newCX, newCY);
+				if (pointIO1)
+				{
 					h = hslh1;
 					s = hsls1;
 					l = hsll;
 				}
 
-
-				bool pointIO2	=	pnpoly7(polyXX2, polyYY2, newCX, newCY);
-				if (pointIO2){
+				bool pointIO2 =	pnpoly7(polyXX2, polyYY2, newCX, newCY);
+				if (pointIO2)
+				{
 					h = hslh2;
 					s = hsls2;
 					l = hsll;
 				}
 
-				bool pointIO3	=	pnpoly7(polyXX3, polyYY3, newCX, newCY);
-				if (pointIO3){
+				bool pointIO3 =	pnpoly7(polyXX3, polyYY3, newCX, newCY);
+				if (pointIO3)
+				{
 					h = hslh3;
 					s = hsls3;
 					l = hsll;
 				}
 
-				bool pointIO4	=	pnpoly7(polyXX4, polyYY4, newCX, newCY);
-				if (pointIO4){
+				bool pointIO4 =	pnpoly7(polyXX4, polyYY4, newCX, newCY);
+				if (pointIO4)
+				{
 					h = hslh4;
 					s = hsls4;
 					l = hsll;
 				}
 
-				bool pointIO5	=	pnpoly7(polyXX5, polyYY5, newCX, newCY);
-				if (pointIO5){
+				bool pointIO5 =	pnpoly7(polyXX5, polyYY5, newCX, newCY);
+				if (pointIO5)
+				{
 					h = hslh5;
 					s = hsls5;
 					l = hsll;
@@ -1551,6 +1549,7 @@
             return HslToRgb(HSL2IN);
 
 		}
+
 		vec4 PC2OUT = vec4(0.0);
 		vec3 ceRGB;
 		vec3 coRGB;
@@ -1561,7 +1560,6 @@
 		vec3 feRGBA;
 		vec3 gdRGBA;
 
-
 		float ceA;
 		float coA;
 		float feA;
@@ -1569,16 +1567,16 @@
 
 		vec3 PCRGB = vec3(0.0);
 
-		vec3 rgba2rgb(vec3 RGBA, float alphaPC){
-					PCRGB.r = (1.0 - alphaPC) * 0.0 + alphaPC * RGBA.r/255.0;
-					PCRGB.g = (1.0 - alphaPC) * 0.0 + alphaPC * RGBA.g/255.0;
-					PCRGB.b = (1.0 - alphaPC) * 0.0 + alphaPC * RGBA.b/255.0;
-					return PCRGB;
+		vec3 rgba2rgb(vec3 RGBA, float alphaPC)
+		{
+			PCRGB.r = (1.0 - alphaPC) * 0.0 + alphaPC * RGBA.r/255.0;
+			PCRGB.g = (1.0 - alphaPC) * 0.0 + alphaPC * RGBA.g/255.0;
+			PCRGB.b = (1.0 - alphaPC) * 0.0 + alphaPC * RGBA.b/255.0;
+			return PCRGB;
 		}
 
 		vec4 PCtoRGB (vec4 colorSample, vec4 colorSample2, float rotateVar3D, float radialValue, float lensMode)
 		{
-
 			float datam[8];
 			ceRGBA.r = 0.0,
 			ceRGBA.g = 255.0,
@@ -1596,56 +1594,57 @@
 			gdRGBA.g = 0.0,
 			gdRGBA.b = 255.0;
 
-			if (colorSample.r < minCe){
+			if (colorSample.r < minCe)
+			{
 				colorSample.r = 0.0;
 			}
-			if (colorSample.g < minCo){
+			if (colorSample.g < minCo)
+			{
 				colorSample.g = 0.0;
 			}
-			if (colorSample.b < minFe){
+			if (colorSample.b < minFe)
+			{
 				colorSample.b = 0.0;
 			}
-			if (colorSample.a < minGd){
+			if (colorSample.a < minGd)
+			{
 				colorSample.a = 0.0;
 			}
-			if (colorSample2.r < minGd){
+			if (colorSample2.r < minGd)
+			{
 				colorSample2.r = 0.0;
 			}
-			// if (colorSample2.g < rangeVal){
-			// 	colorSample2.g = 0.0;
-			// }
-			// if (colorSample2.b < rangeVal){
-			// 	colorSample2.b = 0.0;
-			// }
 
 
-
-			if (colorSample.r > maxCe){
+			if (colorSample.r > maxCe)
+			{
 				colorSample.r = 0.0;
 			}
-			if (colorSample.g > maxCo){
+			if (colorSample.g > maxCo)
+			{
 				colorSample.g = 0.0;
 			}
-			if (colorSample.b > maxFe){
+			if (colorSample.b > maxFe)
+			{
 				colorSample.b = 0.0;
 			}
-			if (colorSample2.r > maxGd){
+			if (colorSample2.r > maxGd)
+			{
 				colorSample2.r = 0.0;
 			}
-			if (colorSample2.g > maxrangeVal){
+			if (colorSample2.g > maxrangeVal)
+			{
 				colorSample2.g = 0.0;
 			}
-
-			if (colorSample2.b > maxrangeVal){
+			if (colorSample2.b > maxrangeVal)
+			{
 				colorSample2.b = 0.0;
 			}
-
 
 			ceA = colorSample.r;
 			coA = colorSample.g;
 			feA = colorSample.b;
 			gdA = colorSample2.r;
-
 
 			vec3 PC2IN = vec3(0.0);
 
@@ -1662,7 +1661,8 @@
 		}
 
 		vec4  clipPlanesNew;
-		bool withinBoundaries_Plane( vec3 pos ) {
+		bool withinBoundaries_Plane( vec3 pos ) 
+		{
 			clipPlanesNew.x = xClippingPlaneMin;
 			clipPlanesNew.y = yClippingPlaneMin;
 			clipPlanesNew.z = zClippingPlaneMin;
@@ -1671,7 +1671,8 @@
 			return dot(pos, clipPlanesNew.xyz) < clipPlanesNew.w;
 		}
 
-		bool withinBoundaries_Axis( vec3 pos ) {
+		bool withinBoundaries_Axis( vec3 pos ) 
+		{
 		if (
 				pos.x > xClippingPlaneMin ||
 				pos.y > yClippingPlaneMin ||
@@ -1686,8 +1687,7 @@
 		void main( void ) {
 
 			//Transform the coordinates it from [-1;1] to [0;1]
-			vec2 texc = vec2(((projectedCoords.x / projectedCoords.w) + 1.0 ) / 2.0,
-							((projectedCoords.y / projectedCoords.w) + 1.0 ) / 2.0 );
+			vec2 texc = vec2(((projectedCoords.x / projectedCoords.w) + 1.0 ) / 2.0, ((projectedCoords.y / projectedCoords.w) + 1.0 ) / 2.0 );
 
 			//The back position is the world space position stored in the texture.
 			vec3 backPos = texture2D(tex, texc).xyz;
@@ -1700,7 +1700,6 @@
 			if ((backPos.x == 0.0) && (backPos.y == 0.0))
 			{
 				gl_FragColor = vec4(0.0);
-				// gl_FragColorJ = vec4(0.0);
 				return;
 			}
 
@@ -1759,54 +1758,50 @@
 				colorSample = sampleAs3DTexture( currentPosition );
 				colorSample2 = sampleAs3DTexture2( currentPosition );
 
-
-
 				if (modeGBC == 1.0)
 				{
 					HCL2Sample = GBCtoHCL( colorSample, colorSample2, rotateVar3D, radialValue, lensMode);
 				}
 
-				else if (modeGBC == 2.0) {
+				else if (modeGBC == 2.0) 
+				{
 					HCL2Sample = DGBCtoHCL( colorSample, colorSample2, rotateVar3D, radialValue, lensMode);
 				}
 
-				else if (modeGBC == 3.0) {
+				else if (modeGBC == 3.0) 
+				{
 					PC2Sample = PCtoRGB(colorSample, colorSample2, rotateVar3D, radialValue, lensMode);
 				}
 
-				else if(modeGBC == 0.0 ){
-
+				else if(modeGBC == 0.0 )
+				{
 					HCL2Sample.r = colorSample.b;
 					HCL2Sample.g = colorSample.g;
 					HCL2Sample.b = colorSample.r;
 				}
-				else {
+				else 
+				{
 					HCL2Sample.r = colorSample.r;
 					HCL2Sample.g = colorSample.g;
 					HCL2Sample.b = colorSample.b;
 				}
+
 				// Magnitude Thresholding for
 				accumulatedRGB = sqrt(((HCL2Sample.r*HCL2Sample.r)+(HCL2Sample.g*HCL2Sample.g)+(HCL2Sample.b*HCL2Sample.b))/255.0);
 
-				if (modeGBC != 3.0){
+				if (modeGBC != 3.0)
+				{
 					colorSample.r = HCL2Sample.r;
 					colorSample.g = HCL2Sample.g;
 					colorSample.b = HCL2Sample.b;
 				}
-				else {
+				else 
+				{
 					colorSample.r = PC2Sample.r;
 					colorSample.g = PC2Sample.g;
 					colorSample.b = PC2Sample.b;
 					colorSample.a = PC2Sample.a;
 				}
-
-				// if (colorSample.a < rangeVal){
-				// 	colorSample.a=0.0;
-				// }
-				//
-				// if (colorSample.a > maxrangeVal){
-				// 	colorSample.a=0.0;
-				// }
 
 				// FINDNNG THE SUM OF ALL THE VOXELS WHILE RAY MARCHING.
 				totalSample.rgb += colorSample.rgb;
@@ -1821,22 +1816,28 @@
 				// alphaSample *= alphaScaleFactor;
 
 
-				if (axisClipping == 1.0){
-					if ( withinBoundaries_Axis( currentPosition ) ) {
+				if (axisClipping == 1.0)
+				{
+					if ( withinBoundaries_Axis( currentPosition ) ) 
+					{
 						//Perform the composition.
 						accumulatedColor +=  colorSample * alphaSample;
 
 						//Store the alpha accumulated so far.
-						if (modeGBC != 3.0){
+						if (modeGBC != 3.0)
+						{
 							accumulatedAlpha += alphaSample;
 						}
-						else {
+						else 
+						{
 							accumulatedAlpha += alphaSample*0.2;
 						}
 					}
 				}
-				else{
-					if ( withinBoundaries_Plane( currentPosition ) ) {
+				else
+				{
+					if ( withinBoundaries_Plane( currentPosition ) ) 
+					{
 						//Perform the composition.
 						accumulatedColor += colorSample * alphaSample;
 						//Store the alpha accumulated so far.
@@ -1850,13 +1851,11 @@
 
 				//If the length traversed is more than the ray length, or if the alpha accumulated reaches 1.0 then exit.
 				if(accumulatedLength >= rayLength || accumulatedAlpha >= 1.0 )
-				// totalSample.r = totalSample.r/rayLength;
 					break;
 			}
 
 			//Perform the second ray marching iterations for finding out the standard deviation
 			if (stDev == 1.0)
-
 			{
 				for( int j = 0; j < MAX_STEPS; j++)
 				{
@@ -1870,36 +1869,34 @@
 						secSample = GBCtoHCL( colorSampleJ, colorSample2J, rotateVar3D, radialValue, lensMode);
 					}
 
-					else if (modeGBC == 2.0) {
+					else if (modeGBC == 2.0) 
+					{
 						secSample = DGBCtoHCL( colorSampleJ, colorSample2J, rotateVar3D, radialValue, lensMode);
 					}
 
-					else if(modeGBC == 0.0 ){
-
+					else if(modeGBC == 0.0 )
+					{
 						secSample.r = colorSampleJ.b;
 						secSample.g = colorSampleJ.g;
 						secSample.b = colorSampleJ.r;
 					}
 
-					// colorSample.a = (colorSample.r*0.15 + colorSample.g*0.35 + colorSample.b*0.21 + colorSample.a*0.29 )/4.0;
 					colorSampleJ.r = secSample.r;
 					colorSampleJ.g = secSample.g;
 					colorSampleJ.b = secSample.b;
 
 					alphaSampleJ = colorSampleJ.a * alphaCorrection;
 
-
 					meanSample.r = totalSample.r/885.0;
-					// meanSample.r = totalSample.r/385.0;
 					meanSample.g = totalSample.g/885.0;
 					meanSample.b = totalSample.b/885.0;
 
-
 					varSample += (colorSampleJ.rgb - meanSample.rgb) * (colorSampleJ.rgb - meanSample.rgb);
 
-					// alphaSample *= alphaScaleFactor;
-					if (axisClipping == 1.0){
-						if ( withinBoundaries_Axis( currentPosition ) ) {
+					if (axisClipping == 1.0)
+					{
+						if ( withinBoundaries_Axis( currentPosition ) ) 
+						{
 							//Perform the composition.
 							accumulatedColor +=  colorSample * alphaSample;
 
@@ -1907,8 +1904,10 @@
 							accumulatedAlpha += alphaSample;
 						}
 					}
-					else{
-						if ( withinBoundaries_Plane( currentPosition ) ) {
+					else
+					{
+						if ( withinBoundaries_Plane( currentPosition ) ) 
+						{
 							//Perform the composition.
 							accumulatedColor += colorSample * alphaSample;
 							//Store the alpha accumulated so far.
@@ -1922,11 +1921,9 @@
 
 					//If the length traversed is more than the ray length, or if the alpha accumulated reaches 1.0 then exit.
 					if(accumulatedLengthJ >= rayLength || accumulatedAlphaJ >= 1.0 )
-						// rayMarch2 = j;
 						break;
 
 				}
-
 			}
 
 			// Fragmant Coloring is happening here.
@@ -1935,28 +1932,15 @@
 			{
 				gl_FragColor  = accumulatedColor;
 			}
-			// gl_FragColor  = accumulatedColor; // originally this is vertexShaderSecondPass
-			else if (stDev == 1.0) {
+			else if (stDev == 1.0) 
+			{
 				devSample.r = sqrt(varSample.r/885.0);
 				devSample.g = sqrt(varSample.g/885.0);
 				devSample.b = sqrt(varSample.b/885.0);
 				gl_FragColor.rgb  = devSample.rgb;
-				gl_FragColor.a = 0.0;// colorSampleJ.a;
+				gl_FragColor.a = 0.0;
 			}
 		}
-	</script>
-
-	<script id="vertexShaderSecondPass" type="x-shader/x-vertex">
-			varying vec3 worldSpaceCoords;
-			varying vec4 projectedCoords;
-
-			void main()
-			{
-				worldSpaceCoords = (modelMatrix * vec4(position + vec3(0.5, 0.5,0.5), 1.0 )).xyz;
-				gl_Position = projectionMatrix *  modelViewMatrix * vec4( position, 1.0 );
-				projectedCoords =  projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
-			}
-
 	</script>
 
 	<script>

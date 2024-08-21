@@ -180,8 +180,6 @@ function brushingCode() {
       guiControls.x4 = pp1[3][0];
       guiControls.x5 = pp1[4][0];
       guiControls.x6 = pp1[5][0];
-      // guiControls.x7 = pp1[6][0];
-      // guiControls.x8 = pp1[7][0];
 
       guiControls.y1 = pp1[0][1];
       guiControls.y2 = pp1[1][1];
@@ -189,8 +187,6 @@ function brushingCode() {
       guiControls.y4 = pp1[3][1];
       guiControls.y5 = pp1[4][1];
       guiControls.y6 = pp1[5][1];
-      // guiControls.y7 = pp1[6][1];
-      // guiControls.x8 = pp1[7][0];
     }
 
     if (pp2.length > 0) {
@@ -272,7 +268,6 @@ function brushingCode() {
       guiControls.x5 = pp1[4][0];
       guiControls.x6 = pp1[5][0];
       guiControls.x7 = pp1[6][0];
-      // guiControls.x8 = pp1[7][0];
 
       guiControls.y1 = pp1[0][1];
       guiControls.y2 = pp1[1][1];
@@ -281,7 +276,6 @@ function brushingCode() {
       guiControls.y5 = pp1[4][1];
       guiControls.y6 = pp1[5][1];
       guiControls.y7 = pp1[6][1];
-      // guiControls.x8 = pp1[7][0];
     }
 
     if (pp2.length > 0) {

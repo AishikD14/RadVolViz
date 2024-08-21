@@ -218,7 +218,7 @@ function helloWorld() {
 
     // ##########################################################
     console.log(Q.length);
-    console.log(Q);
+    // console.log(Q);
     // ##########################################################
 
     // Plot the scatter dots on the color space
@@ -466,7 +466,7 @@ function helloWorld() {
     // ##########################################################
     /// Parallel Coordinate Starts Here
     // ##########################################################
-    
+
     var margin = { top: 18, right: 20, bottom: 0, left: 50 },
       width = 300,
       height = 135 - margin.top - margin.bottom,
