@@ -582,7 +582,6 @@ cubeTextures['Default'].generateMipmaps = false;
 			generateMipmaps: false
 		});
 
-
 	var materialFirstPass = new THREE.ShaderMaterial({
 		vertexShader: document.getElementById('vertexShaderFirstPass').textContent,
 		fragmentShader: document.getElementById('fragmentShaderFirstPass').textContent,
