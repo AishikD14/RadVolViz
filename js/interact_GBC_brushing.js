@@ -4,13 +4,14 @@ function GBC(datam, rotateVar) {
     var m = datam.length;
     var n = (datam[0]).length;
 
-    console.log(m, n);
+    // console.log(m, n);
 
     var angle = new Array(n)
     angle[0] = Math.PI / 2 + rotateVar;
 
     var GBCL = new Array();
 
+    // Populate the GBCL array where the first 2 dimensions are set to 0 and remaining 4 are copied from datam
     for (i = 0; i < m + n; i++) {
         GBCL[i] = new Array();
         for (j = 0; j < 2; j++) {
@@ -23,9 +24,11 @@ function GBC(datam, rotateVar) {
         }
     }
 
+    // Populate the first 3 dimensions of the mth row of the GBCL array
     GBCL[m][0] = Math.cos(angle[0]);
     GBCL[m][1] = Math.sin(angle[0]);
 
+    // Populate the first 3 dimensions of of the last 4 rows of the GBCL array
     for (var i = 1; i < n; i++) {
         angle[i] = angle[i - 1] - 2 * Math.PI / n;
         GBCL[m + i][0] = Math.cos(angle[i]) * 0.997;
@@ -84,6 +87,7 @@ function GBC(datam, rotateVar) {
         }
     }
 
+    // Not in use
     var dimorder = new Array(n)
     for (var i = 0; i < n; i++) {
         dimorder[i] = i;

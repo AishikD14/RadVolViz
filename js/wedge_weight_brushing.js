@@ -23,7 +23,7 @@ function clearBrush() {
 
 // Being called on nearly every interaction with dashboard
 function helloWorld() {
-  console.log("Hello World");
+  // console.log("Hello World");
 
   var seed = 1;
   function random() {
@@ -46,6 +46,9 @@ function helloWorld() {
   // moveXCord = guiControls.xValue;
   // moveYCord = guiControls.yValue;
 
+  console.log("Downsampled Data");
+  console.log(data.length);
+
   var ss = 0;
   var datum = ObjtoArr(data);
 
@@ -57,12 +60,16 @@ function helloWorld() {
     ss = DGBC(datum, rotateVar);
   }
 
+  // console.log("Transformed Data after GBC");
+  // console.log(ss);
+
   var x = d3.scale.linear().domain([-1, 1]);
   var y = d3.scale.linear().domain([-1, 1]);
 
   var row = ss.length;
   var col = ss[0].length;
 
+  // Get all data except last 4 rows
   var newarr = [];
   for (var i = 0; i < row - 4; i++) {
     newarr[i] = [];
@@ -71,6 +78,10 @@ function helloWorld() {
     }
   }
 
+  console.log("Initial Data used for Information Display");
+  console.log(newarr.length);
+
+  // Get the last 4 rows of the data
   var vararr = [];
   for (var i = row - 4, j = 0; i < row, j < 4; i++, j++) {
     vararr[j] = [];
@@ -78,6 +89,7 @@ function helloWorld() {
     vararr[j][1] = ss[i][1];
   }
 
+  // Generate histogram of all data
   var hist2d;
   hist2d = d3.hist2d()
     .bins(binNum)
@@ -99,6 +111,12 @@ function helloWorld() {
     var Q = [];
     var T = 0;
 
+    // console.log(hist);
+
+    // Get the values for the scatter dots to be printed in the color space
+    // Loop through all the histogram bins and push some of the data in different bins into the Q array
+    // This method allows for a representative sampling of points from bins of varying sizes, reducing the number of points in larger bins to avoid overcrowding in the scatter plot while still capturing the distribution of smaller bins effectively.
+    // Value of data not affected, only sampling done for display
     for (var i = 0; i < hist.length; i++) {
       if (hist[i].length > 500) {
         var P = [];
@@ -130,6 +148,7 @@ function helloWorld() {
       }
     }
 
+    // Replace the first 4 entries of the Q array with the last 4 rows of the data (vararr) [don't know why being done]
     for (ij = 0, T; ij < 4; ij++, T++) {
       Q[T] = vararr[ij];
     }
@@ -200,7 +219,7 @@ function helloWorld() {
       .attr("width", colorSpaceWidth)
       .attr("height", colorSpaceHeight);
 
-    // Get the values for the scatter dots to be printed in the color space
+    // Filter out the data to be displayed in the Information Display on the basis of the brushing in PC
     for (var i = 0; i < need_keys.length; i++) {
       if (need_keys[i].key == "Ce") {
         Q = Q.filter(function (dataRow) {
@@ -217,8 +236,9 @@ function helloWorld() {
     var g = main.append("svg:g");
 
     // ##########################################################
+    console.log("Final data for Information Display for performing downsamling by histogram");
     console.log(Q.length);
-    // console.log(Q);
+    console.log(Q);
     // ##########################################################
 
     // Plot the scatter dots on the color space

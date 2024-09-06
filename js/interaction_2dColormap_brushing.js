@@ -47,9 +47,9 @@ function drawInitialchart(file) {
   d3.csv("data10.csv", function (d) {
     dataS = d;
     // console.log(dataS);
-
+    console.log("CSV data Iniital")
+    console.log(dataS.length);
   });
-
 }
 
 // Copy the entire CSV data to a new array named data to be used in other places

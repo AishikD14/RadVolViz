@@ -109,6 +109,22 @@
 
 	<link rel="stylesheet" href="./css/coloring.css">
 
+	<script id="vertexShaderFirstPass" type="x-shader/x-vertex">
+		varying vec3 worldSpaceCoords;
+
+		void main()
+		{
+			//The goal of this step is to render the back faces of the cube and store the world-space coordinates of these faces in a rendering texture.
+			//The world-space coordinates of each fragment are encoded into the RGB channels of the texture (as floating-point values), which will later serve as the end points for rays.
+			
+			//Set the world space coordinates of the back faces vertices as output.
+			//move it from [-0.5;0.5] to [0,1]
+			worldSpaceCoords = position + vec3(0.5, 0.5, 0.5);
+
+			//Standard transformation of vertex positions from model space to screen space
+			gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+		}
+	</script>
 
 	<script id="fragmentShaderFirstPass" type="x-shader/x-fragment">
 			varying vec3 worldSpaceCoords;
@@ -116,18 +132,8 @@
 			void main()
 			{
 				//The fragment's world space coordinates as fragment output.
+				//Outputs the world-space coordinates as the RGB values of the fragment. The alpha channel is set to 1 (fully opaque).
 				gl_FragColor = vec4( worldSpaceCoords.x , worldSpaceCoords.y, worldSpaceCoords.z, 1 );
-			}
-	</script>
-
-	<script id="vertexShaderFirstPass" type="x-shader/x-vertex">
-			varying vec3 worldSpaceCoords;
-
-			void main()
-			{
-				//Set the world space coordinates of the back faces vertices as output.
-				worldSpaceCoords = position + vec3(0.5, 0.5, 0.5); //move it from [-0.5;0.5] to [0,1]
-				gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
 			}
 	</script>
 
@@ -137,8 +143,13 @@
 
 		void main()
 		{
+			// Store the world-space coordinates of the front face vertices as output.
 			worldSpaceCoords = (modelMatrix * vec4(position + vec3(0.5, 0.5,0.5), 1.0 )).xyz;
+
+			// Compute the projected coordinates (2D screen coordinates).
 			gl_Position = projectionMatrix *  modelViewMatrix * vec4( position, 1.0 );
+
+			// projectedCoords: Stores the 2D screen coordinates after the projection transformation, which will be used to look up the corresponding back face position in the texture.
 			projectedCoords =  projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
 		}
 
@@ -302,6 +313,7 @@
 		// This prevents the back of the image from getting cut off when steps=512 & viewing diagonally.
 		const int MAX_STEPS = 887;
 
+		// Simulate a 3D texture using 2D textures because WebGL does not natively support 3D textures.
 		//Acts like a texture3D using Z slices and trilinear filtering.
 		vec4 sampleAs3DTexture( vec3 texCoord )
 		{
@@ -309,7 +321,7 @@
 			vec2 texCoordSlice1, texCoordSlice2;
 
 			//The z coordinate determines which Z slice we have to look for.
-			//Z slice number goes from 0 to 255.
+			//Z slice number goes from 0 to 255, floor is used to get the integer value, effectively identifying which slice to sample.
 			float zSliceNumber1 = floor(texCoord.z  * 255.0);
 
 			//As we use trilinear we go the next Z slice.
@@ -317,6 +329,7 @@
 
 			//The Z slices are stored in a matrix of 16x16 of Z slices.
 			//The original UV coordinates have to be rescaled by the tile numbers in each row and column.
+			//This scaling adjusts the UV coordinates to fit within a single tile in the mosaic.
 			texCoord.xy /= 16.0;
 
 			texCoordSlice1 = texCoordSlice2 = texCoord.xy;
@@ -439,6 +452,7 @@
 		float polyX14[4];
 		float polyY14[4];
 
+		// Checks whether a point is inside a polygon of side 4 (Point in Polygon Algorithm)
 		bool pnpoly4( float polyX14[4], float polyY14[4], float testx, float testy)
 		{
 			bool c = false;
@@ -459,6 +473,7 @@
 		float polyX15[5];
 		float polyY15[5];
 
+		// Checks whether a point is inside a polygon of side 5
 		bool pnpoly5( float polyX15[5], float polyY15[5], float testx, float testy)
 		{
 			bool c = false;
@@ -478,6 +493,7 @@
 		float polyX16[6];
 		float polyY16[6];
 
+		// Checks whether a point is inside a polygon of side 6
 		bool pnpoly6( float polyX16[6], float polyY16[6], float testx, float testy)
 		{
 			bool c = false;
@@ -497,6 +513,7 @@
 		float polyX17[7];
 		float polyY17[7];
 
+		// Checks whether a point is inside a polygon of side 7
 		bool pnpoly7( float polyX17[7], float polyY17[7], float testx, float testy)
 		{
 			bool c = false;
@@ -786,7 +803,8 @@
 			float positionY;
 
 			float datam[8];
-
+			
+			// Perform normalization based on threshold if outside the range
 			if (colorSample.r < minCe){
 				colorSample.r = 0.0;
 			}
@@ -799,6 +817,7 @@
 			if (colorSample.a < minGd){
 				colorSample.a = 0.0;
 			}
+
 			if (colorSample2.r < minGd){
 				colorSample2.r = 0.0;
 			}
@@ -812,6 +831,7 @@
 			if (colorSample.b > maxFe){
 				colorSample.b = 0.0;
 			}
+
 			if (colorSample2.r > maxGd){
 				colorSample2.r = 0.0;
 			}
@@ -828,6 +848,7 @@
 			if (colorSample.a < rangeVal){
 				colorSample.a = 0.0;
 			}
+
 			if (colorSample2.r < rangeVal){
 				colorSample2.r = 0.0;
 			}
@@ -847,17 +868,18 @@
 			if (colorSample.b > maxrangeVal){
 				colorSample.b = 0.0;
 			}
+
 			if (colorSample2.r > maxrangeVal){
 				colorSample2.r = 0.0;
 			}
 			if (colorSample2.g > maxrangeVal){
 				colorSample2.g = 0.0;
 			}
-
 			if (colorSample2.b > maxrangeVal){
 				colorSample2.b = 0.0;
 			}
 
+			// NOt being used
 			float normV = sqrt(colorSample.r*colorSample.r + colorSample.g*colorSample.g + colorSample.b*colorSample.b + colorSample2.r*colorSample2.r );//+ colorSample2.g*colorSample2.g);
 
 			datam[0] = colorSample.r;
@@ -881,11 +903,13 @@
 			float angle[4];
 			float GBCX[4];
 			float GBCY[4];
+
 			angle[0] = PI / 2.0 + rotateVar3D/57.32;
 
 			GBCX[0] = cos(angle[0]);
 			GBCY[0] = sin(angle[0]);
 
+			// Populate the arrays
 			for ( int i = 1; i < n; i++)
 			{
 				angle[i] = angle[i - 1] - 2.0 * PI / 4.0 ;
@@ -905,6 +929,7 @@
 				}
 			}
 
+			// Sort angles
 			float temp = 0.0;
 			for (int write = 0; write < n; write++)
 			{
@@ -1083,6 +1108,7 @@
 			float d_x = (newCX - centerX);
 			float d_y = (newCY - centerY);
 
+			// If polygon is of 4 sides and manual coloring is enabled
 			if (polySide == 5.0 && brushMode == 1.0){
 
 				h = 0.0;
@@ -1098,6 +1124,8 @@
 				float polyYY4[4];
 				float polyXX5[4];
 				float polyYY5[4];
+
+				// Store the marked point coordinates for different clusters on the information display into the arrays
 
 				polyXX1[0] = x1;
 				polyXX1[1] = x2;
@@ -1144,6 +1172,9 @@
 				polyYY5[2] = y53;
 				polyYY5[3] = y54;
 
+				//Check if the sampled point lies within one of the polygons and assign the color accordingly
+				//Total 5 polygons possible at max
+
 				bool pointIO1 =	pnpoly4(polyXX1, polyYY1, newCX, newCY);
 				if (pointIO1)
 				{
@@ -1186,6 +1217,7 @@
 
 			}
 
+			// If polygon is of 5 sides and manual coloring is enabled
 			if (polySide == 6.0 && brushMode == 1.0)
 			{
 				h = 0.0;
@@ -1201,6 +1233,8 @@
 				float polyYY4[5];
 				float polyXX5[5];
 				float polyYY5[5];
+
+				// Store the marked point coordinates for different clusters on the information display into the arrays
 
 				polyXX1[0] = x1;
 				polyXX1[1] = x2;
@@ -1258,6 +1292,9 @@
 				polyYY5[3] = y54;
 				polyYY5[4] = y55;
 
+				//Check if the sampled point lies within one of the polygons and assign the color accordingly
+				//Total 5 polygons possible at max
+
 				bool pointIO1 =	pnpoly5(polyXX1, polyYY1, newCX, newCY);
 				if (pointIO1)
 				{
@@ -1299,6 +1336,7 @@
 				}
 			}
 
+			// // If polygon is of 6 sides and manual coloring is enabled
 			if (polySide == 7.0 && brushMode == 1.0)
 			{
 				h = 0.0;
@@ -1314,6 +1352,8 @@
 				float polyYY4[6];
 				float polyXX5[6];
 				float polyYY5[6];
+
+				// Store the marked point coordinates for different clusters on the information display into the arrays
 
 				polyXX1[0] = x1;
 				polyXX1[1] = x2;
@@ -1380,6 +1420,9 @@
 				polyYY5[4] = y55;
 				polyYY5[5] = y56;
 
+				//Check if the sampled point lies within one of the polygons and assign the color accordingly
+				//Total 5 polygons possible at max
+
 				bool pointIO1 =	pnpoly6(polyXX1, polyYY1, newCX, newCY);
 				if (pointIO1)
 				{
@@ -1422,6 +1465,7 @@
 
 			}
 
+			// // If polygon is of 7 sides and manual coloring is enabled
 			if (polySide == 8.0 && brushMode == 1.0)
 			{
 				h = 0.0;
@@ -1437,6 +1481,8 @@
 				float polyYY4[7];
 				float polyXX5[7];
 				float polyYY5[7];
+
+				// Store the marked point coordinates for different clusters on the information display into the arrays
 
 				polyXX1[0] = x1;
 				polyXX1[1] = x2;
@@ -1512,6 +1558,9 @@
 				polyYY5[4] = y55;
 				polyYY5[5] = y56;
 				polyYY5[6] = y57;
+
+				//Check if the sampled point lies within one of the polygons and assign the color accordingly
+				//Total 5 polygons possible at max
 
 				bool pointIO1 =	pnpoly7(polyXX1, polyYY1, newCX, newCY);
 				if (pointIO1)
@@ -1770,6 +1819,9 @@
 				//Get the voxel intensity value from the 3D texture.
 				colorSample = sampleAs3DTexture( currentPosition );
 				colorSample2 = sampleAs3DTexture2( currentPosition );
+
+				//console.log(colorSample);
+				//console.log(colorSample2);
 
 				if (modeGBC == 1.0)
 				{
