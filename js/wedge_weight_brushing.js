@@ -236,7 +236,7 @@ function helloWorld() {
     var g = main.append("svg:g");
 
     // ##########################################################
-    console.log("Final data for Information Display for performing downsamling by histogram");
+    console.log("Final data for Information Display by performing downsamling by histogram");
     console.log(Q.length);
     console.log(Q);
     // ##########################################################
