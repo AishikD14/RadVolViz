@@ -462,6 +462,12 @@ function brushingCode() {
     }
 
   }
+
+  // Implement rehgion growing algorithm on volume in here
+  console.log(window.npArray);
+  console.log(npArray.data); // This is your volume data as a typed array
+  console.log(npArray.shape); // Shape of the numpy array
+
 }
 
 function ClearSVGPoints() {

@@ -1,0 +1,1820 @@
+const fragmentShaderSecondPass = /*glsl*/ `
+
+		varying vec3 worldSpaceCoords;
+		varying vec4 projectedCoords;
+		uniform sampler2D tex, cubeTex, transferTex, cubeTex2;
+		uniform float steps;
+		uniform float alphaCorrection;
+		uniform float rangeVal;
+		uniform float maxrangeVal;
+
+		uniform float rotateVarG;
+		uniform float rotateVar3D;
+		uniform float radialValue;
+		uniform float lensMode;
+		uniform float lensAng;
+		uniform float lensMove;
+		uniform float modeGBC;
+		uniform float testValue;
+		uniform float xValue;
+		uniform float yValue;
+		uniform float radiusR;
+		uniform float startAng;
+		uniform float arcWidth;
+		uniform float modeARC;
+		uniform float points;
+		vec3 HCL2Sample;
+		vec4 PC2Sample;
+		vec3 HCLDSample;
+		vec3 totalSample;
+		vec3 devSample;
+		vec3 meanSample;
+		vec3 varSample;
+		vec3 secSample;
+		uniform bool defaultLens;
+
+		uniform float minCe;
+		uniform float maxCe;
+		uniform float minCo;
+		uniform float maxCo;
+		uniform float minFe;
+		uniform float maxFe;
+		uniform float minGd;
+		uniform float maxGd;
+
+		mat4 corrV;
+
+		uniform float xClippingPlaneMax;
+		uniform float xClippingPlaneMin;
+		uniform float xClippingPlaneMin2;
+		uniform float yClippingPlaneMax;
+		uniform float yClippingPlaneMin;
+		uniform float zClippingPlaneMax;
+		uniform float zClippingPlaneMin;
+		uniform float wClippingPlane;
+		uniform float axisClipping;
+
+		uniform float x1;
+		uniform float x2;
+		uniform float x3;
+		uniform float x4;
+		uniform float x5;
+		uniform float x6;
+		uniform float x7;
+		uniform float y1;
+		uniform float y2;
+		uniform float y3;
+		uniform float y4;
+		uniform float y5;
+		uniform float y6;
+		uniform float y7;
+
+		uniform float x11;
+		uniform float x12;
+		uniform float x13;
+		uniform float x14;
+		uniform float x15;
+		uniform float x16;
+		uniform float x17;
+		uniform float y11;
+		uniform float y12;
+		uniform float y13;
+		uniform float y14;
+		uniform float y15;
+		uniform float y16;
+		uniform float y17;
+
+		uniform float x31;
+		uniform float x32;
+		uniform float x33;
+		uniform float x34;
+		uniform float x35;
+		uniform float x36;
+		uniform float x37;
+		uniform float y31;
+		uniform float y32;
+		uniform float y33;
+		uniform float y34;
+		uniform float y35;
+		uniform float y36;
+		uniform float y37;
+
+		uniform float x41;
+		uniform float x42;
+		uniform float x43;
+		uniform float x44;
+		uniform float x45;
+		uniform float x46;
+		uniform float x47;
+		uniform float y41;
+		uniform float y42;
+		uniform float y43;
+		uniform float y44;
+		uniform float y45;
+		uniform float y46;
+		uniform float y47;
+
+		uniform float x51;
+		uniform float x52;
+		uniform float x53;
+		uniform float x54;
+		uniform float x55;
+		uniform float x56;
+		uniform float x57;
+		uniform float y51;
+		uniform float y52;
+		uniform float y53;
+		uniform float y54;
+		uniform float y55;
+		uniform float y56;
+		uniform float y57;
+
+		uniform float hslh1;
+		uniform float hslh2;
+		uniform float hslh3;
+		uniform float hslh4;
+		uniform float hslh5;
+		uniform float hsls1;
+		uniform float hsls2;
+		uniform float hsls3;
+		uniform float hsls4;
+		uniform float hsls5;
+		uniform float hsll;
+		uniform float polySide;
+		uniform float brushMode;
+		uniform float passingA;
+		uniform float passingB;
+		uniform float passingC;
+		uniform float passingD;
+		uniform float stDev;
+		const int MAX_POLY = 4;
+		uniform int rayMarch2;
+
+		// The maximum distance through our rendering volume is sqrt(3).
+		// The maximum number of steps we take to travel a distance of 1 is 512.
+		// ceil( sqrt(3) * 512 ) = 887
+
+		// This prevents the back of the image from getting cut off when steps=512 & viewing diagonally.
+		const int MAX_STEPS = 887;
+
+		// Simulate a 3D texture using 2D textures because WebGL does not natively support 3D textures.
+		//Acts like a texture3D using Z slices and trilinear filtering.
+		vec4 sampleAs3DTexture( vec3 texCoord )
+		{
+			vec4 colorSlice1, colorSlice2, colorSlice3, colorSlice4;
+			vec2 texCoordSlice1, texCoordSlice2;
+
+			//The z coordinate determines which Z slice we have to look for.
+			//Z slice number goes from 0 to 255, floor is used to get the integer value, effectively identifying which slice to sample.
+			float zSliceNumber1 = floor(texCoord.z  * 255.0);
+
+			//As we use trilinear we go the next Z slice.
+			float zSliceNumber2 = min( zSliceNumber1 + 1.0, 255.0); //Clamp to 255
+
+			//The Z slices are stored in a matrix of 16x16 of Z slices.
+			//The original UV coordinates have to be rescaled by the tile numbers in each row and column.
+			//This scaling adjusts the UV coordinates to fit within a single tile in the mosaic.
+			texCoord.xy /= 16.0;
+
+			texCoordSlice1 = texCoordSlice2 = texCoord.xy;
+
+			//Add an offset to the original UV coordinates depending on the row and column number.
+			texCoordSlice1.x += (mod(zSliceNumber1, 16.0 ) / 16.0);
+			texCoordSlice1.y += floor((255.0 - zSliceNumber1) / 16.0) / 16.0;
+
+			texCoordSlice2.x += (mod(zSliceNumber2, 16.0 ) / 16.0);
+			texCoordSlice2.y += floor((255.0 - zSliceNumber2) / 16.0) / 16.0;
+
+			//Get the opacity value from the 2D texture.
+			//Bilinear filtering is done at each texture2D by default.
+			colorSlice1 = texture2D( cubeTex, texCoordSlice1 );
+			colorSlice2 = texture2D( cubeTex, texCoordSlice2 );
+
+			colorSlice3 = texture2D( cubeTex2, texCoordSlice1 );
+			colorSlice4 = texture2D( cubeTex2, texCoordSlice2 );
+
+			//How distant is zSlice1 to ZSlice2. Used to interpolate between one Z slice and the other.
+			float zDifference = mod(texCoord.z * 255.0, 1.0);
+
+			//Finally interpolate between the two intermediate colors of each Z slice.
+			return mix(colorSlice1, colorSlice2, zDifference) ;
+		}
+
+		vec4 sampleAs3DTexture2( vec3 texCoord )
+		{
+			vec4 colorSlice1, colorSlice2, colorSlice3, colorSlice4;
+			vec2 texCoordSlice1, texCoordSlice2;
+
+			//The z coordinate determines which Z slice we have to look for.
+			//Z slice number goes from 0 to 255.
+			float zSliceNumber1 = floor(texCoord.z  * 255.0);
+
+			//As we use trilinear we go the next Z slice.
+			float zSliceNumber2 = min( zSliceNumber1 + 1.0, 255.0); //Clamp to 255
+
+			//The Z slices are stored in a matrix of 16x16 of Z slices.
+			//The original UV coordinates have to be rescaled by the tile numbers in each row and column.
+			texCoord.xy /= 16.0;
+
+			texCoordSlice1 = texCoordSlice2 = texCoord.xy;
+
+			//Add an offset to the original UV coordinates depending on the row and column number.
+			texCoordSlice1.x += (mod(zSliceNumber1, 16.0 ) / 16.0);
+			texCoordSlice1.y += floor((255.0 - zSliceNumber1) / 16.0) / 16.0;
+
+			texCoordSlice2.x += (mod(zSliceNumber2, 16.0 ) / 16.0);
+			texCoordSlice2.y += floor((255.0 - zSliceNumber2) / 16.0) / 16.0;
+
+			//Get the opacity value from the 2D texture.
+			//Bilinear filtering is done at each texture2D by default.
+			colorSlice1 = texture2D( cubeTex, texCoordSlice1 );
+			colorSlice2 = texture2D( cubeTex, texCoordSlice2 );
+
+			colorSlice3 = texture2D( cubeTex2, texCoordSlice1 );
+			colorSlice4 = texture2D( cubeTex2, texCoordSlice2 );
+
+			//How distant is zSlice1 to ZSlice2. Used to interpolate between one Z slice and the other.
+			float zDifference = mod(texCoord.z * 255.0, 1.0);
+
+			//Finally interpolate between the two intermediate colors of each Z slice.
+			return mix(colorSlice3, colorSlice4, zDifference) ;
+		}
+
+      	float HueToRgb(float p, float q, float t)
+		{
+			if (t < 0.0)
+			{
+			t += 1.0;
+			}
+			else if (t > 1.0) {
+			t -= 1.0;
+			}
+			else if (t < 1.0 / 6.0)
+			{
+			return p + (q - p) * 6.0 * t;
+			}
+			else if (t < 1.0 / 2.0)
+			{
+			return q;
+			}
+			else if (t < 2.0 / 3.0)
+			{
+			return p + (q - p) * (2.0 / 3.0 - t) * 6.0;
+			}
+
+			return p;
+		}
+
+		vec3 HUESample = vec3(0.0);
+
+		vec3 HslToRgb(vec3 hsl)
+		{
+			float r, g, b;
+
+			if (hsl.t == 0.0)
+				r = g = b = hsl.p;
+
+			else
+			{
+				float q = hsl.p < 0.5 ? hsl.p * (1.0 + hsl.t) : hsl.p + hsl.t - hsl.p * hsl.t;
+				float p = 2.0 * hsl.p - q;
+				float rr = hsl.s + 1.0/3.0;
+				float bb = hsl.s - 1.0 / 3.0;
+
+				r = HueToRgb(p, q, rr);
+				g = HueToRgb(p, q, hsl.s);
+				b = HueToRgb(p, q, bb);
+			}
+
+			HUESample.s = r;
+			HUESample.t = g;
+			HUESample.p = b;
+
+			return HUESample;
+		}
+
+		float polyX14[4];
+		float polyY14[4];
+
+        // Checks whether a point is inside a polygon of side 4
+		bool pnpoly4( float polyX14[4], float polyY14[4], float testx, float testy)
+		{
+			bool c = false;
+			if ( (( polyY14[0] > testy) != ( polyY14[3] > testy)) && (testx < ( polyX14[3] - polyX14[0] ) * (testy - polyY14[3] ) / (polyY14[3] - polyY14[0]) + polyX14[0]) )
+			{
+				c = !c;
+			}
+			for (int i = 1; i < 4;i++) {
+				if ( (( polyY14[i] > testy) != ( polyY14[i-1] > testy)) && (testx < ( polyX14[i-1] - polyX14[i] ) * (testy - polyY14[i] ) / (polyY14[i-1] - polyY14[i]) + polyX14[i]) )
+				{
+					c = !c;
+				}
+			}
+			return c;
+		}
+
+
+		float polyX15[5];
+		float polyY15[5];
+
+		bool pnpoly5( float polyX15[5], float polyY15[5], float testx, float testy)
+		{
+			bool c = false;
+			if ( (( polyY15[0] > testy) != ( polyY15[4] > testy)) && (testx < ( polyX15[4] - polyX15[0] ) * (testy - polyY15[4] ) / (polyY15[4] - polyY15[0]) + polyX15[0]) )
+			{
+				c = !c;
+			}
+			for (int i = 1; i < 5;i++) {
+				if ( (( polyY15[i] > testy) != ( polyY15[i-1] > testy)) && (testx < ( polyX15[i-1] - polyX15[i] ) * (testy - polyY15[i] ) / (polyY15[i-1] - polyY15[i]) + polyX15[i]) )
+				{
+					c = !c;
+				}
+			}
+			return c;
+		}
+
+		float polyX16[6];
+		float polyY16[6];
+
+		bool pnpoly6( float polyX16[6], float polyY16[6], float testx, float testy)
+		{
+			bool c = false;
+			if ( (( polyY16[0] > testy) != ( polyY16[5] > testy)) && (testx < ( polyX16[5] - polyX16[0] ) * (testy - polyY16[5] ) / (polyY16[5] - polyY16[0]) + polyX16[0]) )
+			{
+				c = !c;
+			}
+			for (int i = 1; i < 6;i++) {
+				if ( (( polyY16[i] > testy) != ( polyY16[i-1] > testy)) && (testx < ( polyX16[i-1] - polyX16[i] ) * (testy - polyY16[i] ) / (polyY16[i-1] - polyY16[i]) + polyX16[i]) )
+				{
+					c = !c;
+				}
+			}
+			return c;
+		}
+
+		float polyX17[7];
+		float polyY17[7];
+
+		bool pnpoly7( float polyX17[7], float polyY17[7], float testx, float testy)
+		{
+			bool c = false;
+			if ( (( polyY17[0] > testy) != ( polyY17[6] > testy)) && (testx < ( polyX17[6] - polyX17[0] ) * (testy - polyY17[6] ) / (polyY17[6] - polyY17[0]) + polyX17[0]) )
+			{
+				c = !c;
+			}
+			for (int i = 1; i < 7;i++) {
+				if ( (( polyY17[i] > testy) != ( polyY17[i-1] > testy)) && (testx < ( polyX17[i-1] - polyX17[i] ) * (testy - polyY17[i] ) / (polyY17[i-1] - polyY17[i]) + polyX17[i]) )
+				{
+					c = !c;
+				}
+			}
+			return c;
+		}
+
+		vec3 DGBCtoHCL (vec4 colorSample, vec4 colorSample2, float rotateVar3D, float radialValue, float lensMode)
+		{
+			float newRadius;
+			float positionX;
+			float positionY;
+			float datam[4];
+			float normV = sqrt(colorSample.r*colorSample.r + colorSample.g*colorSample.g + colorSample.b*colorSample.b + colorSample2.r*colorSample2.r);
+			if(normV != 0.0)
+			{
+				datam[0] = colorSample.r/normV;
+				datam[1] = colorSample.g/normV;
+				datam[2] = colorSample.b/normV;
+				datam[3] = colorSample2.r/normV;
+			}
+			else 
+			{
+				datam[0] = colorSample.r;
+				datam[1] = colorSample.g;
+				datam[2] = colorSample.b;
+				datam[3] = colorSample2.r;
+			}
+
+			corrV[0] = vec4(0.0, 0.7950340093834131, 0.8762606761779697, 0.651604013569835);
+			corrV[1] = vec4(0.7950340093834131, 0.0, 0.33909500723823477, 0.564133011221424);
+			corrV[2] = vec4(0.8762606761779697, 0.33909500723823477, 0.0, 0.6369433058377262);
+			corrV[3] = vec4(0.651604013569835, 0.564133011221424, 0.6369433058377262, 0.0);
+
+			int dimorder[4];
+			dimorder[0] = 0;
+			dimorder[1] = 3;
+			dimorder[2] = 2;
+			dimorder[3] = 1;
+
+			float PI = 3.14;
+
+			float CX = 0.0;
+			float CY = 0.0;
+			float GBCXL = 0.0;
+			float GBCYL = 0.0;
+			const int n = 4;
+
+			float corr[4];
+
+			float sumcorr = 0.0;
+
+			corr[0] = corrV[0][3];
+			corr[1] = corrV[3][2];
+			corr[2] = corrV[2][3];
+			corr[3] = corrV[1][0];
+
+			sumcorr = 1.0;
+
+			float angle[4];
+			float GBCX[4];
+			float GBCY[4];
+			angle[0] = 0.0 + rotateVar3D/57.32;
+
+			GBCX[0] = cos(angle[0]);
+			GBCY[0] = sin(angle[0]);
+
+			for ( int i = 1; i < n; i++)
+			{
+				angle[i] = angle[i - 1] + 2.0 * PI * (corr[i-1] / sumcorr) ;
+				GBCX[i] = cos(angle[i]) * 0.997;
+				GBCY[i] = sin(angle[i]) * 0.997;
+			}
+
+			float tempsumXY = 0.0;
+			for (int j = 0; j < n; j++)
+			{
+				tempsumXY = tempsumXY + datam[j];
+			}
+
+			if (tempsumXY == 0.0)
+			{
+				GBCXL = 0.0;
+				GBCYL = 0.0;
+			}
+			else
+			{
+				for (int k = 0; k < n; k++)
+				{
+					GBCXL = GBCXL + ((datam[0] / tempsumXY) * GBCX[0]) + ((datam[3] / tempsumXY) * GBCX[1]) + ((datam[2] / tempsumXY) * GBCX[2]) + ((datam[1] / tempsumXY) * GBCX[3]);
+					GBCYL = GBCYL + ((datam[0] / tempsumXY) * GBCY[0]) + ((datam[3] / tempsumXY) * GBCY[1]) + ((datam[2] / tempsumXY) * GBCY[2]) + ((datam[1] / tempsumXY) * GBCY[3]);
+				}
+			}
+
+			for (int i = 0; i < n; i++)
+			{
+				if (angle[i] < 0.0)
+				{
+					angle[i] = angle[i] + PI * 2.0;
+				}
+				if (angle[i] > PI * 2.0)
+				{
+					angle[i] = angle[i] - PI * 2.0;
+				}
+			}
+
+			float temp = 0.0;
+			for (int write = 0; write < n; write++)
+			{
+				for (int sort = 0; sort < n - 1; sort++)
+				{
+					if (angle[sort] > angle[sort + 1])
+					{
+						temp = angle[sort + 1];
+						angle[sort + 1] = angle[sort];
+						angle[sort] = temp;
+					}
+				}
+			}
+
+			float tempangleXY = atan(GBCYL, GBCXL);
+
+			if (tempangleXY < 0.0)
+			{ 
+				tempangleXY = tempangleXY + PI * 2.0;
+			}
+
+			bool flag = false;
+			float tempA = 0.0;
+			float tempB = 0.0;
+
+			for (int j = 0; j < n - 1; j++)
+			{
+				if ((tempangleXY > angle[j] || tempangleXY == angle[j]) && (tempangleXY < angle[j + 1]))
+				{
+					tempA = angle[j + 1];
+					tempB = angle[j];
+					flag = true;
+				}
+				if (flag == true)
+					break;
+			}
+
+			if (flag == false)
+			{
+				tempA = angle[0] + PI * 2.0;
+				tempB = angle[n - 1];
+			}
+
+			float lthXY = (sqrt((GBCXL * GBCXL) + (GBCYL * GBCYL)) / cos((tempA - tempB) / 2.0) * cos(-(tempA + tempB) / 2.0 + tempangleXY));
+			GBCXL = (lthXY * cos(tempangleXY));
+			GBCYL = (lthXY * sin(tempangleXY));
+
+			CX = GBCXL;
+			CY = GBCYL;
+
+			float rr = sqrt(pow(CX, 2.0) + pow(CY, 2.0));
+			if (rr >= 1.0) 
+			{
+				CX /= rr;
+				CY /= rr;
+			}
+
+			float newCX = 0.0;
+			float newCY = 0.0;
+			float centerX = 200.0;
+			float centerY = 200.0;
+
+			newCX = (CX+1.0)/2.0 * (310.0) + 45.0;
+			newCY = (CY+1.0)/2.0 * (310.0) + 45.0;
+
+			float dist = sqrt((newCX - centerX)*(newCX- centerX) + (newCY-centerY)*(newCY-centerY));
+
+			vec3 HSL2IN = vec3(0.0);
+			vec3 HSL2OUT = vec3(0.0);
+
+			float h = atan(CY, CX) + PI / 2.0;
+			if (h < 0.0) 
+			{
+				h = h + PI * 2.0;
+			}
+			if (h > PI * 2.0) 
+			{
+				h = h - PI * 2.0;
+			}
+
+			h = h / PI * 180.0;
+			float s = sqrt(pow(CX, 2.0) + pow(CY, 2.0));
+			float l =0.55;
+
+			if (lensMove == 1.0)
+			{
+				positionX = xValue + centerX;
+				positionY = yValue + centerY;
+
+				newRadius = sqrt((newCX - positionX)*(newCX - positionX) + (newCY - positionY)*(newCY - positionY) );
+			}
+			else
+			{
+				float rr = sqrt(xValue*xValue + yValue*yValue);
+				positionX = rr*cos(lensAng) + centerX;
+				positionY = rr*sin(lensAng) + centerY;
+
+				newRadius = sqrt((newCX - positionX)*(newCX - positionX) + (newCY - positionY)*(newCY - positionY) );
+			}
+
+			// NEED TO CHANGE HERE FOR INVERSE EFFECT OF LENS
+			if (lensMode == 0.0)
+			{
+				if (newRadius >  radiusR) 
+				{
+					l = 0.0;
+				}
+				else 
+				{
+					l=0.55;
+				}
+			}
+			else 
+			{
+				if (newRadius <  radiusR) 
+				{
+					l = 0.0;
+				}
+				else 
+				{
+					l=0.55;
+				}
+			}
+
+			if(radialValue > dist)
+			{
+				l = 0.0;
+			}
+
+			//WHETHER POINT LIES WITHIN THE ARC OR NOT
+			float angleArc = atan(newCY-centerY,newCX-centerX);
+
+			float startAng = startAng * (PI/180.0);
+			float endAngle = arcWidth;
+			float s_x = cos(startAng);
+			float s_y = sin(startAng);
+			float e_x = cos(arcWidth);
+			float e_y = sin(arcWidth);
+
+			if (endAngle < startAng)
+			{
+				endAngle = endAngle + 2.0 * PI;
+			}
+
+			float half_angle = (endAngle - startAng) / 2.0;
+			float mid_angle  = (endAngle + startAng) / 2.0;
+			float cos_half_angle = cos(half_angle);
+
+			if (cos(angleArc - mid_angle) >= cos_half_angle)
+			{
+				l=l;
+			}
+			else 
+			{
+				l=0.0;
+			}
+
+			float d_x = (newCX - centerX);
+			float d_y = (newCY - centerY);
+
+			HSL2IN.s = h/360.0;
+			HSL2IN.t = s;
+			HSL2IN.p = l;
+
+			return HslToRgb(HSL2IN);
+		}
+
+		vec3 GBCtoHCL (vec4 colorSample, vec4 colorSample2, float rotateVar3D, float radialValue, float lensMode)
+		{
+			float newRadius;
+			float positionX;
+			float positionY;
+
+			float datam[8];
+
+			if (colorSample.r < minCe){
+				colorSample.r = 0.0;
+			}
+			if (colorSample.g < minCo){
+				colorSample.g = 0.0;
+			}
+			if (colorSample.b < minFe){
+				colorSample.b = 0.0;
+			}
+			if (colorSample.a < minGd){
+				colorSample.a = 0.0;
+			}
+
+			if (colorSample2.r < minGd){
+				colorSample2.r = 0.0;
+			}
+
+			if (colorSample.r > maxCe){
+				colorSample.r = 0.0;
+			}
+			if (colorSample.g > maxCo){
+				colorSample.g = 0.0;
+			}
+			if (colorSample.b > maxFe){
+				colorSample.b = 0.0;
+			}
+
+			if (colorSample2.r > maxGd){
+				colorSample2.r = 0.0;
+			}
+
+			if (colorSample.r < rangeVal){
+				colorSample.r = 0.0;
+			}
+			if (colorSample.g < rangeVal){
+				colorSample.g = 0.0;
+			}
+			if (colorSample.b < rangeVal){
+				colorSample.b = 0.0;
+			}
+			if (colorSample.a < rangeVal){
+				colorSample.a = 0.0;
+			}
+
+			if (colorSample2.r < rangeVal){
+				colorSample2.r = 0.0;
+			}
+			if (colorSample2.g < rangeVal){
+				colorSample2.g = 0.0;
+			}
+			if (colorSample2.b < rangeVal){
+				colorSample2.b = 0.0;
+			}
+
+			if (colorSample.r > maxrangeVal){
+				colorSample.r = 0.0;
+			}
+			if (colorSample.g > maxrangeVal){
+				colorSample.g = 0.0;
+			}
+			if (colorSample.b > maxrangeVal){
+				colorSample.b = 0.0;
+			}
+
+			if (colorSample2.r > maxrangeVal){
+				colorSample2.r = 0.0;
+			}
+			if (colorSample2.g > maxrangeVal){
+				colorSample2.g = 0.0;
+			}
+			if (colorSample2.b > maxrangeVal){
+				colorSample2.b = 0.0;
+			}
+
+			float normV = sqrt(colorSample.r*colorSample.r + colorSample.g*colorSample.g + colorSample.b*colorSample.b + colorSample2.r*colorSample2.r );//+ colorSample2.g*colorSample2.g);
+
+			datam[0] = colorSample.r;
+			datam[1] = colorSample.g;
+			datam[2] = colorSample.b;
+			datam[3] = colorSample2.r;
+			datam[4] = colorSample2.g;
+			datam[5] = colorSample2.b;
+			datam[6] = colorSample.a;
+			datam[7] = colorSample2.a;
+
+			float PI = 3.14;
+
+			float CX = 0.0;
+			float CY = 0.0;
+			float GBCXL = 0.0;
+			float GBCYL = 0.0;
+
+			const int n = 4;
+
+			float angle[4];
+			float GBCX[4];
+			float GBCY[4];
+			angle[0] = PI / 2.0 + rotateVar3D/57.32;
+
+			GBCX[0] = cos(angle[0]);
+			GBCY[0] = sin(angle[0]);
+
+			for ( int i = 1; i < n; i++)
+			{
+				angle[i] = angle[i - 1] - 2.0 * PI / 4.0 ;
+				GBCX[i] = cos(angle[i]) * 0.997;
+				GBCY[i] = sin(angle[i]) * 0.997;
+			}
+
+			for (int i = 0; i < n; i++)
+			{
+				if (angle[i] < 0.0)
+				{
+					angle[i] = angle[i] + PI * 2.0;
+				}
+				if (angle[i] > PI * 2.0)
+				{
+					angle[i] = angle[i] - PI * 2.0;
+				}
+			}
+
+			float temp = 0.0;
+			for (int write = 0; write < n; write++)
+			{
+				for (int sort = 0; sort < n - 1; sort++)
+				{
+					if (angle[sort] > angle[sort + 1])
+					{
+						temp = angle[sort + 1];
+						angle[sort + 1] = angle[sort];
+						angle[sort] = temp;
+					}
+				}
+
+			}
+
+			float tempsumXY = 0.0;
+			for (int j = 0; j < n; j++)
+			{
+				tempsumXY = tempsumXY + datam[j];
+			}
+
+			if (tempsumXY == 0.0)
+			{
+				GBCXL = 0.0;
+				GBCYL = 0.0;
+			}
+			else
+			{
+				for (int k = 0; k < n; k++)
+				{
+					GBCXL = GBCXL + (datam[k] / tempsumXY) * GBCX[k];
+					GBCYL = GBCYL + (datam[k] / tempsumXY) * GBCY[k];
+
+				}
+
+				float tempangleXY = atan(GBCYL, GBCXL);
+
+				if (tempangleXY < 0.0)
+				{ tempangleXY = tempangleXY + PI * 2.0; }
+
+				bool flag = false;
+				float tempA = 0.0;
+				float tempB = 0.0;
+
+				for (int j = 0; j < n - 1; j++)
+				{
+					if ((tempangleXY > angle[j] || tempangleXY == angle[j]) && (tempangleXY < angle[j + 1]))
+					{
+						tempA = angle[j + 1];
+						tempB = angle[j];
+						flag = true;
+					}
+					if (flag == true)
+							break;
+				}
+				if (flag == false)
+				{
+						tempA = angle[0] + PI * 2.0;
+						tempB = angle[n - 1];
+				}
+				float lthXY = (sqrt((GBCXL * GBCXL) + (GBCYL * GBCYL)) / cos((tempA - tempB) / 2.0) * cos(-(tempA + tempB) / 2.0 + tempangleXY));
+				GBCXL = (lthXY * cos(tempangleXY));
+				GBCYL = (lthXY * sin(tempangleXY));
+			}
+
+			CX = GBCXL;
+			CY = GBCYL;
+
+			float rr = sqrt(pow(CX, 2.0) + pow(CY, 2.0));
+			if (rr >= 1.0) {
+				CX /= rr;
+				CY /= rr;
+			}
+
+			float newCX = 0.0;
+			float newCY = 0.0;
+			float centerX = 200.0;
+			float centerY = 200.0;
+
+			newCX = (CX+1.0)/2.0 * (310.0) + 45.0;
+			newCY = (CY+1.0)/2.0 * (310.0) + 45.0;
+
+			float dist = sqrt((newCX - centerX)*(newCX- centerX) + (newCY-centerY)*(newCY-centerY));
+
+			vec3 HSL2IN = vec3(0.0);
+			vec3 HSL2OUT = vec3(0.0);
+
+			float h = atan(CY, CX) + PI / 2.0;
+
+			if (h < 0.0) {
+				h = h + PI * 2.0;
+			}
+
+			if (h > PI * 2.0) {
+				h = h - PI * 2.0;
+			}
+
+			h = h / PI * 180.0;
+			float s = sqrt(pow(CX, 2.0) + pow(CY, 2.0));
+			float l =0.55;
+
+			if (lensMove == 1.0)
+			{
+				positionX = xValue + centerX;
+				positionY = yValue + centerY;
+
+				newRadius = sqrt((newCX - positionX)*(newCX - positionX) + (newCY - positionY)*(newCY - positionY) );
+			}
+
+			else
+			{
+				float rr = sqrt(xValue*xValue + yValue*yValue);
+				positionX = rr*cos(lensAng) + centerX;
+				positionY = rr*sin(lensAng) + centerY;
+
+				newRadius = sqrt((newCX - positionX)*(newCX - positionX) + (newCY - positionY)*(newCY - positionY) );
+			}
+
+			// NEED TO CHANGE HERE FOR INVERSE EFFECT OF LENS
+			if (lensMode == 0.0 )
+			{
+				if (newRadius >  radiusR) 
+				{
+					l = 0.0;
+				}
+
+				else 
+				{
+					l=0.55;
+				}
+			}
+			else  
+			{
+				if (newRadius <  radiusR) 
+				{
+					l = 0.0;
+				}
+				else 
+				{
+					l=0.55;
+				}
+			}
+
+			if(radialValue > dist)
+			{
+				l = 0.0;
+			}
+
+			//WHETHER POINT LIES WITHIN THE ARC OR NOT
+			float angleArc = atan(newCY-centerY,newCX-centerX);
+
+			float startAng = startAng * (PI/180.0);
+			float endAngle = arcWidth;
+			float s_x = cos(startAng);
+			float s_y = sin(startAng);
+			float e_x = cos(arcWidth);
+			float e_y = sin(arcWidth);
+
+			if (endAngle < startAng)
+			{
+				endAngle = endAngle + 2.0 * PI;
+			}
+
+			float half_angle = (endAngle - startAng) / 2.0;
+			float mid_angle  = (endAngle + startAng) / 2.0;
+			float cos_half_angle = cos(half_angle);
+
+			if (cos(angleArc - mid_angle) >= cos_half_angle)
+			{
+				l=l;
+			}
+			else {
+				l=0.0;
+			}
+
+			float d_x = (newCX - centerX);
+			float d_y = (newCY - centerY);
+
+			if (polySide == 5.0 && brushMode == 1.0){
+
+				h = 0.0;
+				s = 0.0;
+				l = 0.0;
+				float polyXX1[4];
+				float polyYY1[4];
+				float polyXX2[4];
+				float polyYY2[4];
+				float polyXX3[4];
+				float polyYY3[4];
+				float polyXX4[4];
+				float polyYY4[4];
+				float polyXX5[4];
+				float polyYY5[4];
+
+				polyXX1[0] = x1;
+				polyXX1[1] = x2;
+				polyXX1[2] = x3;
+				polyXX1[3] = x4;
+				polyYY1[0] = y1;
+				polyYY1[1] = y2;
+				polyYY1[2] = y3;
+				polyYY1[3] = y4;
+
+				polyXX2[0] = x11;
+				polyXX2[1] = x12;
+				polyXX2[2] = x13;
+				polyXX2[3] = x14;
+				polyYY2[0] = y11;
+				polyYY2[1] = y12;
+				polyYY2[2] = y13;
+				polyYY2[3] = y14;
+
+				polyXX3[0] = x31;
+				polyXX3[1] = x32;
+				polyXX3[2] = x33;
+				polyXX3[3] = x34;
+				polyYY3[0] = y31;
+				polyYY3[1] = y32;
+				polyYY3[2] = y33;
+				polyYY3[3] = y34;
+
+				polyXX4[0] = x41;
+				polyXX4[1] = x42;
+				polyXX4[2] = x43;
+				polyXX4[3] = x44;
+				polyYY4[0] = y41;
+				polyYY4[1] = y42;
+				polyYY4[2] = y43;
+				polyYY4[3] = y44;
+
+				polyXX5[0] = x51;
+				polyXX5[1] = x52;
+				polyXX5[2] = x53;
+				polyXX5[3] = x54;
+				polyYY5[0] = y51;
+				polyYY5[1] = y52;
+				polyYY5[2] = y53;
+				polyYY5[3] = y54;
+
+				bool pointIO1 =	pnpoly4(polyXX1, polyYY1, newCX, newCY);
+				if (pointIO1)
+				{
+					h = hslh1;
+					s = hsls1;
+					l = hsll;
+				}
+
+				bool pointIO2 =	pnpoly4(polyXX2, polyYY2, newCX, newCY);
+				if (pointIO2)
+				{
+					h = hslh2;
+					s = hsls2;
+					l = hsll;
+				}
+
+				bool pointIO3 =	pnpoly4(polyXX3, polyYY3, newCX, newCY);
+				if (pointIO3)
+				{
+					h = hslh3;
+					s = hsls3;
+					l = hsll;
+				}
+
+				bool pointIO4 =	pnpoly4(polyXX4, polyYY4, newCX, newCY);
+				if (pointIO4)
+				{
+					h = hslh4;
+					s = hsls4;
+					l = hsll;
+				}
+
+				bool pointIO5 =	pnpoly4(polyXX5, polyYY5, newCX, newCY);
+				if (pointIO5)
+				{
+					h = hslh5;
+					s = hsls5;
+					l = hsll;
+				}
+
+			}
+
+			if (polySide == 6.0 && brushMode == 1.0)
+			{
+				h = 0.0;
+				s = 0.0;
+				l = 0.0;
+				float polyXX1[5];
+				float polyYY1[5];
+				float polyXX2[5];
+				float polyYY2[5];
+				float polyXX3[5];
+				float polyYY3[5];
+				float polyXX4[5];
+				float polyYY4[5];
+				float polyXX5[5];
+				float polyYY5[5];
+
+				polyXX1[0] = x1;
+				polyXX1[1] = x2;
+				polyXX1[2] = x3;
+				polyXX1[3] = x4;
+				polyXX1[4] = x5;
+				polyYY1[0] = y1;
+				polyYY1[1] = y2;
+				polyYY1[2] = y3;
+				polyYY1[3] = y4;
+				polyYY1[4] = y5;
+
+				polyXX2[0] = x11;
+				polyXX2[1] = x12;
+				polyXX2[2] = x13;
+				polyXX2[3] = x14;
+				polyXX2[4] = x15;
+				polyYY2[0] = y11;
+				polyYY2[1] = y12;
+				polyYY2[2] = y13;
+				polyYY2[3] = y14;
+				polyYY2[4] = y15;
+				//
+				polyXX3[0] = x31;
+				polyXX3[1] = x32;
+				polyXX3[2] = x33;
+				polyXX3[3] = x34;
+				polyXX3[4] = x35;
+				polyYY3[0] = y31;
+				polyYY3[1] = y32;
+				polyYY3[2] = y33;
+				polyYY3[3] = y34;
+				polyYY3[4] = y35;
+
+				polyXX4[0] = x41;
+				polyXX4[1] = x42;
+				polyXX4[2] = x43;
+				polyXX4[3] = x44;
+				polyXX4[4] = x45;
+				polyYY4[0] = y41;
+				polyYY4[1] = y42;
+				polyYY4[2] = y43;
+				polyYY4[3] = y44;
+				polyYY4[4] = y45;
+
+				polyXX5[0] = x51;
+				polyXX5[1] = x52;
+				polyXX5[2] = x53;
+				polyXX5[3] = x54;
+				polyXX5[4] = x55;
+
+				polyYY5[0] = y51;
+				polyYY5[1] = y52;
+				polyYY5[2] = y53;
+				polyYY5[3] = y54;
+				polyYY5[4] = y55;
+
+				bool pointIO1 =	pnpoly5(polyXX1, polyYY1, newCX, newCY);
+				if (pointIO1)
+				{
+					h = hslh1;
+					s = hsls1;
+					l = hsll;
+				}
+
+				bool pointIO2 =	pnpoly5(polyXX2, polyYY2, newCX, newCY);
+				if (pointIO2)
+				{
+					h = hslh2;
+					s = hsls2;
+					l = hsll;
+				}
+
+				bool pointIO3 =	pnpoly5(polyXX3, polyYY3, newCX, newCY);
+				if (pointIO3)
+				{
+					h = hslh3;
+					s = hsls3;
+					l = hsll;
+				}
+
+				bool pointIO4 =	pnpoly5(polyXX4, polyYY4, newCX, newCY);
+				if (pointIO4)
+				{
+					h = hslh4;
+					s = hsls4;
+					l = hsll;
+				}
+
+				bool pointIO5 =	pnpoly5(polyXX5, polyYY5, newCX, newCY);
+				if (pointIO5)
+				{
+					h = hslh5;
+					s = hsls5;
+					l = hsll;
+				}
+			}
+
+			if (polySide == 7.0 && brushMode == 1.0)
+			{
+				h = 0.0;
+				s = 0.0;
+				l = 0.0;
+				float polyXX1[6];
+				float polyYY1[6];
+				float polyXX2[6];
+				float polyYY2[6];
+				float polyXX3[6];
+				float polyYY3[6];
+				float polyXX4[6];
+				float polyYY4[6];
+				float polyXX5[6];
+				float polyYY5[6];
+
+				polyXX1[0] = x1;
+				polyXX1[1] = x2;
+				polyXX1[2] = x3;
+				polyXX1[3] = x4;
+				polyXX1[4] = x5;
+				polyXX1[5] = x6;
+				polyYY1[0] = y1;
+				polyYY1[1] = y2;
+				polyYY1[2] = y3;
+				polyYY1[3] = y4;
+				polyYY1[4] = y5;
+				polyYY1[5] = y6;
+
+				polyXX2[0] = x11;
+				polyXX2[1] = x12;
+				polyXX2[2] = x13;
+				polyXX2[3] = x14;
+				polyXX2[4] = x15;
+				polyXX2[5] = x16;
+				polyYY2[0] = y11;
+				polyYY2[1] = y12;
+				polyYY2[2] = y13;
+				polyYY2[3] = y14;
+				polyYY2[4] = y15;
+				polyYY2[5] = y16;
+				//
+				polyXX3[0] = x31;
+				polyXX3[1] = x32;
+				polyXX3[2] = x33;
+				polyXX3[3] = x34;
+				polyXX3[4] = x35;
+				polyXX3[5] = x36;
+				polyYY3[0] = y31;
+				polyYY3[1] = y32;
+				polyYY3[2] = y33;
+				polyYY3[3] = y34;
+				polyYY3[4] = y35;
+				polyYY3[5] = y36;
+
+				polyXX4[0] = x41;
+				polyXX4[1] = x42;
+				polyXX4[2] = x43;
+				polyXX4[3] = x44;
+				polyXX4[4] = x45;
+				polyXX4[5] = x46;
+				polyYY4[0] = y41;
+				polyYY4[1] = y42;
+				polyYY4[2] = y43;
+				polyYY4[3] = y44;
+				polyYY4[4] = y45;
+				polyYY4[5] = y46;
+
+				polyXX5[0] = x51;
+				polyXX5[1] = x52;
+				polyXX5[2] = x53;
+				polyXX5[3] = x54;
+				polyXX5[4] = x55;
+				polyXX5[5] = x56;
+				polyYY5[0] = y51;
+				polyYY5[1] = y52;
+				polyYY5[2] = y53;
+				polyYY5[3] = y54;
+				polyYY5[4] = y55;
+				polyYY5[5] = y56;
+
+				bool pointIO1 =	pnpoly6(polyXX1, polyYY1, newCX, newCY);
+				if (pointIO1)
+				{
+					h = hslh1;
+					s = hsls1;
+					l = hsll;
+				}
+
+				bool pointIO2 =	pnpoly6(polyXX2, polyYY2, newCX, newCY);
+				if (pointIO2)
+				{
+					h = hslh2;
+					s = hsls2;
+					l = hsll;
+				}
+
+				bool pointIO3 =	pnpoly6(polyXX3, polyYY3, newCX, newCY);
+				if (pointIO3)
+				{
+					h = hslh3;
+					s = hsls3;
+					l = hsll;
+				}
+
+				bool pointIO4 =	pnpoly6(polyXX4, polyYY4, newCX, newCY);
+				if (pointIO4)
+				{
+					h = hslh4;
+					s = hsls4;
+					l = hsll;
+				}
+
+				bool pointIO5 =	pnpoly6(polyXX5, polyYY5, newCX, newCY);
+				if (pointIO5)
+				{
+					h = hslh5;
+					s = hsls5;
+					l = hsll;
+				}
+
+			}
+
+			if (polySide == 8.0 && brushMode == 1.0)
+			{
+				h = 0.0;
+				s = 0.0;
+				l = 0.0;
+				float polyXX1[7];
+				float polyYY1[7];
+				float polyXX2[7];
+				float polyYY2[7];
+				float polyXX3[7];
+				float polyYY3[7];
+				float polyXX4[7];
+				float polyYY4[7];
+				float polyXX5[7];
+				float polyYY5[7];
+
+				polyXX1[0] = x1;
+				polyXX1[1] = x2;
+				polyXX1[2] = x3;
+				polyXX1[3] = x4;
+				polyXX1[4] = x5;
+				polyXX1[5] = x6;
+				polyXX1[6] = x7;
+				polyYY1[0] = y1;
+				polyYY1[1] = y2;
+				polyYY1[2] = y3;
+				polyYY1[3] = y4;
+				polyYY1[4] = y5;
+				polyYY1[5] = y6;
+				polyYY1[6] = y7;
+
+				polyXX2[0] = x11;
+				polyXX2[1] = x12;
+				polyXX2[2] = x13;
+				polyXX2[3] = x14;
+				polyXX2[4] = x15;
+				polyXX2[5] = x16;
+				polyXX2[6] = x17;
+				polyYY2[0] = y11;
+				polyYY2[1] = y12;
+				polyYY2[2] = y13;
+				polyYY2[3] = y14;
+				polyYY2[4] = y15;
+				polyYY2[5] = y16;
+				polyYY2[6] = y17;
+										
+				polyXX3[0] = x31;
+				polyXX3[1] = x32;
+				polyXX3[2] = x33;
+				polyXX3[3] = x34;
+				polyXX3[4] = x35;
+				polyXX3[5] = x36;
+				polyXX3[6] = x37;
+				polyYY3[0] = y31;
+				polyYY3[1] = y32;
+				polyYY3[2] = y33;
+				polyYY3[3] = y34;
+				polyYY3[4] = y35;
+				polyYY3[5] = y36;
+				polyYY3[6] = y37;
+
+				polyXX4[0] = x41;
+				polyXX4[1] = x42;
+				polyXX4[2] = x43;
+				polyXX4[3] = x44;
+				polyXX4[4] = x45;
+				polyXX4[5] = x46;
+				polyXX4[6] = x47;
+				polyYY4[0] = y41;
+				polyYY4[1] = y42;
+				polyYY4[2] = y43;
+				polyYY4[3] = y44;
+				polyYY4[4] = y45;
+				polyYY4[5] = y46;
+				polyYY4[6] = y47;
+
+				polyXX5[0] = x51;
+				polyXX5[1] = x52;
+				polyXX5[2] = x53;
+				polyXX5[3] = x54;
+				polyXX5[4] = x55;
+				polyXX5[5] = x56;
+				polyXX5[6] = x57;
+				polyYY5[0] = y51;
+				polyYY5[1] = y52;
+				polyYY5[2] = y53;
+				polyYY5[3] = y54;
+				polyYY5[4] = y55;
+				polyYY5[5] = y56;
+				polyYY5[6] = y57;
+
+				bool pointIO1 =	pnpoly7(polyXX1, polyYY1, newCX, newCY);
+				if (pointIO1)
+				{
+					h = hslh1;
+					s = hsls1;
+					l = hsll;
+				}
+
+				bool pointIO2 =	pnpoly7(polyXX2, polyYY2, newCX, newCY);
+				if (pointIO2)
+				{
+					h = hslh2;
+					s = hsls2;
+					l = hsll;
+				}
+
+				bool pointIO3 =	pnpoly7(polyXX3, polyYY3, newCX, newCY);
+				if (pointIO3)
+				{
+					h = hslh3;
+					s = hsls3;
+					l = hsll;
+				}
+
+				bool pointIO4 =	pnpoly7(polyXX4, polyYY4, newCX, newCY);
+				if (pointIO4)
+				{
+					h = hslh4;
+					s = hsls4;
+					l = hsll;
+				}
+
+				bool pointIO5 =	pnpoly7(polyXX5, polyYY5, newCX, newCY);
+				if (pointIO5)
+				{
+					h = hslh5;
+					s = hsls5;
+					l = hsll;
+				}
+
+			}
+
+			HSL2IN.s = h/360.0;
+			HSL2IN.t = s;
+			HSL2IN.p = l;
+
+            return HslToRgb(HSL2IN);
+
+		}
+
+		vec4 PC2OUT = vec4(0.0);
+		vec3 ceRGB;
+		vec3 coRGB;
+		vec3 feRGB;
+		vec3 gdRGB;
+		vec3 ceRGBA;
+		vec3 coRGBA;
+		vec3 feRGBA;
+		vec3 gdRGBA;
+
+		float ceA;
+		float coA;
+		float feA;
+		float gdA;
+
+		vec3 PCRGB = vec3(0.0);
+
+		vec3 rgba2rgb(vec3 RGBA, float alphaPC)
+		{
+			PCRGB.r = (1.0 - alphaPC) * 0.0 + alphaPC * RGBA.r/255.0;
+			PCRGB.g = (1.0 - alphaPC) * 0.0 + alphaPC * RGBA.g/255.0;
+			PCRGB.b = (1.0 - alphaPC) * 0.0 + alphaPC * RGBA.b/255.0;
+			return PCRGB;
+		}
+
+		vec4 PCtoRGB (vec4 colorSample, vec4 colorSample2, float rotateVar3D, float radialValue, float lensMode)
+		{
+			float datam[8];
+			ceRGBA.r = 0.0,
+			ceRGBA.g = 255.0,
+			ceRGBA.b = 255.0,
+
+			coRGBA.r = 127.5,
+			coRGBA.g = 255.0,
+			coRGBA.b = 0.0,
+
+			feRGBA.r = 255.0,
+			feRGBA.g = 0.0,
+			feRGBA.b = 0.0,
+
+			gdRGBA.r = 127.5,
+			gdRGBA.g = 0.0,
+			gdRGBA.b = 255.0;
+
+			if (colorSample.r < minCe)
+			{
+				colorSample.r = 0.0;
+			}
+			if (colorSample.g < minCo)
+			{
+				colorSample.g = 0.0;
+			}
+			if (colorSample.b < minFe)
+			{
+				colorSample.b = 0.0;
+			}
+			if (colorSample.a < minGd)
+			{
+				colorSample.a = 0.0;
+			}
+
+			if (colorSample2.r < minGd)
+			{
+				colorSample2.r = 0.0;
+			}
+
+			if (colorSample.r > maxCe)
+			{
+				colorSample.r = 0.0;
+			}
+			if (colorSample.g > maxCo)
+			{
+				colorSample.g = 0.0;
+			}
+			if (colorSample.b > maxFe)
+			{
+				colorSample.b = 0.0;
+			}
+
+			if (colorSample2.r > maxGd)
+			{
+				colorSample2.r = 0.0;
+			}
+
+			if (colorSample2.g > maxrangeVal)
+			{
+				colorSample2.g = 0.0;
+			}
+			if (colorSample2.b > maxrangeVal)
+			{
+				colorSample2.b = 0.0;
+			}
+
+			ceA = colorSample.r;
+			coA = colorSample.g;
+			feA = colorSample.b;
+			gdA = colorSample2.r;
+
+			vec3 PC2IN = vec3(0.0);
+
+			ceRGB = rgba2rgb(ceRGBA, ceA);
+			coRGB = rgba2rgb(coRGBA, coA);
+			feRGB = rgba2rgb(feRGBA, feA);
+			gdRGB = rgba2rgb(gdRGBA, gdA);
+
+			PC2OUT.a = ceA + coA + feA + gdA / 4.0;
+
+			PC2OUT.rgb = ((ceRGB + coRGB + feRGB + gdRGB) / 4.0);
+
+			return PC2OUT;
+		}
+
+		vec4  clipPlanesNew;
+		bool withinBoundaries_Plane( vec3 pos ) 
+		{
+			clipPlanesNew.x = xClippingPlaneMin;
+			clipPlanesNew.y = yClippingPlaneMin;
+			clipPlanesNew.z = zClippingPlaneMin;
+			clipPlanesNew.w = wClippingPlane;
+
+			return dot(pos, clipPlanesNew.xyz) < clipPlanesNew.w;
+		}
+
+		bool withinBoundaries_Axis( vec3 pos ) 
+		{
+		if (
+				pos.x > xClippingPlaneMin ||
+				pos.y > yClippingPlaneMin ||
+				pos.z > zClippingPlaneMin ||
+				pos.x < xClippingPlaneMax ||
+				pos.y < yClippingPlaneMax ||
+				pos.z < zClippingPlaneMax
+			) return false;
+			return true;
+		}
+
+		void main( void ) {
+
+			//Transform the coordinates it from [-1;1] to [0;1]
+			vec2 texc = vec2(((projectedCoords.x / projectedCoords.w) + 1.0 ) / 2.0, ((projectedCoords.y / projectedCoords.w) + 1.0 ) / 2.0 );
+
+			//The back position is the world space position stored in the texture.
+			vec3 backPos = texture2D(tex, texc).xyz;
+
+			//The front position is the world space position of the second render pass.
+			vec3 frontPos = worldSpaceCoords;
+
+			//Using NearestFilter for rtTexture mostly eliminates bad backPos values at the edges
+			//of the cube, but there may still be no valid backPos value for the current fragment.
+			if ((backPos.x == 0.0) && (backPos.y == 0.0))
+			{
+				gl_FragColor = vec4(0.0);
+				return;
+			}
+
+			//The direction from the front position to back position.
+			vec3 dir = backPos - frontPos;
+
+			float rayLength = length(dir);
+
+			//Calculate how long to increment in each step.
+			float delta = 1.0 / steps;
+
+			//The increment in each direction for each step.
+			vec3 deltaDirection = normalize(dir) * delta;
+			float deltaDirectionLength = length(deltaDirection);
+
+			//Start the ray casting from the front position.
+			vec3 currentPosition = frontPos;
+			vec3 currentPositionJ = frontPos;
+
+			//The color accumulator.
+			vec4 accumulatedColor = vec4(0.0);
+			vec4 accumulatedColorJ = vec4(0.0);
+
+			//The alpha value accumulated so far.
+			float accumulatedAlpha = 0.0;
+			float accumulatedAlphaJ = 0.0;
+
+			//How long has the ray travelled so far.
+			float accumulatedLength = 0.0;
+			float accumulatedLengthJ = 0.0;
+
+			//If we have twice as many samples, we only need ~1/2 the alpha per sample.
+			//Scaling by 256/10 just happens to give a good value for the alphaCorrection slider.
+			float alphaScaleFactor = 205.6 * delta;
+			float alphaScaleFactorJ = 205.6 * delta;
+
+			vec4 colorSample;
+			vec4 colorSample2;
+			vec4 colorSampleJ;
+			vec4 colorSample2J;
+			float alphaSample;
+			float alphaSampleJ;
+			float accumulatedRGB;
+			vec3 HCL2Sample = vec3(0.0);
+			vec3 devSample = vec3(0.0);
+			vec3 meanSample = vec3(0.0);
+			vec3 totalSample = vec3(0.0);
+			vec3 varSample = vec3(0.0);
+			vec3 secSample = vec3(0.0);
+			vec4 MutatedColorSample;
+
+			//Perform the ray marching iterations for calculating mean
+			for(int i = 0; i < MAX_STEPS; i++)
+			{
+				//Get the voxel intensity value from the 3D texture.
+				colorSample = sampleAs3DTexture( currentPosition );
+				colorSample2 = sampleAs3DTexture2( currentPosition );
+
+				if (modeGBC == 1.0)
+				{
+					HCL2Sample = GBCtoHCL( colorSample, colorSample2, rotateVar3D, radialValue, lensMode);
+				}
+
+				else if (modeGBC == 2.0) 
+				{
+					HCL2Sample = DGBCtoHCL( colorSample, colorSample2, rotateVar3D, radialValue, lensMode);
+				}
+
+				else if (modeGBC == 3.0) 
+				{
+					PC2Sample = PCtoRGB(colorSample, colorSample2, rotateVar3D, radialValue, lensMode);
+				}
+
+				else if(modeGBC == 0.0 )
+				{
+					HCL2Sample.r = colorSample.b;
+					HCL2Sample.g = colorSample.g;
+					HCL2Sample.b = colorSample.r;
+				}
+				else 
+				{
+					HCL2Sample.r = colorSample.r;
+					HCL2Sample.g = colorSample.g;
+					HCL2Sample.b = colorSample.b;
+				}
+
+				// Magnitude Thresholding for
+				accumulatedRGB = sqrt(((HCL2Sample.r*HCL2Sample.r)+(HCL2Sample.g*HCL2Sample.g)+(HCL2Sample.b*HCL2Sample.b))/255.0);
+
+				if (modeGBC != 3.0)
+				{
+					colorSample.r = HCL2Sample.r;
+					colorSample.g = HCL2Sample.g;
+					colorSample.b = HCL2Sample.b;
+				}
+				else 
+				{
+					colorSample.r = PC2Sample.r;
+					colorSample.g = PC2Sample.g;
+					colorSample.b = PC2Sample.b;
+					colorSample.a = PC2Sample.a;
+				}
+
+				// FINDNNG THE SUM OF ALL THE VOXELS WHILE RAY MARCHING.
+				totalSample.rgb += colorSample.rgb;
+
+				//Allow the alpha correction customization.
+				alphaSample = colorSample.a * alphaCorrection;
+
+				//Applying this effect to both the color and alpha accumulation results in more realistic transparency.
+				alphaSample *= (1.0 - accumulatedAlpha);
+
+				//Scaling alpha by the number of steps makes the final color invariant to the step size.
+				// alphaSample *= alphaScaleFactor;
+
+
+				if (axisClipping == 1.0)
+				{
+					if ( withinBoundaries_Axis( currentPosition ) ) 
+					{
+						//Perform the composition.
+						accumulatedColor +=  colorSample * alphaSample;
+
+						//Store the alpha accumulated so far.
+						if (modeGBC != 3.0)
+						{
+							accumulatedAlpha += alphaSample;
+						}
+						else 
+						{
+							accumulatedAlpha += alphaSample*0.2;
+						}
+					}
+				}
+				else
+				{
+					if ( withinBoundaries_Plane( currentPosition ) ) 
+					{
+						//Perform the composition.
+						accumulatedColor += colorSample * alphaSample;
+						//Store the alpha accumulated so far.
+						accumulatedAlpha += alphaSample;
+					}
+				}
+
+				//Advance the ray.
+				currentPosition += deltaDirection;
+				accumulatedLength += deltaDirectionLength;
+
+				//If the length traversed is more than the ray length, or if the alpha accumulated reaches 1.0 then exit.
+				if(accumulatedLength >= rayLength || accumulatedAlpha >= 1.0 )
+					break;
+			}
+
+			//Perform the second ray marching iterations for finding out the standard deviation
+			if (stDev == 1.0)
+			{
+				for( int j = 0; j < MAX_STEPS; j++)
+				{
+					//Get the voxel intensity value from the 3D texture.
+					colorSampleJ = sampleAs3DTexture( currentPositionJ );
+					colorSample2J = sampleAs3DTexture2( currentPositionJ );
+
+
+					if (modeGBC == 1.0)
+					{
+						secSample = GBCtoHCL( colorSampleJ, colorSample2J, rotateVar3D, radialValue, lensMode);
+					}
+
+					else if (modeGBC == 2.0) 
+					{
+						secSample = DGBCtoHCL( colorSampleJ, colorSample2J, rotateVar3D, radialValue, lensMode);
+					}
+
+					else if(modeGBC == 0.0 )
+					{
+						secSample.r = colorSampleJ.b;
+						secSample.g = colorSampleJ.g;
+						secSample.b = colorSampleJ.r;
+					}
+
+					colorSampleJ.r = secSample.r;
+					colorSampleJ.g = secSample.g;
+					colorSampleJ.b = secSample.b;
+
+					alphaSampleJ = colorSampleJ.a * alphaCorrection;
+
+					meanSample.r = totalSample.r/885.0;
+					meanSample.g = totalSample.g/885.0;
+					meanSample.b = totalSample.b/885.0;
+
+					varSample += (colorSampleJ.rgb - meanSample.rgb) * (colorSampleJ.rgb - meanSample.rgb);
+
+					if (axisClipping == 1.0)
+					{
+						if ( withinBoundaries_Axis( currentPosition ) ) 
+						{
+							//Perform the composition.
+							accumulatedColor +=  colorSample * alphaSample;
+
+							//Store the alpha accumulated so far.
+							accumulatedAlpha += alphaSample;
+						}
+					}
+					else
+					{
+						if ( withinBoundaries_Plane( currentPosition ) ) 
+						{
+							//Perform the composition.
+							accumulatedColor += colorSample * alphaSample;
+							//Store the alpha accumulated so far.
+							accumulatedAlpha += alphaSample;
+						}
+					}
+
+					//Advance the ray.
+					currentPositionJ += deltaDirection;
+					accumulatedLengthJ += deltaDirectionLength;
+
+					//If the length traversed is more than the ray length, or if the alpha accumulated reaches 1.0 then exit.
+					if(accumulatedLengthJ >= rayLength || accumulatedAlphaJ >= 1.0 )
+						break;
+
+				}
+			}
+
+			// Fragmant Coloring is happening here.
+
+			if (stDev == 0.0)
+			{
+				gl_FragColor  = accumulatedColor;
+			}
+			else if (stDev == 1.0) 
+			{
+				devSample.r = sqrt(varSample.r/885.0);
+				devSample.g = sqrt(varSample.g/885.0);
+				devSample.b = sqrt(varSample.b/885.0);
+				gl_FragColor.rgb  = devSample.rgb;
+				gl_FragColor.a = 0.0;
+			}
+		}
+`
