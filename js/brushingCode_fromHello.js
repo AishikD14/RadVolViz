@@ -964,5 +964,7 @@ function segmentRegions(clusterNo, sideNo) {
   }
   console.log(boundaryArray);
 
-  // Transform coordinates to original feature space
+  // Transform boundary coordinates to original feature space
+  
+
 }

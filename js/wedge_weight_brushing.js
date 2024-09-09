@@ -762,9 +762,4 @@ function brushedPC() {
       // console.log("GD Brushing");
     }
   }
-  // console.log(extents[0]);
-  // console.log(extents[i][1]);
-  // }
-
-
 }
