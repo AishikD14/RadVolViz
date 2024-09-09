@@ -110,63 +110,111 @@ function brushingCode() {
     }
 
     if (pp2.length > 0) {
+      guiControls.x11 = pp2[0][0];
+      guiControls.x12 = pp2[1][0];
+      guiControls.x13 = pp2[2][0];
+      guiControls.x14 = pp2[3][0];
+      guiControls.x15 = pp2[4][0];
+      
+      guiControls.y11 = pp2[0][1];
+      guiControls.y12 = pp2[1][1];
+      guiControls.y13 = pp2[2][1];
+      guiControls.y14 = pp2[3][1];
+      guiControls.y15 = pp2[4][1];
 
-      guiControls.x11 = pp2[1][0];
-      guiControls.x12 = pp2[2][0];
-      guiControls.x13 = pp2[3][0];
-      guiControls.x14 = pp2[4][0];
-      guiControls.x15 = pp2[5][0];
+      // Can delete if needed
+      // guiControls.x11 = pp2[1][0];
+      // guiControls.x12 = pp2[2][0];
+      // guiControls.x13 = pp2[3][0];
+      // guiControls.x14 = pp2[4][0];
+      // guiControls.x15 = pp2[5][0];
 
-      guiControls.y11 = pp2[1][1];
-      guiControls.y12 = pp2[2][1];
-      guiControls.y13 = pp2[3][1];
-      guiControls.y14 = pp2[4][1];
-      guiControls.y15 = pp2[5][1];
+      // guiControls.y11 = pp2[1][1];
+      // guiControls.y12 = pp2[2][1];
+      // guiControls.y13 = pp2[3][1];
+      // guiControls.y14 = pp2[4][1];
+      // guiControls.y15 = pp2[5][1];
     }
 
     if (pp3.length > 0) {
+      guiControls.x31 = pp3[0][0];
+      guiControls.x32 = pp3[1][0];
+      guiControls.x33 = pp3[2][0];
+      guiControls.x34 = pp3[3][0];
+      guiControls.x35 = pp3[4][0];
 
-      guiControls.x31 = pp3[1][0];
-      guiControls.x32 = pp3[2][0];
-      guiControls.x33 = pp3[3][0];
-      guiControls.x34 = pp3[4][0];
-      guiControls.x35 = pp3[5][0];
+      guiControls.y31 = pp3[0][1];
+      guiControls.y32 = pp3[1][1];
+      guiControls.y33 = pp3[2][1];
+      guiControls.y34 = pp3[3][1];
+      guiControls.y35 = pp3[4][1];
 
-      guiControls.y31 = pp3[1][1];
-      guiControls.y32 = pp3[2][1];
-      guiControls.y33 = pp3[3][1];
-      guiControls.y34 = pp3[4][1];
-      guiControls.y35 = pp3[5][1];
+      // Can delete if needed
+      // guiControls.x31 = pp3[1][0];
+      // guiControls.x32 = pp3[2][0];
+      // guiControls.x33 = pp3[3][0];
+      // guiControls.x34 = pp3[4][0];
+      // guiControls.x35 = pp3[5][0];
+
+      // guiControls.y31 = pp3[1][1];
+      // guiControls.y32 = pp3[2][1];
+      // guiControls.y33 = pp3[3][1];
+      // guiControls.y34 = pp3[4][1];
+      // guiControls.y35 = pp3[5][1];
     }
 
     if (pp4.length > 0) {
+      guiControls.x41 = pp4[0][0];
+      guiControls.x42 = pp4[1][0];
+      guiControls.x43 = pp4[2][0];
+      guiControls.x44 = pp4[3][0];
+      guiControls.x45 = pp4[4][0];
 
-      guiControls.x41 = pp4[1][0];
-      guiControls.x42 = pp4[2][0];
-      guiControls.x43 = pp4[3][0];
-      guiControls.x44 = pp4[4][0];
-      guiControls.x45 = pp4[5][0];
+      guiControls.y41 = pp4[0][1];
+      guiControls.y42 = pp4[1][1];
+      guiControls.y43 = pp4[2][1];
+      guiControls.y44 = pp4[3][1];
+      guiControls.y45 = pp4[4][1];
 
-      guiControls.y41 = pp4[1][1];
-      guiControls.y42 = pp4[2][1];
-      guiControls.y43 = pp4[3][1];
-      guiControls.y44 = pp4[4][1];
-      guiControls.y45 = pp4[5][1];
+      // Can delete if needed
+      // guiControls.x41 = pp4[1][0];
+      // guiControls.x42 = pp4[2][0];
+      // guiControls.x43 = pp4[3][0];
+      // guiControls.x44 = pp4[4][0];
+      // guiControls.x45 = pp4[5][0];
+
+      // guiControls.y41 = pp4[1][1];
+      // guiControls.y42 = pp4[2][1];
+      // guiControls.y43 = pp4[3][1];
+      // guiControls.y44 = pp4[4][1];
+      // guiControls.y45 = pp4[5][1];
     }
 
     if (pp5.length > 0) {
+      guiControls.x51 = pp5[0][0];
+      guiControls.x52 = pp5[1][0];
+      guiControls.x53 = pp5[2][0];
+      guiControls.x54 = pp5[3][0];
+      guiControls.x55 = pp5[4][0];
 
-      guiControls.x51 = pp5[1][0];
-      guiControls.x52 = pp5[2][0];
-      guiControls.x53 = pp5[3][0];
-      guiControls.x54 = pp5[4][0];
-      guiControls.x55 = pp5[5][0];
+      guiControls.y51 = pp5[0][1];
+      guiControls.y52 = pp5[1][1];
+      guiControls.y53 = pp5[2][1];
+      guiControls.y54 = pp5[3][1];
+      guiControls.y55 = pp5[4][1];
 
-      guiControls.y51 = pp5[1][1];
-      guiControls.y52 = pp5[2][1];
-      guiControls.y53 = pp5[3][1];
-      guiControls.y54 = pp5[4][1];
-      guiControls.y55 = pp5[5][1];
+      // Can delete if needed
+      // guiControls.x51 = pp5[1][0];
+      // guiControls.x52 = pp5[2][0];
+      // guiControls.x53 = pp5[3][0];
+      // guiControls.x54 = pp5[4][0];
+      // guiControls.x55 = pp5[5][0];
+
+      // guiControls.y51 = pp5[1][1];
+      // guiControls.y52 = pp5[2][1];
+      // guiControls.y53 = pp5[3][1];
+      // guiControls.y54 = pp5[4][1];
+      // guiControls.y55 = pp5[5][1];
     }
 
   }
@@ -190,73 +238,128 @@ function brushingCode() {
     }
 
     if (pp2.length > 0) {
+      guiControls.x11 = pp2[0][0];
+      guiControls.x12 = pp2[1][0];
+      guiControls.x13 = pp2[2][0];
+      guiControls.x14 = pp2[3][0];
+      guiControls.x15 = pp2[4][0];
+      guiControls.x16 = pp2[5][0];
 
-      guiControls.x11 = pp2[1][0];
-      guiControls.x12 = pp2[2][0];
-      guiControls.x13 = pp2[3][0];
-      guiControls.x14 = pp2[4][0];
-      guiControls.x15 = pp2[5][0];
-      guiControls.x16 = pp2[6][0];
+      guiControls.y11 = pp2[0][1];
+      guiControls.y12 = pp2[1][1];
+      guiControls.y13 = pp2[2][1];
+      guiControls.y14 = pp2[3][1];
+      guiControls.y15 = pp2[4][1];
+      guiControls.y16 = pp2[5][1];
 
-      guiControls.y11 = pp2[1][1];
-      guiControls.y12 = pp2[2][1];
-      guiControls.y13 = pp2[3][1];
-      guiControls.y14 = pp2[4][1];
-      guiControls.y15 = pp2[5][1];
-      guiControls.y16 = pp2[6][1];
+      // Can delete if needed
+      // guiControls.x11 = pp2[1][0];
+      // guiControls.x12 = pp2[2][0];
+      // guiControls.x13 = pp2[3][0];
+      // guiControls.x14 = pp2[4][0];
+      // guiControls.x15 = pp2[5][0];
+      // guiControls.x16 = pp2[6][0];
+
+      // guiControls.y11 = pp2[1][1];
+      // guiControls.y12 = pp2[2][1];
+      // guiControls.y13 = pp2[3][1];
+      // guiControls.y14 = pp2[4][1];
+      // guiControls.y15 = pp2[5][1];
+      // guiControls.y16 = pp2[6][1];
     }
 
     if (pp3.length > 0) {
+      guiControls.x31 = pp3[0][0];
+      guiControls.x32 = pp3[1][0];
+      guiControls.x33 = pp3[2][0];
+      guiControls.x34 = pp3[3][0];
+      guiControls.x35 = pp3[4][0];
+      guiControls.x36 = pp3[5][0];
 
-      guiControls.x31 = pp3[1][0];
-      guiControls.x32 = pp3[2][0];
-      guiControls.x33 = pp3[3][0];
-      guiControls.x34 = pp3[4][0];
-      guiControls.x35 = pp3[5][0];
-      guiControls.x36 = pp3[6][0];
+      guiControls.y31 = pp3[0][1];
+      guiControls.y32 = pp3[1][1];
+      guiControls.y33 = pp3[2][1];
+      guiControls.y34 = pp3[3][1];
+      guiControls.y35 = pp3[4][1];
+      guiControls.y36 = pp3[5][1];
 
-      guiControls.y31 = pp3[1][1];
-      guiControls.y32 = pp3[2][1];
-      guiControls.y33 = pp3[3][1];
-      guiControls.y34 = pp3[4][1];
-      guiControls.y35 = pp3[5][1];
-      guiControls.y36 = pp3[6][1];
+      // Can delete if needed
+      // guiControls.x31 = pp3[1][0];
+      // guiControls.x32 = pp3[2][0];
+      // guiControls.x33 = pp3[3][0];
+      // guiControls.x34 = pp3[4][0];
+      // guiControls.x35 = pp3[5][0];
+      // guiControls.x36 = pp3[6][0];
+
+      // guiControls.y31 = pp3[1][1];
+      // guiControls.y32 = pp3[2][1];
+      // guiControls.y33 = pp3[3][1];
+      // guiControls.y34 = pp3[4][1];
+      // guiControls.y35 = pp3[5][1];
+      // guiControls.y36 = pp3[6][1];
     }
 
     if (pp4.length > 0) {
+      guiControls.x41 = pp4[0][0];
+      guiControls.x42 = pp4[1][0];
+      guiControls.x43 = pp4[2][0];
+      guiControls.x44 = pp4[3][0];
+      guiControls.x45 = pp4[4][0];
+      guiControls.x46 = pp4[5][0];
 
-      guiControls.x41 = pp4[1][0];
-      guiControls.x42 = pp4[2][0];
-      guiControls.x43 = pp4[3][0];
-      guiControls.x44 = pp4[4][0];
-      guiControls.x45 = pp4[5][0];
-      guiControls.x46 = pp4[6][0];
+      guiControls.y41 = pp4[0][1];
+      guiControls.y42 = pp4[1][1];
+      guiControls.y43 = pp4[2][1];
+      guiControls.y44 = pp4[3][1];
+      guiControls.y45 = pp4[4][1];
+      guiControls.y46 = pp4[5][1];
 
-      guiControls.y41 = pp4[1][1];
-      guiControls.y42 = pp4[2][1];
-      guiControls.y43 = pp4[3][1];
-      guiControls.y44 = pp4[4][1];
-      guiControls.y45 = pp4[5][1];
-      guiControls.y46 = pp4[6][1];
+      // Can delete if needed
+      // guiControls.x41 = pp4[1][0];
+      // guiControls.x42 = pp4[2][0];
+      // guiControls.x43 = pp4[3][0];
+      // guiControls.x44 = pp4[4][0];
+      // guiControls.x45 = pp4[5][0];
+      // guiControls.x46 = pp4[6][0];
+
+      // guiControls.y41 = pp4[1][1];
+      // guiControls.y42 = pp4[2][1];
+      // guiControls.y43 = pp4[3][1];
+      // guiControls.y44 = pp4[4][1];
+      // guiControls.y45 = pp4[5][1];
+      // guiControls.y46 = pp4[6][1];
     }
 
     if (pp5.length > 0) {
+      guiControls.x51 = pp5[0][0];
+      guiControls.x52 = pp5[1][0];
+      guiControls.x53 = pp5[2][0];
+      guiControls.x54 = pp5[3][0];
+      guiControls.x55 = pp5[4][0];
+      guiControls.x56 = pp5[5][0];
 
-      guiControls.x51 = pp5[1][0];
-      guiControls.x52 = pp5[2][0];
-      guiControls.x53 = pp5[3][0];
-      guiControls.x54 = pp5[4][0];
-      guiControls.x55 = pp5[5][0];
-      guiControls.x56 = pp5[6][0];
+      guiControls.y51 = pp5[0][1];
+      guiControls.y52 = pp5[1][1];
+      guiControls.y53 = pp5[2][1];
+      guiControls.y54 = pp5[3][1];
+      guiControls.y55 = pp5[4][1];
+      guiControls.y56 = pp5[5][1];
 
-      guiControls.y51 = pp5[1][1];
-      guiControls.y52 = pp5[2][1];
-      guiControls.y53 = pp5[3][1];
-      guiControls.y54 = pp5[4][1];
-      guiControls.y55 = pp5[5][1];
-      guiControls.y56 = pp5[6][1];
+      // Can delete if needed
+      // guiControls.x51 = pp5[1][0];
+      // guiControls.x52 = pp5[2][0];
+      // guiControls.x53 = pp5[3][0];
+      // guiControls.x54 = pp5[4][0];
+      // guiControls.x55 = pp5[5][0];
+      // guiControls.x56 = pp5[6][0];
+
+      // guiControls.y51 = pp5[1][1];
+      // guiControls.y52 = pp5[2][1];
+      // guiControls.y53 = pp5[3][1];
+      // guiControls.y54 = pp5[4][1];
+      // guiControls.y55 = pp5[5][1];
+      // guiControls.y56 = pp5[6][1];
     }
-
   }
 
   if (guiControls.polySide == 7.0) {
@@ -279,81 +382,144 @@ function brushingCode() {
     }
 
     if (pp2.length > 0) {
+      guiControls.x11 = pp2[0][0];
+      guiControls.x12 = pp2[1][0];
+      guiControls.x13 = pp2[2][0];
+      guiControls.x14 = pp2[3][0];
+      guiControls.x15 = pp2[4][0];
+      guiControls.x16 = pp2[5][0];
+      guiControls.x17 = pp2[6][0];
 
-      guiControls.x11 = pp2[1][0];
-      guiControls.x12 = pp2[2][0];
-      guiControls.x13 = pp2[3][0];
-      guiControls.x14 = pp2[4][0];
-      guiControls.x15 = pp2[5][0];
-      guiControls.x16 = pp2[6][0];
-      guiControls.x17 = pp2[7][0];
+      guiControls.y11 = pp2[0][1];
+      guiControls.y12 = pp2[1][1];
+      guiControls.y13 = pp2[2][1];
+      guiControls.y14 = pp2[3][1];
+      guiControls.y15 = pp2[4][1];
+      guiControls.y16 = pp2[5][1];
+      guiControls.y17 = pp2[6][1];
 
-      guiControls.y11 = pp2[1][1];
-      guiControls.y12 = pp2[2][1];
-      guiControls.y13 = pp2[3][1];
-      guiControls.y14 = pp2[4][1];
-      guiControls.y15 = pp2[5][1];
-      guiControls.y16 = pp2[6][1];
-      guiControls.y17 = pp2[7][1];
+      // Can delete if needed
+      // guiControls.x11 = pp2[1][0];
+      // guiControls.x12 = pp2[2][0];
+      // guiControls.x13 = pp2[3][0];
+      // guiControls.x14 = pp2[4][0];
+      // guiControls.x15 = pp2[5][0];
+      // guiControls.x16 = pp2[6][0];
+      // guiControls.x17 = pp2[7][0];
+
+      // guiControls.y11 = pp2[1][1];
+      // guiControls.y12 = pp2[2][1];
+      // guiControls.y13 = pp2[3][1];
+      // guiControls.y14 = pp2[4][1];
+      // guiControls.y15 = pp2[5][1];
+      // guiControls.y16 = pp2[6][1];
+      // guiControls.y17 = pp2[7][1];
     }
 
     if (pp3.length > 0) {
+      guiControls.x31 = pp3[0][0];
+      guiControls.x32 = pp3[1][0];
+      guiControls.x33 = pp3[2][0];
+      guiControls.x34 = pp3[3][0];
+      guiControls.x35 = pp3[4][0];
+      guiControls.x36 = pp3[5][0];
+      guiControls.x37 = pp3[6][0];
 
-      guiControls.x31 = pp3[1][0];
-      guiControls.x32 = pp3[2][0];
-      guiControls.x33 = pp3[3][0];
-      guiControls.x34 = pp3[4][0];
-      guiControls.x35 = pp3[5][0];
-      guiControls.x36 = pp3[6][0];
-      guiControls.x37 = pp3[7][0];
+      guiControls.y31 = pp3[0][1];
+      guiControls.y32 = pp3[1][1];
+      guiControls.y33 = pp3[2][1];
+      guiControls.y34 = pp3[3][1];
+      guiControls.y35 = pp3[4][1];
+      guiControls.y36 = pp3[5][1];
+      guiControls.y37 = pp3[6][1];
 
-      guiControls.y31 = pp3[1][1];
-      guiControls.y32 = pp3[2][1];
-      guiControls.y33 = pp3[3][1];
-      guiControls.y34 = pp3[4][1];
-      guiControls.y35 = pp3[5][1];
-      guiControls.y36 = pp3[6][1];
-      guiControls.y37 = pp3[7][1];
+      // Can delete if needed
+      // guiControls.x31 = pp3[1][0];
+      // guiControls.x32 = pp3[2][0];
+      // guiControls.x33 = pp3[3][0];
+      // guiControls.x34 = pp3[4][0];
+      // guiControls.x35 = pp3[5][0];
+      // guiControls.x36 = pp3[6][0];
+      // guiControls.x37 = pp3[7][0];
+
+      // guiControls.y31 = pp3[1][1];
+      // guiControls.y32 = pp3[2][1];
+      // guiControls.y33 = pp3[3][1];
+      // guiControls.y34 = pp3[4][1];
+      // guiControls.y35 = pp3[5][1];
+      // guiControls.y36 = pp3[6][1];
+      // guiControls.y37 = pp3[7][1];
     }
 
     if (pp4.length > 0) {
+      guiControls.x41 = pp4[0][0];
+      guiControls.x42 = pp4[1][0];
+      guiControls.x43 = pp4[2][0];
+      guiControls.x44 = pp4[3][0];
+      guiControls.x45 = pp4[4][0];
+      guiControls.x46 = pp4[5][0];
+      guiControls.x47 = pp4[6][0];
 
-      guiControls.x41 = pp4[1][0];
-      guiControls.x42 = pp4[2][0];
-      guiControls.x43 = pp4[3][0];
-      guiControls.x44 = pp4[4][0];
-      guiControls.x45 = pp4[5][0];
-      guiControls.x46 = pp4[6][0];
-      guiControls.x47 = pp4[7][0];
+      guiControls.y41 = pp4[0][1];
+      guiControls.y42 = pp4[1][1];
+      guiControls.y43 = pp4[2][1];
+      guiControls.y44 = pp4[3][1];
+      guiControls.y45 = pp4[4][1];
+      guiControls.y46 = pp4[5][1];
+      guiControls.y47 = pp4[6][1];
 
-      guiControls.y41 = pp4[1][1];
-      guiControls.y42 = pp4[2][1];
-      guiControls.y43 = pp4[3][1];
-      guiControls.y44 = pp4[4][1];
-      guiControls.y45 = pp4[5][1];
-      guiControls.y46 = pp4[6][1];
-      guiControls.y47 = pp4[7][1];
+      // Can delete if needed
+      // guiControls.x41 = pp4[1][0];
+      // guiControls.x42 = pp4[2][0];
+      // guiControls.x43 = pp4[3][0];
+      // guiControls.x44 = pp4[4][0];
+      // guiControls.x45 = pp4[5][0];
+      // guiControls.x46 = pp4[6][0];
+      // guiControls.x47 = pp4[7][0];
+
+      // guiControls.y41 = pp4[1][1];
+      // guiControls.y42 = pp4[2][1];
+      // guiControls.y43 = pp4[3][1];
+      // guiControls.y44 = pp4[4][1];
+      // guiControls.y45 = pp4[5][1];
+      // guiControls.y46 = pp4[6][1];
+      // guiControls.y47 = pp4[7][1];
     }
 
     if (pp5.length > 0) {
+      guiControls.x51 = pp5[0][0];
+      guiControls.x52 = pp5[1][0];
+      guiControls.x53 = pp5[2][0];
+      guiControls.x54 = pp5[3][0];
+      guiControls.x55 = pp5[4][0];
+      guiControls.x56 = pp5[5][0];
+      guiControls.x57 = pp5[6][0];
 
-      guiControls.x51 = pp5[1][0];
-      guiControls.x52 = pp5[2][0];
-      guiControls.x53 = pp5[3][0];
-      guiControls.x54 = pp5[4][0];
-      guiControls.x55 = pp5[5][0];
-      guiControls.x56 = pp5[6][0];
-      guiControls.x57 = pp5[7][0];
+      guiControls.y51 = pp5[0][1];
+      guiControls.y52 = pp5[1][1];
+      guiControls.y53 = pp5[2][1];
+      guiControls.y54 = pp5[3][1];
+      guiControls.y55 = pp5[4][1];
+      guiControls.y56 = pp5[5][1];
+      guiControls.y57 = pp5[6][1];
 
-      guiControls.y51 = pp5[1][1];
-      guiControls.y52 = pp5[2][1];
-      guiControls.y53 = pp5[3][1];
-      guiControls.y54 = pp5[4][1];
-      guiControls.y55 = pp5[5][1];
-      guiControls.y56 = pp5[6][1];
-      guiControls.y57 = pp5[7][1];
+      // Can delete if needed
+      // guiControls.x51 = pp5[1][0];
+      // guiControls.x52 = pp5[2][0];
+      // guiControls.x53 = pp5[3][0];
+      // guiControls.x54 = pp5[4][0];
+      // guiControls.x55 = pp5[5][0];
+      // guiControls.x56 = pp5[6][0];
+      // guiControls.x57 = pp5[7][0];
+
+      // guiControls.y51 = pp5[1][1];
+      // guiControls.y52 = pp5[2][1];
+      // guiControls.y53 = pp5[3][1];
+      // guiControls.y54 = pp5[4][1];
+      // guiControls.y55 = pp5[5][1];
+      // guiControls.y56 = pp5[6][1];
+      // guiControls.y57 = pp5[7][1];
     }
-
   }
 
   if (guiControls.polySide == 8.0) {
@@ -378,117 +544,164 @@ function brushingCode() {
     }
 
     if (pp2.length > 0) {
+      guiControls.x11 = pp2[0][0];
+      guiControls.x12 = pp2[1][0];
+      guiControls.x13 = pp2[2][0];
+      guiControls.x14 = pp2[3][0];
+      guiControls.x15 = pp2[4][0];
+      guiControls.x16 = pp2[5][0];
+      guiControls.x17 = pp2[6][0];
+      guiControls.x18 = pp2[7][0];
 
-      guiControls.x11 = pp2[1][0];
-      guiControls.x12 = pp2[2][0];
-      guiControls.x13 = pp2[3][0];
-      guiControls.x14 = pp2[4][0];
-      guiControls.x15 = pp2[5][0];
-      guiControls.x16 = pp2[6][0];
-      guiControls.x17 = pp2[7][0];
-      guiControls.x18 = pp2[8][0];
+      guiControls.y11 = pp2[0][1];
+      guiControls.y12 = pp2[1][1];
+      guiControls.y13 = pp2[2][1];
+      guiControls.y14 = pp2[3][1];
+      guiControls.y15 = pp2[4][1];
+      guiControls.y16 = pp2[5][1];
+      guiControls.y17 = pp2[6][1];
+      guiControls.y18 = pp2[7][1];
 
-      guiControls.y11 = pp2[1][1];
-      guiControls.y12 = pp2[2][1];
-      guiControls.y13 = pp2[3][1];
-      guiControls.y14 = pp2[4][1];
-      guiControls.y15 = pp2[5][1];
-      guiControls.y16 = pp2[6][1];
-      guiControls.y17 = pp2[7][1];
-      guiControls.y18 = pp2[8][1];
+      // Can delete if needed
+      // guiControls.x11 = pp2[1][0];
+      // guiControls.x12 = pp2[2][0];
+      // guiControls.x13 = pp2[3][0];
+      // guiControls.x14 = pp2[4][0];
+      // guiControls.x15 = pp2[5][0];
+      // guiControls.x16 = pp2[6][0];
+      // guiControls.x17 = pp2[7][0];
+      // guiControls.x18 = pp2[8][0];
+
+      // guiControls.y11 = pp2[1][1];
+      // guiControls.y12 = pp2[2][1];
+      // guiControls.y13 = pp2[3][1];
+      // guiControls.y14 = pp2[4][1];
+      // guiControls.y15 = pp2[5][1];
+      // guiControls.y16 = pp2[6][1];
+      // guiControls.y17 = pp2[7][1];
+      // guiControls.y18 = pp2[8][1];
     }
 
     if (pp3.length > 0) {
+      guiControls.x31 = pp3[0][0];
+      guiControls.x32 = pp3[1][0];
+      guiControls.x33 = pp3[2][0];
+      guiControls.x34 = pp3[3][0];
+      guiControls.x35 = pp3[4][0];
+      guiControls.x36 = pp3[5][0];
+      guiControls.x37 = pp3[6][0];
+      guiControls.x38 = pp3[7][0];
 
-      guiControls.x31 = pp3[1][0];
-      guiControls.x32 = pp3[2][0];
-      guiControls.x33 = pp3[3][0];
-      guiControls.x34 = pp3[4][0];
-      guiControls.x35 = pp3[5][0];
-      guiControls.x36 = pp3[6][0];
-      guiControls.x37 = pp3[7][0];
-      guiControls.x38 = pp3[8][0];
+      guiControls.y31 = pp3[0][1];
+      guiControls.y32 = pp3[1][1];
+      guiControls.y33 = pp3[2][1];
+      guiControls.y34 = pp3[3][1];
+      guiControls.y35 = pp3[4][1];
+      guiControls.y36 = pp3[5][1];
+      guiControls.y37 = pp3[6][1];
+      guiControls.y38 = pp3[7][1];
 
-      guiControls.y31 = pp3[1][1];
-      guiControls.y32 = pp3[2][1];
-      guiControls.y33 = pp3[3][1];
-      guiControls.y34 = pp3[4][1];
-      guiControls.y35 = pp3[5][1];
-      guiControls.y36 = pp3[6][1];
-      guiControls.y37 = pp3[7][1];
-      guiControls.y38 = pp3[8][1];
+      // Can delete if needed
+      // guiControls.x31 = pp3[1][0];
+      // guiControls.x32 = pp3[2][0];
+      // guiControls.x33 = pp3[3][0];
+      // guiControls.x34 = pp3[4][0];
+      // guiControls.x35 = pp3[5][0];
+      // guiControls.x36 = pp3[6][0];
+      // guiControls.x37 = pp3[7][0];
+      // guiControls.x38 = pp3[8][0];
+
+      // guiControls.y31 = pp3[1][1];
+      // guiControls.y32 = pp3[2][1];
+      // guiControls.y33 = pp3[3][1];
+      // guiControls.y34 = pp3[4][1];
+      // guiControls.y35 = pp3[5][1];
+      // guiControls.y36 = pp3[6][1];
+      // guiControls.y37 = pp3[7][1];
+      // guiControls.y38 = pp3[8][1];
     }
 
     if (pp4.length > 0) {
+      guiControls.x41 = pp4[0][0];
+      guiControls.x42 = pp4[1][0];
+      guiControls.x43 = pp4[2][0];
+      guiControls.x44 = pp4[3][0];
+      guiControls.x45 = pp4[4][0];
+      guiControls.x46 = pp4[5][0];
+      guiControls.x47 = pp4[6][0];
+      guiControls.x48 = pp4[7][0];
 
-      guiControls.x41 = pp4[1][0];
-      guiControls.x42 = pp4[2][0];
-      guiControls.x43 = pp4[3][0];
-      guiControls.x44 = pp4[4][0];
-      guiControls.x45 = pp4[5][0];
-      guiControls.x46 = pp4[6][0];
-      guiControls.x47 = pp4[7][0];
-      guiControls.x48 = pp4[8][0];
+      guiControls.y41 = pp4[0][1];
+      guiControls.y42 = pp4[1][1];
+      guiControls.y43 = pp4[2][1];
+      guiControls.y44 = pp4[3][1];
+      guiControls.y45 = pp4[4][1];
+      guiControls.y46 = pp4[5][1];
+      guiControls.y47 = pp4[6][1];
+      guiControls.y48 = pp4[7][1];
 
-      guiControls.y41 = pp4[1][1];
-      guiControls.y42 = pp4[2][1];
-      guiControls.y43 = pp4[3][1];
-      guiControls.y44 = pp4[4][1];
-      guiControls.y45 = pp4[5][1];
-      guiControls.y46 = pp4[6][1];
-      guiControls.y47 = pp4[7][1];
-      guiControls.y48 = pp4[8][1];
+      // Can delete if needed
+      // guiControls.x41 = pp4[1][0];
+      // guiControls.x42 = pp4[2][0];
+      // guiControls.x43 = pp4[3][0];
+      // guiControls.x44 = pp4[4][0];
+      // guiControls.x45 = pp4[5][0];
+      // guiControls.x46 = pp4[6][0];
+      // guiControls.x47 = pp4[7][0];
+      // guiControls.x48 = pp4[8][0];
+
+      // guiControls.y41 = pp4[1][1];
+      // guiControls.y42 = pp4[2][1];
+      // guiControls.y43 = pp4[3][1];
+      // guiControls.y44 = pp4[4][1];
+      // guiControls.y45 = pp4[5][1];
+      // guiControls.y46 = pp4[6][1];
+      // guiControls.y47 = pp4[7][1];
+      // guiControls.y48 = pp4[8][1];
     }
 
     if (pp5.length > 0) {
+      guiControls.x51 = pp5[0][0];
+      guiControls.x52 = pp5[1][0];
+      guiControls.x53 = pp5[2][0];
+      guiControls.x54 = pp5[3][0];
+      guiControls.x55 = pp5[4][0];
+      guiControls.x56 = pp5[5][0];
+      guiControls.x57 = pp5[6][0];
+      guiControls.x58 = pp5[7][0];
 
-      guiControls.x51 = pp5[1][0];
-      guiControls.x52 = pp5[2][0];
-      guiControls.x53 = pp5[3][0];
-      guiControls.x54 = pp5[4][0];
-      guiControls.x55 = pp5[5][0];
-      guiControls.x56 = pp5[6][0];
-      guiControls.x57 = pp5[7][0];
-      guiControls.x58 = pp5[8][0];
+      guiControls.y51 = pp5[0][1];
+      guiControls.y52 = pp5[1][1];
+      guiControls.y53 = pp5[2][1];
+      guiControls.y54 = pp5[3][1];
+      guiControls.y55 = pp5[4][1];
+      guiControls.y56 = pp5[5][1];
+      guiControls.y57 = pp5[6][1];
+      guiControls.y58 = pp5[7][1];
 
-      guiControls.y51 = pp5[1][1];
-      guiControls.y52 = pp5[2][1];
-      guiControls.y53 = pp5[3][1];
-      guiControls.y54 = pp5[4][1];
-      guiControls.y55 = pp5[5][1];
-      guiControls.y56 = pp5[6][1];
-      guiControls.y57 = pp5[7][1];
-      guiControls.y58 = pp5[8][1];
+      // Can delete if needed
+      // guiControls.x51 = pp5[1][0];
+      // guiControls.x52 = pp5[2][0];
+      // guiControls.x53 = pp5[3][0];
+      // guiControls.x54 = pp5[4][0];
+      // guiControls.x55 = pp5[5][0];
+      // guiControls.x56 = pp5[6][0];
+      // guiControls.x57 = pp5[7][0];
+      // guiControls.x58 = pp5[8][0];
+
+      // guiControls.y51 = pp5[1][1];
+      // guiControls.y52 = pp5[2][1];
+      // guiControls.y53 = pp5[3][1];
+      // guiControls.y54 = pp5[4][1];
+      // guiControls.y55 = pp5[5][1];
+      // guiControls.y56 = pp5[6][1];
+      // guiControls.y57 = pp5[7][1];
+      // guiControls.y58 = pp5[8][1];
     }
-
   }
-
-  // Implement rehgion growing algorithm on volume in here
-  // console.log(npArray.data); // This is your volume data as a typed array
-  console.log(npArray.shape); // Shape of the numpy array
-
-  // Find number of unique values in the volume
-  const uniqueValues = new Set(npArray.data);
-  // console.log(uniqueValues.size);
-
-  // Find the minimum and maximum values in the volume
-  const min = npArray.data.reduce((acc, val) => Math.min(acc, val), Infinity);
-  const max = npArray.data.reduce((acc, val) => Math.max(acc, val), -Infinity);
-  // console.log(min, max);
-
-  const shape = window.npArray.shape;  // [d1, d2, d3, d4]
-  const data = window.npArray.data;    // TypedArray with flattened data
-
-  // Access element at indices [0, 0, 0, 0]
-  const value1 = getElement(data, shape, [100, 100, 100, 0]);
-  const value2 = getElement(data, shape, [100, 100, 100, 1]);
-  const value3 = getElement(data, shape, [100, 100, 100, 2]);
-  const value4 = getElement(data, shape, [100, 100, 100, 3]);
-  // console.log(value1, value2, value3, value4);
-
-
 }
 
+// Clear marked cluster regions
 function ClearSVGPoints() {
   console.log("ClearSVGPoints");
 
@@ -620,6 +833,9 @@ function radioOnChange(value) {
   if (value == 'brush') {
     guiControls.brushMode = 1.0
   }
+  else if (value == 'segment') {
+    guiControls.brushMode = 2.0
+  }
   else {
     guiControls.brushMode = 0.0
     ClearSVGPoints();
@@ -637,4 +853,135 @@ function getElement(data, shape, indices) {
 
   const index = (i1 * d2 * d3 * d4) + (i2 * d3 * d4) + (i3 * d4) + i4;
   return data[index];
+}
+
+// Check if cluster marking is completed
+function checkClusterCompletion() {
+  if (guiControls.clusters == 1.0){
+    console.log("Do check");
+    console.log(pp1.length);
+    if (guiControls.polySide == 5.0 && pp1.length == 5) {
+      console.log("Cluster marking completed");
+      segmentRegions();
+    }
+    else if (guiControls.polySide == 6.0 && pp1.length == 6) {
+      console.log("Cluster marking completed");
+      segmentRegions();
+    }
+    else if (guiControls.polySide == 7.0 && pp1.length == 7) {
+      console.log("Cluster marking completed");
+      segmentRegions();
+    }
+    else if (guiControls.polySide == 8.0 && pp1.length == 8) {
+      console.log("Cluster marking completed");
+      segmentRegions();
+    }
+  }
+  else if (guiControls.clusters == 2.0){
+    console.log("Do check");
+    console.log(pp1.length, pp2.length);
+    if (guiControls.polySide == 5.0 && pp1.length == 5 && pp2.length == 5) {
+      console.log("Cluster marking completed");
+      segmentRegions();
+    }
+    else if (guiControls.polySide == 6.0 && pp1.length == 6 && pp2.length == 6) {
+      console.log("Cluster marking completed");
+      segmentRegions();
+    }
+    else if (guiControls.polySide == 7.0 && pp1.length == 7 && pp2.length == 7) {
+      console.log("Cluster marking completed");
+      segmentRegions();
+    }
+    else if (guiControls.polySide == 8.0 && pp1.length == 8 && pp2.length == 8) {
+      console.log("Cluster marking completed");
+      segmentRegions();
+    }
+  }
+  else if (guiControls.clusters == 3.0){
+    console.log("Do check");
+    console.log(pp1.length, pp2.length, pp3.length);
+    if (guiControls.polySide == 5.0 && pp1.length == 5 && pp2.length == 5 && pp3.length == 5) {
+      console.log("Cluster marking completed");
+      segmentRegions();
+    }
+    else if (guiControls.polySide == 6.0 && pp1.length == 6 && pp2.length == 6 && pp3.length == 6) {
+      console.log("Cluster marking completed");
+      segmentRegions();
+    }
+    else if (guiControls.polySide == 7.0 && pp1.length == 7 && pp2.length == 7 && pp3.length == 7) {
+      console.log("Cluster marking completed");
+      segmentRegions();
+    }
+    else if (guiControls.polySide == 8.0 && pp1.length == 8 && pp2.length == 8 && pp3.length == 8) {
+      console.log("Cluster marking completed");
+      segmentRegions();
+    }
+  }
+  else if (guiControls.clusters == 4.0){
+    console.log("Do check");
+    console.log(pp1.length, pp2.length, pp3.length, pp4.length);
+    if (guiControls.polySide == 5.0 && pp1.length == 5 && pp2.length == 5 && pp3.length == 5 && pp4.length == 5) {
+      console.log("Cluster marking completed");
+      segmentRegions();
+    }
+    else if (guiControls.polySide == 6.0 && pp1.length == 6 && pp2.length == 6 && pp3.length == 6 && pp4.length == 6) {
+      console.log("Cluster marking completed");
+      segmentRegions();
+    }
+    else if (guiControls.polySide == 7.0 && pp1.length == 7 && pp2.length == 7 && pp3.length == 7 && pp4.length == 7) {
+      console.log("Cluster marking completed");
+      segmentRegions();
+    }
+    else if (guiControls.polySide == 8.0 && pp1.length == 8 && pp2.length == 8 && pp3.length == 8 && pp4.length == 8) {
+      console.log("Cluster marking completed");
+      segmentRegions();
+    }
+  }
+  else if (guiControls.clusters == 5.0){
+    console.log("Do check");
+    console.log(pp1.length, pp2.length, pp3.length, pp4.length, pp5.length);
+    if (guiControls.polySide == 5.0 && pp1.length == 5 && pp2.length == 5 && pp3.length == 5 && pp4.length == 5 && pp5.length == 5) {
+      console.log("Cluster marking completed");
+      segmentRegions();
+    }
+    else if (guiControls.polySide == 6.0 && pp1.length == 6 && pp2.length == 6 && pp3.length == 6 && pp4.length == 6 && pp5.length == 6) {
+      console.log("Cluster marking completed");
+      segmentRegions();
+    }
+    else if (guiControls.polySide == 7.0 && pp1.length == 7 && pp2.length == 7 && pp3.length == 7 && pp4.length == 7 && pp5.length == 7) {
+      console.log("Cluster marking completed");
+      segmentRegions();
+    }
+    else if (guiControls.polySide == 8.0 && pp1.length == 8 && pp2.length == 8 && pp3.length == 8 && pp4.length == 8 && pp5.length == 8) {
+      console.log("Cluster marking completed");
+      segmentRegions();
+    }
+  }
+}
+
+// Implement rehgion growing algorithm on volume in here
+function segmentRegions() {
+  console.log("Segment Regions");
+  // console.log(npArray.data); // This is your volume data as a typed array
+  // console.log(npArray.shape); // Shape of the numpy array
+
+  // Find number of unique values in the volume
+  const uniqueValues = new Set(npArray.data);
+  // console.log(uniqueValues.size);
+
+  // Find the minimum and maximum values in the volume
+  // const min = npArray.data.reduce((acc, val) => Math.min(acc, val), Infinity);
+  // const max = npArray.data.reduce((acc, val) => Math.max(acc, val), -Infinity);
+  // console.log(min, max);
+
+  const shape = window.npArray.shape;  // [d1, d2, d3, d4]
+  const data = window.npArray.data;    // TypedArray with flattened data
+
+  // Access element at indices [0, 0, 0, 0]
+  // const value1 = getElement(data, shape, [100, 100, 100, 0]);
+  // const value2 = getElement(data, shape, [100, 100, 100, 1]);
+  // const value3 = getElement(data, shape, [100, 100, 100, 2]);
+  // const value4 = getElement(data, shape, [100, 100, 100, 3]);
+  // console.log(value1, value2, value3, value4);
+
 }
