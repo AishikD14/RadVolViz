@@ -121,19 +121,6 @@ function brushingCode() {
       guiControls.y13 = pp2[2][1];
       guiControls.y14 = pp2[3][1];
       guiControls.y15 = pp2[4][1];
-
-      // Can delete if needed
-      // guiControls.x11 = pp2[1][0];
-      // guiControls.x12 = pp2[2][0];
-      // guiControls.x13 = pp2[3][0];
-      // guiControls.x14 = pp2[4][0];
-      // guiControls.x15 = pp2[5][0];
-
-      // guiControls.y11 = pp2[1][1];
-      // guiControls.y12 = pp2[2][1];
-      // guiControls.y13 = pp2[3][1];
-      // guiControls.y14 = pp2[4][1];
-      // guiControls.y15 = pp2[5][1];
     }
 
     if (pp3.length > 0) {
@@ -148,19 +135,6 @@ function brushingCode() {
       guiControls.y33 = pp3[2][1];
       guiControls.y34 = pp3[3][1];
       guiControls.y35 = pp3[4][1];
-
-      // Can delete if needed
-      // guiControls.x31 = pp3[1][0];
-      // guiControls.x32 = pp3[2][0];
-      // guiControls.x33 = pp3[3][0];
-      // guiControls.x34 = pp3[4][0];
-      // guiControls.x35 = pp3[5][0];
-
-      // guiControls.y31 = pp3[1][1];
-      // guiControls.y32 = pp3[2][1];
-      // guiControls.y33 = pp3[3][1];
-      // guiControls.y34 = pp3[4][1];
-      // guiControls.y35 = pp3[5][1];
     }
 
     if (pp4.length > 0) {
@@ -175,19 +149,6 @@ function brushingCode() {
       guiControls.y43 = pp4[2][1];
       guiControls.y44 = pp4[3][1];
       guiControls.y45 = pp4[4][1];
-
-      // Can delete if needed
-      // guiControls.x41 = pp4[1][0];
-      // guiControls.x42 = pp4[2][0];
-      // guiControls.x43 = pp4[3][0];
-      // guiControls.x44 = pp4[4][0];
-      // guiControls.x45 = pp4[5][0];
-
-      // guiControls.y41 = pp4[1][1];
-      // guiControls.y42 = pp4[2][1];
-      // guiControls.y43 = pp4[3][1];
-      // guiControls.y44 = pp4[4][1];
-      // guiControls.y45 = pp4[5][1];
     }
 
     if (pp5.length > 0) {
@@ -202,19 +163,6 @@ function brushingCode() {
       guiControls.y53 = pp5[2][1];
       guiControls.y54 = pp5[3][1];
       guiControls.y55 = pp5[4][1];
-
-      // Can delete if needed
-      // guiControls.x51 = pp5[1][0];
-      // guiControls.x52 = pp5[2][0];
-      // guiControls.x53 = pp5[3][0];
-      // guiControls.x54 = pp5[4][0];
-      // guiControls.x55 = pp5[5][0];
-
-      // guiControls.y51 = pp5[1][1];
-      // guiControls.y52 = pp5[2][1];
-      // guiControls.y53 = pp5[3][1];
-      // guiControls.y54 = pp5[4][1];
-      // guiControls.y55 = pp5[5][1];
     }
 
   }
@@ -862,19 +810,19 @@ function checkClusterCompletion() {
     console.log(pp1.length);
     if (guiControls.polySide == 5.0 && pp1.length == 5) {
       console.log("Cluster marking completed");
-      segmentRegions();
+      segmentRegions(1,5);
     }
     else if (guiControls.polySide == 6.0 && pp1.length == 6) {
       console.log("Cluster marking completed");
-      segmentRegions();
+      segmentRegions(1,6);
     }
     else if (guiControls.polySide == 7.0 && pp1.length == 7) {
       console.log("Cluster marking completed");
-      segmentRegions();
+      segmentRegions(1,7);
     }
     else if (guiControls.polySide == 8.0 && pp1.length == 8) {
       console.log("Cluster marking completed");
-      segmentRegions();
+      segmentRegions(1,8);
     }
   }
   else if (guiControls.clusters == 2.0){
@@ -882,19 +830,19 @@ function checkClusterCompletion() {
     console.log(pp1.length, pp2.length);
     if (guiControls.polySide == 5.0 && pp1.length == 5 && pp2.length == 5) {
       console.log("Cluster marking completed");
-      segmentRegions();
+      segmentRegions(2,5);
     }
     else if (guiControls.polySide == 6.0 && pp1.length == 6 && pp2.length == 6) {
       console.log("Cluster marking completed");
-      segmentRegions();
+      segmentRegions(2,6);
     }
     else if (guiControls.polySide == 7.0 && pp1.length == 7 && pp2.length == 7) {
       console.log("Cluster marking completed");
-      segmentRegions();
+      segmentRegions(2,7);
     }
     else if (guiControls.polySide == 8.0 && pp1.length == 8 && pp2.length == 8) {
       console.log("Cluster marking completed");
-      segmentRegions();
+      segmentRegions(2,8);
     }
   }
   else if (guiControls.clusters == 3.0){
@@ -902,19 +850,19 @@ function checkClusterCompletion() {
     console.log(pp1.length, pp2.length, pp3.length);
     if (guiControls.polySide == 5.0 && pp1.length == 5 && pp2.length == 5 && pp3.length == 5) {
       console.log("Cluster marking completed");
-      segmentRegions();
+      segmentRegions(3,5);
     }
     else if (guiControls.polySide == 6.0 && pp1.length == 6 && pp2.length == 6 && pp3.length == 6) {
       console.log("Cluster marking completed");
-      segmentRegions();
+      segmentRegions(3,6);
     }
     else if (guiControls.polySide == 7.0 && pp1.length == 7 && pp2.length == 7 && pp3.length == 7) {
       console.log("Cluster marking completed");
-      segmentRegions();
+      segmentRegions(3,7);
     }
     else if (guiControls.polySide == 8.0 && pp1.length == 8 && pp2.length == 8 && pp3.length == 8) {
       console.log("Cluster marking completed");
-      segmentRegions();
+      segmentRegions(3,8);
     }
   }
   else if (guiControls.clusters == 4.0){
@@ -922,19 +870,19 @@ function checkClusterCompletion() {
     console.log(pp1.length, pp2.length, pp3.length, pp4.length);
     if (guiControls.polySide == 5.0 && pp1.length == 5 && pp2.length == 5 && pp3.length == 5 && pp4.length == 5) {
       console.log("Cluster marking completed");
-      segmentRegions();
+      segmentRegions(4,5);
     }
     else if (guiControls.polySide == 6.0 && pp1.length == 6 && pp2.length == 6 && pp3.length == 6 && pp4.length == 6) {
       console.log("Cluster marking completed");
-      segmentRegions();
+      segmentRegions(4,6);
     }
     else if (guiControls.polySide == 7.0 && pp1.length == 7 && pp2.length == 7 && pp3.length == 7 && pp4.length == 7) {
       console.log("Cluster marking completed");
-      segmentRegions();
+      segmentRegions(4,7);
     }
     else if (guiControls.polySide == 8.0 && pp1.length == 8 && pp2.length == 8 && pp3.length == 8 && pp4.length == 8) {
       console.log("Cluster marking completed");
-      segmentRegions();
+      segmentRegions(4,8);
     }
   }
   else if (guiControls.clusters == 5.0){
@@ -942,25 +890,25 @@ function checkClusterCompletion() {
     console.log(pp1.length, pp2.length, pp3.length, pp4.length, pp5.length);
     if (guiControls.polySide == 5.0 && pp1.length == 5 && pp2.length == 5 && pp3.length == 5 && pp4.length == 5 && pp5.length == 5) {
       console.log("Cluster marking completed");
-      segmentRegions();
+      segmentRegions(5,5);
     }
     else if (guiControls.polySide == 6.0 && pp1.length == 6 && pp2.length == 6 && pp3.length == 6 && pp4.length == 6 && pp5.length == 6) {
       console.log("Cluster marking completed");
-      segmentRegions();
+      segmentRegions(5,6);
     }
     else if (guiControls.polySide == 7.0 && pp1.length == 7 && pp2.length == 7 && pp3.length == 7 && pp4.length == 7 && pp5.length == 7) {
       console.log("Cluster marking completed");
-      segmentRegions();
+      segmentRegions(5,7);
     }
     else if (guiControls.polySide == 8.0 && pp1.length == 8 && pp2.length == 8 && pp3.length == 8 && pp4.length == 8 && pp5.length == 8) {
       console.log("Cluster marking completed");
-      segmentRegions();
+      segmentRegions(5,8);
     }
   }
 }
 
 // Implement rehgion growing algorithm on volume in here
-function segmentRegions() {
+function segmentRegions(clusterNo, sideNo) {
   console.log("Segment Regions");
   // console.log(npArray.data); // This is your volume data as a typed array
   // console.log(npArray.shape); // Shape of the numpy array
@@ -978,10 +926,43 @@ function segmentRegions() {
   const data = window.npArray.data;    // TypedArray with flattened data
 
   // Access element at indices [0, 0, 0, 0]
-  // const value1 = getElement(data, shape, [100, 100, 100, 0]);
-  // const value2 = getElement(data, shape, [100, 100, 100, 1]);
-  // const value3 = getElement(data, shape, [100, 100, 100, 2]);
-  // const value4 = getElement(data, shape, [100, 100, 100, 3]);
+  const value1 = getElement(data, shape, [100, 100, 100, 0]);
+  const value2 = getElement(data, shape, [100, 100, 100, 1]);
+  const value3 = getElement(data, shape, [100, 100, 100, 2]);
+  const value4 = getElement(data, shape, [100, 100, 100, 3]);
   // console.log(value1, value2, value3, value4);
 
+  // Load boundary coordinates to array
+  var boundaryArray = [];
+  for(i=0; i<clusterNo; i++){
+    var tempArray = [];
+    for(j=0; j<sideNo; j++){
+      var tempCoord = [];
+      if(i==0){
+        tempCoord.push(guiControls['x'+(j+1)]);
+        tempCoord.push(guiControls['y'+(j+1)]);
+      }
+      else if(i==1){
+        tempCoord.push(guiControls['x1'+(j+1)]);
+        tempCoord.push(guiControls['y1'+(j+1)]);
+      }
+      else if(i==2){
+        tempCoord.push(guiControls['x3'+(j+1)]);
+        tempCoord.push(guiControls['y3'+(j+1)]);
+      }
+      else if(i==3){
+        tempCoord.push(guiControls['x4'+(j+1)]);
+        tempCoord.push(guiControls['y4'+(j+1)]);
+      }
+      else if(i==4){
+        tempCoord.push(guiControls['x5'+(j+1)]);
+        tempCoord.push(guiControls['y5'+(j+1)]);
+      }
+      tempArray.push(tempCoord);
+    }
+    boundaryArray.push(tempArray);
+  }
+  console.log(boundaryArray);
+
+  // Transform coordinates to original feature space
 }
