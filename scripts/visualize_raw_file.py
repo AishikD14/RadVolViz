@@ -38,7 +38,7 @@ print("Index of first occurrence of value 128:", index)
 np.save('volume.npy', volume)
 
 # Print value of all channels at a specific location
-z, y, x = 83, 80, 145
+z, y, x = 100, 100, 100
 print("Values at location (100, 100, 100):", volume[z, y, x])
 
 # Optionally: visualize a slice using matplotlib

@@ -464,9 +464,28 @@ function brushingCode() {
   }
 
   // Implement rehgion growing algorithm on volume in here
-  console.log(window.npArray);
-  console.log(npArray.data); // This is your volume data as a typed array
+  // console.log(npArray.data); // This is your volume data as a typed array
   console.log(npArray.shape); // Shape of the numpy array
+
+  // Find number of unique values in the volume
+  const uniqueValues = new Set(npArray.data);
+  // console.log(uniqueValues.size);
+
+  // Find the minimum and maximum values in the volume
+  const min = npArray.data.reduce((acc, val) => Math.min(acc, val), Infinity);
+  const max = npArray.data.reduce((acc, val) => Math.max(acc, val), -Infinity);
+  // console.log(min, max);
+
+  const shape = window.npArray.shape;  // [d1, d2, d3, d4]
+  const data = window.npArray.data;    // TypedArray with flattened data
+
+  // Access element at indices [0, 0, 0, 0]
+  const value1 = getElement(data, shape, [100, 100, 100, 0]);
+  const value2 = getElement(data, shape, [100, 100, 100, 1]);
+  const value3 = getElement(data, shape, [100, 100, 100, 2]);
+  const value4 = getElement(data, shape, [100, 100, 100, 3]);
+  // console.log(value1, value2, value3, value4);
+
 
 }
 
@@ -605,4 +624,17 @@ function radioOnChange(value) {
     guiControls.brushMode = 0.0
     ClearSVGPoints();
   }
+}
+
+// Example function to access a specific element in a 4D array
+function getElement(data, shape, indices) {
+  const [d1, d2, d3, d4] = shape;
+  const [i1, i2, i3, i4] = indices;
+
+  if (i1 >= d1 || i2 >= d2 || i3 >= d3 || i4 >= d4) {
+      throw new Error('Indices out of bounds');
+  }
+
+  const index = (i1 * d2 * d3 * d4) + (i2 * d3 * d4) + (i3 * d4) + i4;
+  return data[index];
 }
