@@ -962,9 +962,26 @@ function segmentRegions(clusterNo, sideNo) {
     }
     boundaryArray.push(tempArray);
   }
-  console.log(boundaryArray);
 
   // Transform boundary coordinates to original feature space
   
+  // Inverse scaling of coordinates
+  var colorSpaceWidth = 400;//document.getElementById(this.iconColorSpaceContainerId).clientWidth;
+  var colorSpaceHeight = 400;//this.colorSpaceWidth;
+  var diameter = Math.round(colorSpaceHeight * 2.4 / 3.1);
+  var xoffset = (colorSpaceWidth - diameter) / 2;
+  var scaleGBC2Canvas = d3.scale.linear().domain([-1, 1]).range([xoffset, xoffset + diameter]);
 
+  newBoundaryArray = [];
+  for(i=0; i<clusterNo; i++){
+    newBoundaryArray[i] = [];
+    for(j=0; j<sideNo; j++){
+      newBoundaryArray[i][j] = [];
+      newBoundaryArray[i][j][0] = scaleGBC2Canvas.invert(boundaryArray[i][j][0]);
+      newBoundaryArray[i][j][1] = scaleGBC2Canvas.invert(boundaryArray[i][j][1]);
+    }
+  }
+  console.log(newBoundaryArray);
+
+  
 }

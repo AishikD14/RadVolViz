@@ -24,7 +24,7 @@ function GBC(datam, rotateVar) {
         }
     }
 
-    // Populate the first 3 dimensions of the mth row of the GBCL array
+    // Populate the first 2 dimensions of the mth row of the GBCL array
     GBCL[m][0] = Math.cos(angle[0]);
     GBCL[m][1] = Math.sin(angle[0]);
 
@@ -35,6 +35,7 @@ function GBC(datam, rotateVar) {
         GBCL[m + i][1] = Math.sin(angle[i]) * 0.997;
     }
 
+    // Transform the angles if less than 0 or more than 180 degrees
     for (var i = 0; i < n; i++) {
         if (angle[i] < 0) {
             angle[i] = angle[i] + Math.PI * 2;
