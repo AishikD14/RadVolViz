@@ -973,7 +973,27 @@ function getGBCCoords(elementArray) {
     GBCYL = (lthXY * Math.sin(tempangleXY));
   }
 
-  return [GBCXL, GBCYL];
+  let CX = GBCXL;
+  let CY = GBCYL;
+
+  // Compute rr
+  let rr = Math.sqrt(Math.pow(CX, 2.0) + Math.pow(CY, 2.0));
+
+  // Normalize CX and CY if rr >= 1.0
+  if (rr >= 1.0) {
+      CX /= rr;
+      CY /= rr;
+  }
+
+  let newCX = 0.0;
+  let newCY = 0.0;
+
+  // Compute newCX and newCY
+  newCX = (CX + 1.0) / 2.0 * 310.0 + 45.0;
+  newCY = (CY + 1.0) / 2.0 * 310.0 + 45.0;
+
+  return [newCX, newCY];
+  
 }
 
 // Check if a point is inside a polygon with 4 vertices
@@ -1368,23 +1388,25 @@ function segmentRegions(clusterNo, sideNo) {
     boundaryArray.push(tempArray);
   }
   // console.log(boundaryArray);
-  
-  // Inverse scaling of coordinates to get back GBC feature space coordinates
-  var colorSpaceWidth = 400;//document.getElementById(this.iconColorSpaceContainerId).clientWidth;
-  var colorSpaceHeight = 400;//this.colorSpaceWidth;
-  var diameter = Math.round(colorSpaceHeight * 2.4 / 3.1);
-  var xoffset = (colorSpaceWidth - diameter) / 2;
-  var scaleGBC2Canvas = d3.scale.linear().domain([-1, 1]).range([xoffset, xoffset + diameter]);
 
-  newBoundaryArray = [];
-  for(var i=0; i<clusterNo; i++){
-    newBoundaryArray[i] = [];
-    for(var j=0; j<sideNo; j++){
-      newBoundaryArray[i][j] = [];
-      newBoundaryArray[i][j][0] = scaleGBC2Canvas.invert(boundaryArray[i][j][0]);
-      newBoundaryArray[i][j][1] = scaleGBC2Canvas.invert(boundaryArray[i][j][1]);
-    }
-  }
+  // ----------------------------------------------------------------------------------------------------
+  // Inverse scaling of coordinates to get back GBC feature space coordinates (Not required for now)
+
+  // var colorSpaceWidth = 400;//document.getElementById(this.iconColorSpaceContainerId).clientWidth;
+  // var colorSpaceHeight = 400;//this.colorSpaceWidth;
+  // var diameter = Math.round(colorSpaceHeight * 2.4 / 3.1);
+  // var xoffset = (colorSpaceWidth - diameter) / 2;
+  // var scaleGBC2Canvas = d3.scale.linear().domain([-1, 1]).range([xoffset, xoffset + diameter]);
+
+  // newBoundaryArray = [];
+  // for(var i=0; i<clusterNo; i++){
+  //   newBoundaryArray[i] = [];
+  //   for(var j=0; j<sideNo; j++){
+  //     newBoundaryArray[i][j] = [];
+  //     newBoundaryArray[i][j][0] = scaleGBC2Canvas.invert(boundaryArray[i][j][0]);
+  //     newBoundaryArray[i][j][1] = scaleGBC2Canvas.invert(boundaryArray[i][j][1]);
+  //   }
+  // }
   // console.log(newBoundaryArray);
 
   // ----------------------------------------------------------------------------------------------------
@@ -1402,7 +1424,8 @@ function segmentRegions(clusterNo, sideNo) {
         }
         // Process the non-NaN values present in the volume data to assign them a cluster
         else{
-          pointInCluster = checkPNP(clusterNo, sideNo, newBoundaryArray, testx, testy);
+          // pointInCluster = checkPNP(clusterNo, sideNo, newBoundaryArray, testx, testy);
+          pointInCluster = checkPNP(clusterNo, sideNo, boundaryArray, testx, testy);
           voxelGBCArray[i][j][k].push(pointInCluster);
         }
       }
@@ -1410,4 +1433,35 @@ function segmentRegions(clusterNo, sideNo) {
   }
   // console.log(voxelGBCArray);
   console.log("All points clustered");
+
+  // ----------------------------------------------------------------------------------------------------
+  // Save the clustered data to a file
+
+  var clusterData = [];
+  for(var i=0; i<shape[0]; i++){
+    clusterData[i] = [];
+    for(var j=0; j<shape[1]; j++){
+      clusterData[i][j] = [];
+      for(var k=0; k<shape[2]; k++){
+        // clusterData.push(voxelGBCArray[i][j][k].at(-1));
+        clusterData[i][j][k] = voxelGBCArray[i][j][k].at(-1);
+      }
+    }
+  }
+  console.log("Done extrscting cluster data");
+  // console.log(clusterData);
+
+  // Convert the 3D array to a JSON string
+  let arrayStr = JSON.stringify(clusterData);
+  console.log("Conversion done");
+
+  // Save the data to a file
+  // var blob = new Blob([arrayStr], {type: "application/json"});
+  // var url = URL.createObjectURL(blob);
+  // var a = document.createElement('a');
+  // a.href = url;
+  // a.download = 'clusteredData.json';
+  // a.click();
+
+  // ----------------------------------------------------------------------------------------------------
 }

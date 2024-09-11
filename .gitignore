@@ -5,3 +5,4 @@ label_slice.npy
 normalized_volume.npy
 /scripts/data10.csv
 node_modules/
+clusteredData.json

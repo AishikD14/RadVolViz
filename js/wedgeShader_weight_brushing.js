@@ -88,7 +88,7 @@ function init() {
 		this.hsll = 0.5;
 		
 		// Deafult no of maunal cluters is 2
-		this.clusters = 2.0;
+		this.clusters = 1.0;
 
 		this.defaultLens = false;
 		this.axishow = false;
@@ -100,7 +100,7 @@ function init() {
 		this.startX = 0.0;
 		this.startY = 0.0;
 
-		this.polySide = 6.0;
+		this.polySide = 5.0;
 
 		this.sDev = false;
 		this.stDev = 0.0;
