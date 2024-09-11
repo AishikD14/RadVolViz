@@ -1062,7 +1062,9 @@ function pnpoly7(polyX17, polyY17, testx, testy) {
 
 // Check if voxel in volume is part of any cluster 
 function checkPNP(clusterNo, sideNo, newBoundaryArray, testx, testy){
+  // Check if voxel is inside any of the clusters for polygon with 4 vertices
   if (sideNo == 5){
+    // Store the x and y coordinates of the polygon vertices in separate arrays
     var polyX = [];
     var polyY = [];
     for(var i=0; i<clusterNo; i++){
@@ -1074,6 +1076,7 @@ function checkPNP(clusterNo, sideNo, newBoundaryArray, testx, testy){
       }
     }
 
+    // Check if voxel is inside any of the clusters
     var pointIO1 = pnpoly4(polyX[0], polyY[0], testx, testy);
     if(pointIO1 == true){
       // console.log("Point inside Cluster 1");
@@ -1110,14 +1113,158 @@ function checkPNP(clusterNo, sideNo, newBoundaryArray, testx, testy){
     // console.log("Point outside all clusters");
     return 0;
   }
+  // Check if voxel is inside any of the clusters for polygon with 5 vertices
   else if (sideNo == 6){
-    pnpoly5(polyX15, polyY15, testx, testy);
+    // Store the x and y coordinates of the polygon vertices in separate arrays
+    var polyX = [];
+    var polyY = [];
+    for(var i=0; i<clusterNo; i++){
+      polyX[i] = [];
+      polyY[i] = [];
+      for(var j=0; j<sideNo-1; j++){
+        polyX[i].push(newBoundaryArray[i][j][0]);
+        polyY[i].push(newBoundaryArray[i][j][1]);
+      }
+    }
+
+    // Check if voxel is inside any of the clusters
+    var pointIO1 = pnpoly5(polyX[0], polyY[0], testx, testy);
+    if(pointIO1 == true){
+      // console.log("Point inside Cluster 1");
+      return 1;
+    }
+    else if(polyX[1] != undefined){
+      var pointIO2 = pnpoly5(polyX[1], polyY[1], testx, testy);
+      if(pointIO2 == true){
+        // console.log("Point inside Cluster 2");
+        return 2;
+      }
+      else if(polyX[2] != undefined){
+        var pointIO3 = pnpoly5(polyX[2], polyY[2], testx, testy);
+        if(pointIO3 == true){
+          // console.log("Point inside Cluster 3");
+          return 3;
+        }
+        else if(polyX[3] != undefined){
+          var pointIO4 = pnpoly5(polyX[3], polyY[3], testx, testy);
+          if(pointIO4 == true){
+            // console.log("Point inside Cluster 4");
+            return 4;
+          }
+          else if(polyX[4] != undefined){
+            var pointIO5 = pnpoly5(polyX[4], polyY[4], testx, testy);
+            if(pointIO5 == true){
+              // console.log("Point inside Cluster 5");
+              return 5;
+            }
+          }
+        }
+      }
+    }
+    // console.log("Point outside all clusters");
+    return 0;
   }
+  // Check if voxel is inside any of the clusters for polygon with 6 vertices
   else if (sideNo == 7){
-    pnpoly6(polyX16, polyY16, testx, testy);
+    // Store the x and y coordinates of the polygon vertices in separate arrays
+    var polyX = [];
+    var polyY = [];
+    for(var i=0; i<clusterNo; i++){
+      polyX[i] = [];
+      polyY[i] = [];
+      for(var j=0; j<sideNo-1; j++){
+        polyX[i].push(newBoundaryArray[i][j][0]);
+        polyY[i].push(newBoundaryArray[i][j][1]);
+      }
+    }
+
+    // Check if voxel is inside any of the clusters
+    var pointIO1 = pnpoly6(polyX[0], polyY[0], testx, testy);
+    if(pointIO1 == true){
+      // console.log("Point inside Cluster 1");
+      return 1;
+    }
+    else if(polyX[1] != undefined){
+      var pointIO2 = pnpoly6(polyX[1], polyY[1], testx, testy);
+      if(pointIO2 == true){
+        // console.log("Point inside Cluster 2");
+        return 2;
+      }
+      else if(polyX[2] != undefined){
+        var pointIO3 = pnpoly6(polyX[2], polyY[2], testx, testy);
+        if(pointIO3 == true){
+          // console.log("Point inside Cluster 3");
+          return 3;
+        }
+        else if(polyX[3] != undefined){
+          var pointIO4 = pnpoly6(polyX[3], polyY[3], testx, testy);
+          if(pointIO4 == true){
+            // console.log("Point inside Cluster 4");
+            return 4;
+          }
+          else if(polyX[4] != undefined){
+            var pointIO5 = pnpoly6(polyX[4], polyY[4], testx, testy);
+            if(pointIO5 == true){
+              // console.log("Point inside Cluster 5");
+              return 5;
+            }
+          }
+        }
+      }
+    }
+    // console.log("Point outside all clusters");
+    return 0;
   }
+  // Check if voxel is inside any of the clusters for polygon with 7 vertices
   else if (sideNo == 8){
-    pnpoly7(polyX17, polyY17, testx, testy);
+    // Store the x and y coordinates of the polygon vertices in separate arrays
+    var polyX = [];
+    var polyY = [];
+    for(var i=0; i<clusterNo; i++){
+      polyX[i] = [];
+      polyY[i] = [];
+      for(var j=0; j<sideNo-1; j++){
+        polyX[i].push(newBoundaryArray[i][j][0]);
+        polyY[i].push(newBoundaryArray[i][j][1]);
+      }
+    }
+
+    // Check if voxel is inside any of the clusters
+    var pointIO1 = pnpoly7(polyX[0], polyY[0], testx, testy);
+    if(pointIO1 == true){
+      // console.log("Point inside Cluster 1");
+      return 1;
+    }
+    else if(polyX[1] != undefined){
+      var pointIO2 = pnpoly7(polyX[1], polyY[1], testx, testy);
+      if(pointIO2 == true){
+        // console.log("Point inside Cluster 2");
+        return 2;
+      }
+      else if(polyX[2] != undefined){
+        var pointIO3 = pnpoly7(polyX[2], polyY[2], testx, testy);
+        if(pointIO3 == true){
+          // console.log("Point inside Cluster 3");
+          return 3;
+        }
+        else if(polyX[3] != undefined){
+          var pointIO4 = pnpoly7(polyX[3], polyY[3], testx, testy);
+          if(pointIO4 == true){
+            // console.log("Point inside Cluster 4");
+            return 4;
+          }
+          else if(polyX[4] != undefined){
+            var pointIO5 = pnpoly7(polyX[4], polyY[4], testx, testy);
+            if(pointIO5 == true){
+              // console.log("Point inside Cluster 5");
+              return 5;
+            }
+          }
+        }
+      }
+    }
+    // console.log("Point outside all clusters");
+    return 0;
   }
 }
 
@@ -1146,18 +1293,11 @@ function segmentRegions(clusterNo, sideNo) {
   const value4 = getElement(data, shape, [100, 100, 100, 3]);
   // console.log(value1, value2, value3, value4);
 
-  // Access elements at indices [0, 0, 0, 0]
-  const value5 = getElement(data, shape, [0, 0, 0, 0]);
-  const value6 = getElement(data, shape, [0, 0, 0, 1]);
-  const value7 = getElement(data, shape, [0, 0, 0, 2]);
-  const value8 = getElement(data, shape, [0, 0, 0, 3]);
-  // console.log(value5, value6, value7, value8);
-
-
   // Get the GBC feature space coordinates corresponding to the volume coordinates
   var voxelGBCArray = [];
   var elementArray = new Array(shape[3]);
   
+  // Loop through the volume data
   for(i=0; i<shape[0]; i++){
     voxelGBCArray[i] = [];
 
@@ -1197,7 +1337,7 @@ function segmentRegions(clusterNo, sideNo) {
 
   // ----------------------------------------------------------------------------------------------------
 
-  // Load boundary coordinates to array
+  // Load marked boundary coordinates to array
   var boundaryArray = [];
   for(i=0; i<clusterNo; i++){
     var tempArray = [];
@@ -1255,9 +1395,12 @@ function segmentRegions(clusterNo, sideNo) {
       for(var k=0; k<shape[2]; k++){
         var testx = voxelGBCArray[i][j][k][0];
         var testy = voxelGBCArray[i][j][k][1];
+        // Process the NaN values present in the volume data
         if (testx == 0 && testy == 0){
+          // Assign them as outlier since cant perform region growing on them
           voxelGBCArray[i][j][k].push(-1);
         }
+        // Process the non-NaN values present in the volume data to assign them a cluster
         else{
           pointInCluster = checkPNP(clusterNo, sideNo, newBoundaryArray, testx, testy);
           voxelGBCArray[i][j][k].push(pointInCluster);
@@ -1266,5 +1409,5 @@ function segmentRegions(clusterNo, sideNo) {
     }
   }
   // console.log(voxelGBCArray);
-  console.log("All points checked");
+  console.log("All points clustered");
 }
