@@ -2,5 +2,6 @@
 xray_volume.npy
 label_volume.npy
 label_slice.npy
+normalized_volume.npy
 /scripts/data10.csv
 node_modules/

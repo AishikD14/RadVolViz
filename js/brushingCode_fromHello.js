@@ -891,16 +891,16 @@ function checkClusterCompletion() {
 // Implement rehgion growing algorithm on volume in here
 function segmentRegions(clusterNo, sideNo) {
   console.log("Segment Regions");
-  // console.log(npArray.data); // This is your volume data as a typed array
-  // console.log(npArray.shape); // Shape of the numpy array
+  // console.log(window.npArray.data); // This is your volume data as a typed array
+  // console.log(window.npArray.shape); // Shape of the numpy array
 
   // Find number of unique values in the volume
-  const uniqueValues = new Set(npArray.data);
+  const uniqueValues = new Set(window.npArray.data);
   // console.log(uniqueValues.size);
 
   // Find the minimum and maximum values in the volume
-  // const min = npArray.data.reduce((acc, val) => Math.min(acc, val), Infinity);
-  // const max = npArray.data.reduce((acc, val) => Math.max(acc, val), -Infinity);
+  // const min = window.npArray.data.reduce((acc, val) => Math.min(acc, val), Infinity);
+  // const max = window.npArray.data.reduce((acc, val) => Math.max(acc, val), -Infinity);
   // console.log(min, max);
 
   const shape = window.npArray.shape;  // [d1, d2, d3, d4]
@@ -911,7 +911,7 @@ function segmentRegions(clusterNo, sideNo) {
   const value2 = getElement(data, shape, [100, 100, 100, 1]);
   const value3 = getElement(data, shape, [100, 100, 100, 2]);
   const value4 = getElement(data, shape, [100, 100, 100, 3]);
-  // console.log(value1, value2, value3, value4);
+  console.log(value1, value2, value3, value4);
 
   // Load boundary coordinates to array
   var boundaryArray = [];

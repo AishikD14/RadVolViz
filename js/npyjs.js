@@ -121,7 +121,7 @@ class npyjs {
 
 let npy = new npyjs();  // Initialize npyjs
 
-fetch('../scripts/volume.npy')
+fetch('../scripts/normalized_volume.npy')
 .then(response => response.arrayBuffer())
 .then(buffer => {
     window.npArray = npy.parse(buffer);
