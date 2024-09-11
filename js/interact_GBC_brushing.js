@@ -4,14 +4,13 @@ function GBC(datam, rotateVar) {
     var m = datam.length;
     var n = (datam[0]).length;
 
-    // console.log(m, n);
-
     var angle = new Array(n)
     angle[0] = Math.PI / 2 + rotateVar;
 
     var GBCL = new Array();
 
     // Populate the GBCL array where the first 2 dimensions are set to 0 and remaining 4 are copied from datam
+    // n new rows are added to the array and they only have the first 2 dimensions populated with 0
     for (i = 0; i < m + n; i++) {
         GBCL[i] = new Array();
         for (j = 0; j < 2; j++) {
@@ -24,11 +23,11 @@ function GBC(datam, rotateVar) {
         }
     }
 
-    // Populate the first 2 dimensions of the mth row of the GBCL array
+    // Populate the first 2 dimensions of the 1st of the last n rows appended to the end of the GBCL array
     GBCL[m][0] = Math.cos(angle[0]);
     GBCL[m][1] = Math.sin(angle[0]);
 
-    // Populate the first 3 dimensions of of the last 4 rows of the GBCL array
+    // Populate the first 2 dimensions of of the remaining (n-1) rows appended to the end of the GBCL array
     for (var i = 1; i < n; i++) {
         angle[i] = angle[i - 1] - 2 * Math.PI / n;
         GBCL[m + i][0] = Math.cos(angle[i]) * 0.997;
@@ -45,30 +44,38 @@ function GBC(datam, rotateVar) {
         }
     }
 
+    // Sort the n angles generated
     angle.sort();
 
+    // Loop through the original m data
     for (var i = 0; i < m; i++) {
         var tempsum = 0;
+        // Add all the metal ratios for the voxel
         for (var j = 0; j < n; j++) {
             tempsum = tempsum + parseFloat(datam[i][j]);
         }
 
+        // If the sum of the metal ratios is 0, set the first 2 dimensions to 0
         if (tempsum == 0) {
             GBCL[i][0] = 0;
             GBCL[i][1] = 0;
         }
+        // Else, calculate the first 2 dimensions based on the metal ratios
         else {
             for (var k = 0; k < n; k++) {
                 GBCL[i][0] = GBCL[i][0] + (datam[i][k] / tempsum) * GBCL[m + k][0];
                 GBCL[i][1] = GBCL[i][1] + (datam[i][k] / tempsum) * GBCL[m + k][1];
-                // console.log(k , datam[i][k] / tempsum);
             }
 
             var tempangle = Math.atan2(GBCL[i][1], GBCL[i][0]);
-            if (tempangle < 0) { tempangle = tempangle + Math.PI * 2; }
+            if (tempangle < 0) { 
+                tempangle = tempangle + Math.PI * 2; 
+            }
+
             var flag = false;
             var tempA = 0;
             var tempB = 0;
+
             for (var j = 0; j < n - 1; j++) {
                 if ((tempangle > angle[j] || tempangle == angle[j]) && (tempangle < angle[j + 1])) {
                     tempA = angle[j + 1];
@@ -78,11 +85,14 @@ function GBC(datam, rotateVar) {
                 if (flag == true)
                     break;
             }
+
             if (flag == false) {
                 tempA = angle[0] + Math.PI * 2;
                 tempB = angle[n - 1];
             }
+
             var lth = (Math.sqrt(GBCL[i][0] * GBCL[i][0] + GBCL[i][1] * GBCL[i][1]) / Math.cos((tempA - tempB) / 2) * Math.cos(-(tempA + tempB) / 2 + tempangle));
+            
             GBCL[i][0] = (lth * Math.cos(tempangle));
             GBCL[i][1] = (lth * Math.sin(tempangle));
         }

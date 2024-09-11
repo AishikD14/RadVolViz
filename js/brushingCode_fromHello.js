@@ -509,25 +509,6 @@ function brushingCode() {
       guiControls.y16 = pp2[5][1];
       guiControls.y17 = pp2[6][1];
       guiControls.y18 = pp2[7][1];
-
-      // Can delete if needed
-      // guiControls.x11 = pp2[1][0];
-      // guiControls.x12 = pp2[2][0];
-      // guiControls.x13 = pp2[3][0];
-      // guiControls.x14 = pp2[4][0];
-      // guiControls.x15 = pp2[5][0];
-      // guiControls.x16 = pp2[6][0];
-      // guiControls.x17 = pp2[7][0];
-      // guiControls.x18 = pp2[8][0];
-
-      // guiControls.y11 = pp2[1][1];
-      // guiControls.y12 = pp2[2][1];
-      // guiControls.y13 = pp2[3][1];
-      // guiControls.y14 = pp2[4][1];
-      // guiControls.y15 = pp2[5][1];
-      // guiControls.y16 = pp2[6][1];
-      // guiControls.y17 = pp2[7][1];
-      // guiControls.y18 = pp2[8][1];
     }
 
     if (pp3.length > 0) {
@@ -962,6 +943,7 @@ function segmentRegions(clusterNo, sideNo) {
     }
     boundaryArray.push(tempArray);
   }
+  console.log(boundaryArray);
 
   // Transform boundary coordinates to original feature space
   
@@ -983,5 +965,5 @@ function segmentRegions(clusterNo, sideNo) {
   }
   console.log(newBoundaryArray);
 
-  
+
 }

@@ -821,12 +821,15 @@ const fragmentShaderSecondPass = /*glsl*/ `
 					if (flag == true)
 							break;
 				}
+				
 				if (flag == false)
 				{
-						tempA = angle[0] + PI * 2.0;
-						tempB = angle[n - 1];
+					tempA = angle[0] + PI * 2.0;
+					tempB = angle[n - 1];
 				}
+
 				float lthXY = (sqrt((GBCXL * GBCXL) + (GBCYL * GBCYL)) / cos((tempA - tempB) / 2.0) * cos(-(tempA + tempB) / 2.0 + tempangleXY));
+				
 				GBCXL = (lthXY * cos(tempangleXY));
 				GBCYL = (lthXY * sin(tempangleXY));
 			}
