@@ -944,10 +944,8 @@ function segmentRegions(clusterNo, sideNo) {
     boundaryArray.push(tempArray);
   }
   console.log(boundaryArray);
-
-  // Transform boundary coordinates to original feature space
   
-  // Inverse scaling of coordinates
+  // Inverse scaling of coordinates to get back GBC feature space coordinates
   var colorSpaceWidth = 400;//document.getElementById(this.iconColorSpaceContainerId).clientWidth;
   var colorSpaceHeight = 400;//this.colorSpaceWidth;
   var diameter = Math.round(colorSpaceHeight * 2.4 / 3.1);
