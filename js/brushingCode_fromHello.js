@@ -976,6 +976,151 @@ function getGBCCoords(elementArray) {
   return [GBCXL, GBCYL];
 }
 
+// Check if a point is inside a polygon with 4 vertices
+function pnpoly4(polyX14, polyY14, testx, testy) {
+  let c = false;
+
+  // Check first edge (between point 0 and point 3)
+  if (((polyY14[0] > testy) !== (polyY14[3] > testy)) && 
+      (testx < (polyX14[3] - polyX14[0]) * (testy - polyY14[3]) / (polyY14[3] - polyY14[0]) + polyX14[0])) {
+      c = !c;
+  }
+
+  // Loop through the remaining edges (between points i and i-1)
+  for (let i = 1; i < 4; i++) {
+      if (((polyY14[i] > testy) !== (polyY14[i - 1] > testy)) && 
+          (testx < (polyX14[i - 1] - polyX14[i]) * (testy - polyY14[i]) / (polyY14[i - 1] - polyY14[i]) + polyX14[i])) {
+          c = !c;
+      }
+  }
+
+  return c;
+}
+
+// Check if a point is inside a polygon with 5 vertices
+function pnpoly5(polyX15, polyY15, testx, testy) {
+  let c = false;
+
+  // Check first edge (between point 0 and point 4)
+  if (((polyY15[0] > testy) !== (polyY15[4] > testy)) &&
+      (testx < (polyX15[4] - polyX15[0]) * (testy - polyY15[4]) / (polyY15[4] - polyY15[0]) + polyX15[0])) {
+      c = !c;
+  }
+
+  // Loop through the remaining edges (between points i and i-1)
+  for (let i = 1; i < 5; i++) {
+      if (((polyY15[i] > testy) !== (polyY15[i - 1] > testy)) &&
+          (testx < (polyX15[i - 1] - polyX15[i]) * (testy - polyY15[i]) / (polyY15[i - 1] - polyY15[i]) + polyX15[i])) {
+          c = !c;
+      }
+  }
+
+  return c;
+}
+
+// Check if a point is inside a polygon with 6 vertices
+function pnpoly6(polyX16, polyY16, testx, testy) {
+  let c = false;
+
+  // Check first edge (between point 0 and point 5)
+  if (((polyY16[0] > testy) !== (polyY16[5] > testy)) &&
+      (testx < (polyX16[5] - polyX16[0]) * (testy - polyY16[5]) / (polyY16[5] - polyY16[0]) + polyX16[0])) {
+      c = !c;
+  }
+
+  // Loop through the remaining edges (between points i and i-1)
+  for (let i = 1; i < 6; i++) {
+      if (((polyY16[i] > testy) !== (polyY16[i - 1] > testy)) &&
+          (testx < (polyX16[i - 1] - polyX16[i]) * (testy - polyY16[i]) / (polyY16[i - 1] - polyY16[i]) + polyX16[i])) {
+          c = !c;
+      }
+  }
+
+  return c;
+}
+
+// Check if a point is inside a polygon with 7 vertices
+function pnpoly7(polyX17, polyY17, testx, testy) {
+  let c = false;
+
+  // Check first edge (between point 0 and point 6)
+  if (((polyY17[0] > testy) !== (polyY17[6] > testy)) &&
+      (testx < (polyX17[6] - polyX17[0]) * (testy - polyY17[6]) / (polyY17[6] - polyY17[0]) + polyX17[0])) {
+      c = !c;
+  }
+
+  // Loop through the remaining edges (between points i and i-1)
+  for (let i = 1; i < 7; i++) {
+      if (((polyY17[i] > testy) !== (polyY17[i - 1] > testy)) &&
+          (testx < (polyX17[i - 1] - polyX17[i]) * (testy - polyY17[i]) / (polyY17[i - 1] - polyY17[i]) + polyX17[i])) {
+          c = !c;
+      }
+  }
+
+  return c;
+}
+
+// Check if voxel in volume is part of any cluster 
+function checkPNP(clusterNo, sideNo, newBoundaryArray, testx, testy){
+  if (sideNo == 5){
+    var polyX = [];
+    var polyY = [];
+    for(var i=0; i<clusterNo; i++){
+      polyX[i] = [];
+      polyY[i] = [];
+      for(var j=0; j<sideNo-1; j++){
+        polyX[i].push(newBoundaryArray[i][j][0]);
+        polyY[i].push(newBoundaryArray[i][j][1]);
+      }
+    }
+
+    var pointIO1 = pnpoly4(polyX[0], polyY[0], testx, testy);
+    if(pointIO1 == true){
+      // console.log("Point inside Cluster 1");
+      return 1;
+    }
+    else if(polyX[1] != undefined){
+      var pointIO2 = pnpoly4(polyX[1], polyY[1], testx, testy);
+      if(pointIO2 == true){
+        // console.log("Point inside Cluster 2");
+        return 2;
+      }
+      else if(polyX[2] != undefined){
+        var pointIO3 = pnpoly4(polyX[2], polyY[2], testx, testy);
+        if(pointIO3 == true){
+          // console.log("Point inside Cluster 3");
+          return 3;
+        }
+        else if(polyX[3] != undefined){
+          var pointIO4 = pnpoly4(polyX[3], polyY[3], testx, testy);
+          if(pointIO4 == true){
+            // console.log("Point inside Cluster 4");
+            return 4;
+          }
+          else if(polyX[4] != undefined){
+            var pointIO5 = pnpoly4(polyX[4], polyY[4], testx, testy);
+            if(pointIO5 == true){
+              // console.log("Point inside Cluster 5");
+              return 5;
+            }
+          }
+        }
+      }
+    }
+    // console.log("Point outside all clusters");
+    return 0;
+  }
+  else if (sideNo == 6){
+    pnpoly5(polyX15, polyY15, testx, testy);
+  }
+  else if (sideNo == 7){
+    pnpoly6(polyX16, polyY16, testx, testy);
+  }
+  else if (sideNo == 8){
+    pnpoly7(polyX17, polyY17, testx, testy);
+  }
+}
+
 // Implement rehgion growing algorithm on volume in here
 function segmentRegions(clusterNo, sideNo) {
   console.log("Segment Regions");
@@ -1006,7 +1151,7 @@ function segmentRegions(clusterNo, sideNo) {
   const value6 = getElement(data, shape, [0, 0, 0, 1]);
   const value7 = getElement(data, shape, [0, 0, 0, 2]);
   const value8 = getElement(data, shape, [0, 0, 0, 3]);
-  console.log(value5, value6, value7, value8);
+  // console.log(value5, value6, value7, value8);
 
 
   // Get the GBC feature space coordinates corresponding to the volume coordinates
@@ -1040,7 +1185,6 @@ function segmentRegions(clusterNo, sideNo) {
         // return x and y coordinates of the GBC feature space
         if(isNanValue == false){
           voxelGBCArray[i][j][k] = getGBCCoords(elementArray);
-          // voxelGBCArray[i][j][k] = [0, 0];
         }
         // If NaN value is present, assign 0 to the x and y coordinates
         else{
@@ -1049,7 +1193,7 @@ function segmentRegions(clusterNo, sideNo) {
       }
     }
   }
-  console.log(voxelGBCArray);
+  // console.log(voxelGBCArray);
 
   // ----------------------------------------------------------------------------------------------------
 
@@ -1093,16 +1237,34 @@ function segmentRegions(clusterNo, sideNo) {
   var scaleGBC2Canvas = d3.scale.linear().domain([-1, 1]).range([xoffset, xoffset + diameter]);
 
   newBoundaryArray = [];
-  for(i=0; i<clusterNo; i++){
+  for(var i=0; i<clusterNo; i++){
     newBoundaryArray[i] = [];
-    for(j=0; j<sideNo; j++){
+    for(var j=0; j<sideNo; j++){
       newBoundaryArray[i][j] = [];
       newBoundaryArray[i][j][0] = scaleGBC2Canvas.invert(boundaryArray[i][j][0]);
       newBoundaryArray[i][j][1] = scaleGBC2Canvas.invert(boundaryArray[i][j][1]);
     }
   }
-  console.log(newBoundaryArray);
+  // console.log(newBoundaryArray);
 
-  // Implement PNP algorithm here
-  
+  // ----------------------------------------------------------------------------------------------------
+  // Call PNP algorithm function here
+  console.log("Call PNP function");
+  for(var i=0; i<shape[0]; i++){
+    for(var j=0; j<shape[1]; j++){
+      for(var k=0; k<shape[2]; k++){
+        var testx = voxelGBCArray[i][j][k][0];
+        var testy = voxelGBCArray[i][j][k][1];
+        if (testx == 0 && testy == 0){
+          voxelGBCArray[i][j][k].push(-1);
+        }
+        else{
+          pointInCluster = checkPNP(clusterNo, sideNo, newBoundaryArray, testx, testy);
+          voxelGBCArray[i][j][k].push(pointInCluster);
+        }
+      }
+    }
+  }
+  // console.log(voxelGBCArray);
+  console.log("All points checked");
 }
