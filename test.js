@@ -819,9 +819,9 @@ const fragmentShaderSecondPass = /*glsl*/ `
 						flag = true;
 					}
 					if (flag == true)
-							break;
+						break;
 				}
-				
+
 				if (flag == false)
 				{
 					tempA = angle[0] + PI * 2.0;

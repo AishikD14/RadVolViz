@@ -35,7 +35,7 @@ index = np.unravel_index(np.argmax(volume == value_to_find), volume.shape)
 # print("Index of first occurrence of value 128:", index)
 
 # Save the original volume as a NumPy file
-np.save('volume.npy', volume)
+# np.save('volume.npy', volume)
 
 # Print value of all channels at a specific location
 z, y, x = 100, 100, 101
@@ -60,10 +60,15 @@ print("Normalized Volume Min Value:", np.min(volume_normalized))
 print("Normalized Volume Max Value:", np.max(volume_normalized))
 
 # Print value of all channels at a specific location
-z, y, x = 100, 100, 101
+z, y, x = 83, 76, 128
 print("Values at location (100, 100, 100):", volume_normalized[z, y, x])
 
 # Save the normalized volume
-np.save('normalized_volume.npy', volume_normalized)
+# np.save('normalized_volume.npy', volume_normalized)
+
+# Print index of first occurrence of a non NaN value
+index = np.unravel_index(np.argmax(~np.isnan(volume_normalized)), volume_normalized.shape)
+print("Index of first occurrence of a non NaN value:", index)
+print("Value at index:", volume_normalized[index])
 
 # --------------------------------------------------------------------------------------------

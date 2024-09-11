@@ -238,7 +238,7 @@ function helloWorld() {
     // ##########################################################
     console.log("Final data for Information Display by performing downsamling by histogram");
     console.log(Q.length);
-    console.log(Q);
+    // console.log(Q);
     // ##########################################################
 
     // Plot the scatter dots on the color space

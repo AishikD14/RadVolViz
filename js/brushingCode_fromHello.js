@@ -19,7 +19,7 @@ function brushingCode() {
     guiControls.startY = startPoint[1];
 
     if (polyG.select('g.drawPoly').empty()) {
-      console.log("drawpoly")
+      // console.log("drawpoly")
       g4 = polyG.append('g').attr('class', 'drawPoly');
     }
 
@@ -888,6 +888,94 @@ function checkClusterCompletion() {
   }
 }
 
+// Get GBC feature space coordinates from the volume voxel values
+function getGBCCoords(elementArray) {
+  var n = elementArray.length;
+
+  var angle = new Array(n)
+  angle[0] = Math.PI / 2 + guiControls.rotateVar3D / 57.32;
+
+  var GBCXL = 0.0;
+  var GBCYL = 0.0;
+
+  // Create new array of shape(n, 2)
+  var GBCX = new Array(n);
+  var GBCY = new Array(n);
+
+  GBCX[0] = Math.cos(angle[0]);
+  GBCY[0] = Math.sin(angle[0]);
+
+  for (var i = 1; i < n; i++) {
+    angle[i] = angle[i - 1] - 2 * Math.PI / n;
+    GBCX[i] = Math.cos(angle[i]) * 0.997;
+    GBCY[i] = Math.sin(angle[i]) * 0.997;
+  }
+
+  for (var i = 0; i < n; i++) {
+    if (angle[i] < 0) {
+        angle[i] = angle[i] + Math.PI * 2;
+    }
+    if (angle[i] > Math.PI * 2) {
+        angle[i] = angle[i] - Math.PI * 2;
+    }
+  }
+
+  angle.sort();
+
+  var tempsumXY = 0;
+  // Add all the metal ratios for the voxel
+  for (var j = 0; j < n; j++) {
+    tempsumXY = tempsumXY + parseFloat(elementArray[j]);
+  }
+
+  // If the sum of the metal ratios is 0, set the first 2 dimensions to 0
+  if (tempsumXY == 0) {
+    GBCXL = 0.0;
+    GBCYL = 0.0;
+  }
+
+  // Else, calculate the first 2 dimensions based on the metal ratios
+  else {
+    for (var k = 0; k < n; k++) {
+      GBCXL = GBCXL + (elementArray[k] / tempsumXY) * GBCX[k];
+      GBCYL = GBCYL + (elementArray[k] / tempsumXY) * GBCY[k];
+    }
+
+    var tempangleXY = Math.atan2(GBCYL, GBCXL);
+
+    if (tempangleXY < 0) { 
+      tempangleXY = tempangleXY + Math.PI * 2; 
+    }
+
+    var flag = false;
+    var tempA = 0;
+    var tempB = 0;
+
+    for (var j = 0; j < n - 1; j++) {
+      if ((tempangleXY > angle[j] || tempangleXY == angle[j]) && (tempangleXY < angle[j + 1])) {
+          tempA = angle[j + 1];
+          tempB = angle[j];
+          flag = true;
+      }
+
+      if (flag == true)
+        break;
+    }
+
+    if (flag == false) {
+        tempA = angle[0] + Math.PI * 2;
+        tempB = angle[n - 1];
+    }
+
+    var lthXY = (Math.sqrt((GBCXL * GBCXL) + (GBCYL * GBCYL)) / Math.cos((tempA - tempB) / 2) * Math.cos(-(tempA + tempB) / 2 + tempangleXY));
+    
+    GBCXL = (lthXY * Math.cos(tempangleXY));
+    GBCYL = (lthXY * Math.sin(tempangleXY));
+  }
+
+  return [GBCXL, GBCYL];
+}
+
 // Implement rehgion growing algorithm on volume in here
 function segmentRegions(clusterNo, sideNo) {
   console.log("Segment Regions");
@@ -906,12 +994,64 @@ function segmentRegions(clusterNo, sideNo) {
   const shape = window.npArray.shape;  // [d1, d2, d3, d4]
   const data = window.npArray.data;    // TypedArray with flattened data
 
-  // Access element at indices [0, 0, 0, 0]
+  // Access elements at indices [100, 100, 100]
   const value1 = getElement(data, shape, [100, 100, 100, 0]);
   const value2 = getElement(data, shape, [100, 100, 100, 1]);
   const value3 = getElement(data, shape, [100, 100, 100, 2]);
   const value4 = getElement(data, shape, [100, 100, 100, 3]);
-  console.log(value1, value2, value3, value4);
+  // console.log(value1, value2, value3, value4);
+
+  // Access elements at indices [0, 0, 0, 0]
+  const value5 = getElement(data, shape, [0, 0, 0, 0]);
+  const value6 = getElement(data, shape, [0, 0, 0, 1]);
+  const value7 = getElement(data, shape, [0, 0, 0, 2]);
+  const value8 = getElement(data, shape, [0, 0, 0, 3]);
+  console.log(value5, value6, value7, value8);
+
+
+  // Get the GBC feature space coordinates corresponding to the volume coordinates
+  var voxelGBCArray = [];
+  var elementArray = new Array(shape[3]);
+  
+  for(i=0; i<shape[0]; i++){
+    voxelGBCArray[i] = [];
+
+    for(j=0; j<shape[1]; j++){
+      voxelGBCArray[i][j] = [];
+
+      for(k=0; k<shape[2]; k++){
+        voxelGBCArray[i][j][k] = [];
+        isNanValue = false;
+
+        for(l=0; l<shape[3]; l++){
+          element = getElement(data, shape, [i, j, k, l]);
+
+          // Check if element is NaN
+          if(isNaN(element)){
+            isNanValue = true;
+            break;
+          }
+
+          else{
+            elementArray[l] = element;
+          }
+        }
+
+        // return x and y coordinates of the GBC feature space
+        if(isNanValue == false){
+          voxelGBCArray[i][j][k] = getGBCCoords(elementArray);
+          // voxelGBCArray[i][j][k] = [0, 0];
+        }
+        // If NaN value is present, assign 0 to the x and y coordinates
+        else{
+          voxelGBCArray[i][j][k] = [0, 0];
+        }
+      }
+    }
+  }
+  console.log(voxelGBCArray);
+
+  // ----------------------------------------------------------------------------------------------------
 
   // Load boundary coordinates to array
   var boundaryArray = [];
@@ -943,7 +1083,7 @@ function segmentRegions(clusterNo, sideNo) {
     }
     boundaryArray.push(tempArray);
   }
-  console.log(boundaryArray);
+  // console.log(boundaryArray);
   
   // Inverse scaling of coordinates to get back GBC feature space coordinates
   var colorSpaceWidth = 400;//document.getElementById(this.iconColorSpaceContainerId).clientWidth;
@@ -963,5 +1103,6 @@ function segmentRegions(clusterNo, sideNo) {
   }
   console.log(newBoundaryArray);
 
-
+  // Implement PNP algorithm here
+  
 }
