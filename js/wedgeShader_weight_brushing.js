@@ -56,6 +56,7 @@ function init() {
 		this.passB = 0.0;
 		this.passC = 0.0;
 		this.passD = 0.0;
+		// this.volumeTex;
 
 		this.minCe = 0.0;
 		this.maxCe = 1.0;
@@ -203,8 +204,6 @@ function init() {
 		this.y57 = 0.0;
 		this.y58 = 0.0;
 		this.y59 = 0.0;
-
-
 	};
 
 	container = document.getElementById('container');
@@ -597,6 +596,7 @@ cubeTextures['Default'].generateMipmaps = false;
 
 			cubeTex2: { type: "t", value: cubeTextures['d3'] },
 			cubeTex: { type: "t", value: cubeTextures['Default'] },
+			volumeTex: { type: "t", value: window.volumeTexture },
 
 			transferTex: { type: "t", value: transferTexture },
 			steps: { type: "1f", value: guiControls.steps },

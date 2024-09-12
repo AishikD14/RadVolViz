@@ -1464,4 +1464,43 @@ function segmentRegions(clusterNo, sideNo) {
   // a.click();
 
   // ----------------------------------------------------------------------------------------------------
+
+  // Function to create array of 2D textures from 3D volume data
+  create2dTextures(clusterData)
+  console.log("Textures created");
+}
+
+// Function to create array of 2D textures from 3D volume data
+function create2dTextures(volumeData){
+  const volumeWidth = volumeData.length;        // X dimension
+  const volumeHeight = volumeData[0].length;    // Y dimension
+  const volumeDepth = volumeData[0][0].length;  // Z dimension
+
+  // Create a 2D texture by packing 3D data into slices of a 2D texture
+  const textureSize = volumeWidth * volumeDepth;
+  const textureData = new Uint8Array(textureSize * volumeHeight * 4); // RGBA texture
+
+  // Pack the 3D volume data into the 2D texture
+  for (let z = 0; z < volumeDepth; z++) {
+    for (let y = 0; y < volumeHeight; y++) {
+      for (let x = 0; x < volumeWidth; x++) {
+        const clusterId = volumeData[x][y][z]; // Access your volumeData
+        const textureIndex = (x + z * volumeWidth + y * textureSize) * 4; // Index in 2D texture
+  
+        textureData[textureIndex] = clusterId;   // Store cluster ID in Red channel
+        textureData[textureIndex + 1] = 0;       // Unused
+        textureData[textureIndex + 2] = 0;       // Unused
+        textureData[textureIndex + 3] = 255;     // Full alpha
+      }
+    }
+  }
+
+  // Create a WebGL texture from the packed 2D texture data
+  window.volumeTexture = new THREE.DataTexture(
+    textureData,
+    textureSize,
+    volumeHeight,
+    THREE.RGBAFormat
+  );
+  window.volumeTexture.needsUpdate = true;
 }
