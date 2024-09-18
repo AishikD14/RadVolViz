@@ -56,7 +56,7 @@ function init() {
 		this.passB = 0.0;
 		this.passC = 0.0;
 		this.passD = 0.0;
-		// this.volumeTex;
+		this.clusterMarkingComplete = 0.0;
 
 		this.minCe = 0.0;
 		this.maxCe = 1.0;
@@ -741,7 +741,8 @@ cubeTextures['Default'].generateMipmaps = false;
 			passC: { type: "1f", value: guiControls.passC },
 			passD: { type: "1f", value: guiControls.passD },
 			stDev: { type: "1f", value: guiControls.stDev },
-			defaultLens: { type: "bool", value: guiControls.defaultLens }
+			defaultLens: { type: "bool", value: guiControls.defaultLens },
+			clusterMarkingComplete: { type: "1f", value: guiControls.clusterMarkingComplete }
 		}
 	});
 
@@ -852,6 +853,10 @@ cubeTextures['Default'].generateMipmaps = false;
 	renderer = new THREE.WebGLRenderer({ alpha: true });
 	// We append the canvas present in the renderer to the container div
 	container.appendChild(renderer.domElement);
+	// const gl = renderer.getContext();
+	// const maxTextureSize = gl.getParameter(gl.MAX_TEXTURE_SIZE);
+	// console.log('Max texture size:', maxTextureSize);
+
 
 	// --------------------------------------------------------------------------------------------
 	// Create the stats panel to show the performance of the rendering

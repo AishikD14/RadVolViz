@@ -160,7 +160,7 @@
 	<script id="fragmentShaderSecondPass" type="x-shader/x-fragment">
 		varying vec3 worldSpaceCoords;
 		varying vec4 projectedCoords;
-		uniform sampler2D tex, cubeTex, transferTex, cubeTex2;
+		uniform sampler2D tex, cubeTex, transferTex, cubeTex2, volumeTex;
 		uniform float steps;
 		uniform float alphaCorrection;
 		uniform float rangeVal;
@@ -190,6 +190,7 @@
 		vec3 varSample;
 		vec3 secSample;
 		uniform bool defaultLens;
+		uniform float clusterMarkingComplete;
 
 		uniform float minCe;
 		uniform float maxCe;
@@ -319,83 +320,152 @@
 		//Acts like a texture3D using Z slices and trilinear filtering.
 		vec4 sampleAs3DTexture( vec3 texCoord )
 		{
-			vec4 colorSlice1, colorSlice2, colorSlice3, colorSlice4;
+			vec4 colorSlice1, colorSlice2;
 			vec2 texCoordSlice1, texCoordSlice2;
 
-			//The z coordinate determines which Z slice we have to look for.
-			//Z slice number goes from 0 to 255, floor is used to get the integer value, effectively identifying which slice to sample.
-			float zSliceNumber1 = floor(texCoord.z  * 255.0);
+			float zSliceNumber1, zSliceNumber2, zDifference;
+			float volumeDepth = 256.0;
+			float volumeHeight = 256.0;
+			float volumeWidth = 256.0;
 
-			//As we use trilinear we go the next Z slice.
-			float zSliceNumber2 = min( zSliceNumber1 + 1.0, 255.0); //Clamp to 255
+			if (brushMode == 2.0) 
+			{
+				// If using THREE.DataTexture, directly sample the 2D texture with 3D coordinates
+				//zSliceNumber1 = floor(texCoord.z * (volumeDepth - 1.0));  // Adjust for DataTexture depth
+		
+				// Sample from the DataTexture
+				//colorSlice1 = texture2D(volumeTex, vec2(texCoord.x, (zSliceNumber1 + texCoord.y) / volumeHeight));
 
-			//The Z slices are stored in a matrix of 16x16 of Z slices.
-			//The original UV coordinates have to be rescaled by the tile numbers in each row and column.
-			//This scaling adjusts the UV coordinates to fit within a single tile in the mosaic.
-			texCoord.xy /= 16.0;
+				//vec2 uv = vec2((texCoord.x + zSliceNumber1 * volumeWidth) / (volumeWidth * volumeDepth), texCoord.y / volumeHeight);
+				//colorSlice1 = texture2D(volumeTex, uv);
 
-			texCoordSlice1 = texCoordSlice2 = texCoord.xy;
+				//return colorSlice1;
 
-			//Add an offset to the original UV coordinates depending on the row and column number.
-			texCoordSlice1.x += (mod(zSliceNumber1, 16.0 ) / 16.0);
-			texCoordSlice1.y += floor((255.0 - zSliceNumber1) / 16.0) / 16.0;
+				// Compute the grid position for the Z-slice
+				float zSliceNumber = texCoord.z * float(volumeDepth - 1.0); // Get Z-slice index as float
+				int gridSize = 16; // Number of Z-slices in each row/column
+				float gridX = fract(zSliceNumber / float(gridSize)); // Equivalent to zSliceNumber % gridSize
+				float gridY = floor(zSliceNumber / float(gridSize)); // Equivalent to zSliceNumber / gridSize
 
-			texCoordSlice2.x += (mod(zSliceNumber2, 16.0 ) / 16.0);
-			texCoordSlice2.y += floor((255.0 - zSliceNumber2) / 16.0) / 16.0;
 
-			//Get the opacity value from the 2D texture.
-			//Bilinear filtering is done at each texture2D by default.
-			colorSlice1 = texture2D( cubeTex, texCoordSlice1 );
-			colorSlice2 = texture2D( cubeTex, texCoordSlice2 );
+				// Compute the texture coordinates for the current voxel
+				vec2 sliceUV = vec2(texCoord.x + gridX / float(gridSize), texCoord.y + gridY / float(gridSize));
 
-			colorSlice3 = texture2D( cubeTex2, texCoordSlice1 );
-			colorSlice4 = texture2D( cubeTex2, texCoordSlice2 );
+				// Sample the 2D texture
+				vec4 colorSlice = texture2D(volumeTex, sliceUV);
 
-			//How distant is zSlice1 to ZSlice2. Used to interpolate between one Z slice and the other.
-			float zDifference = mod(texCoord.z * 255.0, 1.0);
+				return colorSlice;
+			} 
+			else 
+			{
+				//The z coordinate determines which Z slice we have to look for.
+				//Z slice number goes from 0 to 255, floor is used to get the integer value, effectively identifying which slice to sample.
+				zSliceNumber1 = floor(texCoord.z  * 255.0);
 
-			//Finally interpolate between the two intermediate colors of each Z slice.
-			return mix(colorSlice1, colorSlice2, zDifference) ;
+				//As we use trilinear we go the next Z slice.
+				zSliceNumber2 = min(zSliceNumber1 + 1.0, 255.0);
+		
+				//The Z slices are stored in a matrix of 16x16 of Z slices.
+				//The original UV coordinates have to be rescaled by the tile numbers in each row and column.
+				//This scaling adjusts the UV coordinates to fit within a single tile in the mosaic.
+				texCoord.xy /= 16.0;
+
+				texCoordSlice1 = texCoordSlice2 = texCoord.xy;
+		
+				//Add an offset to the original UV coordinates depending on the row and column number.
+				texCoordSlice1.x += (mod(zSliceNumber1, 16.0 ) / 16.0);
+				texCoordSlice1.y += floor((255.0 - zSliceNumber1) / 16.0) / 16.0;
+		
+				texCoordSlice2.x += (mod(zSliceNumber2, 16.0 ) / 16.0);
+				texCoordSlice2.y += floor((255.0 - zSliceNumber2) / 16.0) / 16.0;
+		
+				//Get the opacity value from the 2D texture.
+				//Bilinear filtering is done at each texture2D by default.
+				colorSlice1 = texture2D( cubeTex, texCoordSlice1 );
+				colorSlice2 = texture2D( cubeTex, texCoordSlice2 );
+
+				//How distant is zSlice1 to ZSlice2. Used to interpolate between one Z slice and the other.
+				zDifference = mod(texCoord.z * 255.0, 1.0);
+
+				//Finally interpolate between the two intermediate colors of each Z slice.
+				return mix(colorSlice1, colorSlice2, zDifference) ;
+			}
+
+			
 		}
 
 		vec4 sampleAs3DTexture2( vec3 texCoord )
 		{
-			vec4 colorSlice1, colorSlice2, colorSlice3, colorSlice4;
+			vec4 colorSlice3, colorSlice4;
 			vec2 texCoordSlice1, texCoordSlice2;
 
-			//The z coordinate determines which Z slice we have to look for.
-			//Z slice number goes from 0 to 255.
-			float zSliceNumber1 = floor(texCoord.z  * 255.0);
+			float zSliceNumber1, zSliceNumber2, zDifference;
+			float volumeDepth = 256.0;
+			float volumeHeight = 256.0;
+			float volumeWidth = 256.0;
 
-			//As we use trilinear we go the next Z slice.
-			float zSliceNumber2 = min( zSliceNumber1 + 1.0, 255.0); //Clamp to 255
+			if (brushMode == 2.0) 
+			{
+				// If using THREE.DataTexture, directly sample the 2D texture with 3D coordinates
+				//zSliceNumber1 = floor(texCoord.z * (volumeDepth - 1.0));  // Adjust for DataTexture depth
+		
+				// Sample from the DataTexture
+				//colorSlice3 = texture2D(volumeTex, vec2(texCoord.x, (zSliceNumber1 + texCoord.y) / volumeHeight));
 
-			//The Z slices are stored in a matrix of 16x16 of Z slices.
-			//The original UV coordinates have to be rescaled by the tile numbers in each row and column.
-			texCoord.xy /= 16.0;
+				//vec2 uv = vec2((texCoord.x + zSliceNumber1 * volumeWidth) / (volumeWidth * volumeDepth), texCoord.y / volumeHeight);
+				//colorSlice3 = texture2D(volumeTex, uv);
 
-			texCoordSlice1 = texCoordSlice2 = texCoord.xy;
+				//return colorSlice3;
 
-			//Add an offset to the original UV coordinates depending on the row and column number.
-			texCoordSlice1.x += (mod(zSliceNumber1, 16.0 ) / 16.0);
-			texCoordSlice1.y += floor((255.0 - zSliceNumber1) / 16.0) / 16.0;
+				// Compute the grid position for the Z-slice
+				float zSliceNumber = texCoord.z * float(volumeDepth - 1.0); // Get Z-slice index as float
+				int gridSize = 16; // Number of Z-slices in each row/column
+				float gridX = fract(zSliceNumber / float(gridSize)); // Equivalent to zSliceNumber % gridSize
+				float gridY = floor(zSliceNumber / float(gridSize)); // Equivalent to zSliceNumber / gridSize
 
-			texCoordSlice2.x += (mod(zSliceNumber2, 16.0 ) / 16.0);
-			texCoordSlice2.y += floor((255.0 - zSliceNumber2) / 16.0) / 16.0;
 
-			//Get the opacity value from the 2D texture.
-			//Bilinear filtering is done at each texture2D by default.
-			colorSlice1 = texture2D( cubeTex, texCoordSlice1 );
-			colorSlice2 = texture2D( cubeTex, texCoordSlice2 );
+				// Compute the texture coordinates for the current voxel
+				vec2 sliceUV = vec2(texCoord.x + gridX / float(gridSize), texCoord.y + gridY / float(gridSize));
 
-			colorSlice3 = texture2D( cubeTex2, texCoordSlice1 );
-			colorSlice4 = texture2D( cubeTex2, texCoordSlice2 );
+				// Sample the 2D texture
+				vec4 colorSlice = texture2D(volumeTex, sliceUV);
 
-			//How distant is zSlice1 to ZSlice2. Used to interpolate between one Z slice and the other.
-			float zDifference = mod(texCoord.z * 255.0, 1.0);
+				return colorSlice;
+			} 
+			else 
+			{
+				//The z coordinate determines which Z slice we have to look for.
+				//Z slice number goes from 0 to 255, floor is used to get the integer value, effectively identifying which slice to sample.
+				zSliceNumber1 = floor(texCoord.z  * 255.0);
 
-			//Finally interpolate between the two intermediate colors of each Z slice.
-			return mix(colorSlice3, colorSlice4, zDifference) ;
+				//As we use trilinear we go the next Z slice.
+				zSliceNumber2 = min(zSliceNumber1 + 1.0, 255.0);
+		
+				//The Z slices are stored in a matrix of 16x16 of Z slices.
+				//The original UV coordinates have to be rescaled by the tile numbers in each row and column.
+				//This scaling adjusts the UV coordinates to fit within a single tile in the mosaic.
+				texCoord.xy /= 16.0;
+
+				texCoordSlice1 = texCoordSlice2 = texCoord.xy;
+		
+				//Add an offset to the original UV coordinates depending on the row and column number.
+				texCoordSlice1.x += (mod(zSliceNumber1, 16.0 ) / 16.0);
+				texCoordSlice1.y += floor((255.0 - zSliceNumber1) / 16.0) / 16.0;
+		
+				texCoordSlice2.x += (mod(zSliceNumber2, 16.0 ) / 16.0);
+				texCoordSlice2.y += floor((255.0 - zSliceNumber2) / 16.0) / 16.0;
+		
+				//Get the opacity value from the 2D texture.
+				//Bilinear filtering is done at each texture2D by default.
+				colorSlice3 = texture2D( cubeTex2, texCoordSlice1 );
+				colorSlice4 = texture2D( cubeTex2, texCoordSlice2 );
+
+				//How distant is zSlice1 to ZSlice2. Used to interpolate between one Z slice and the other.
+				zDifference = mod(texCoord.z * 255.0, 1.0);
+
+				//Finally interpolate between the two intermediate colors of each Z slice.
+				return mix(colorSlice3, colorSlice4, zDifference) ;
+			}
 		}
 
       	float HueToRgb(float p, float q, float t)
@@ -807,78 +877,81 @@
 			float datam[8];
 			
 			// Perform normalization based on threshold if outside the range
-			if (colorSample.r < minCe){
-				colorSample.r = 0.0;
-			}
-			if (colorSample.g < minCo){
-				colorSample.g = 0.0;
-			}
-			if (colorSample.b < minFe){
-				colorSample.b = 0.0;
-			}
-			if (colorSample.a < minGd){
-				colorSample.a = 0.0;
-			}
+			if (brushMode != 2.0)
+			{
+				if (colorSample.r < minCe){
+					colorSample.r = 0.0;
+				}
+				if (colorSample.g < minCo){
+					colorSample.g = 0.0;
+				}
+				if (colorSample.b < minFe){
+					colorSample.b = 0.0;
+				}
+				if (colorSample.a < minGd){
+					colorSample.a = 0.0;
+				}
 
-			if (colorSample2.r < minGd){
-				colorSample2.r = 0.0;
-			}
+				if (colorSample2.r < minGd){
+					colorSample2.r = 0.0;
+				}
 
-			if (colorSample.r > maxCe){
-				colorSample.r = 0.0;
-			}
-			if (colorSample.g > maxCo){
-				colorSample.g = 0.0;
-			}
-			if (colorSample.b > maxFe){
-				colorSample.b = 0.0;
-			}
+				if (colorSample.r > maxCe){
+					colorSample.r = 0.0;
+				}
+				if (colorSample.g > maxCo){
+					colorSample.g = 0.0;
+				}
+				if (colorSample.b > maxFe){
+					colorSample.b = 0.0;
+				}
 
-			if (colorSample2.r > maxGd){
-				colorSample2.r = 0.0;
-			}
+				if (colorSample2.r > maxGd){
+					colorSample2.r = 0.0;
+				}
 
-			if (colorSample.r < rangeVal){
-				colorSample.r = 0.0;
-			}
-			if (colorSample.g < rangeVal){
-				colorSample.g = 0.0;
-			}
-			if (colorSample.b < rangeVal){
-				colorSample.b = 0.0;
-			}
-			if (colorSample.a < rangeVal){
-				colorSample.a = 0.0;
-			}
+				if (colorSample.r < rangeVal){
+					colorSample.r = 0.0;
+				}
+				if (colorSample.g < rangeVal){
+					colorSample.g = 0.0;
+				}
+				if (colorSample.b < rangeVal){
+					colorSample.b = 0.0;
+				}
+				if (colorSample.a < rangeVal){
+					colorSample.a = 0.0;
+				}
 
-			if (colorSample2.r < rangeVal){
-				colorSample2.r = 0.0;
-			}
-			if (colorSample2.g < rangeVal){
-				colorSample2.g = 0.0;
-			}
-			if (colorSample2.b < rangeVal){
-				colorSample2.b = 0.0;
-			}
+				if (colorSample2.r < rangeVal){
+					colorSample2.r = 0.0;
+				}
+				if (colorSample2.g < rangeVal){
+					colorSample2.g = 0.0;
+				}
+				if (colorSample2.b < rangeVal){
+					colorSample2.b = 0.0;
+				}
 
-			if (colorSample.r > maxrangeVal){
-				colorSample.r = 0.0;
-			}
-			if (colorSample.g > maxrangeVal){
-				colorSample.g = 0.0;
-			}
-			if (colorSample.b > maxrangeVal){
-				colorSample.b = 0.0;
-			}
+				if (colorSample.r > maxrangeVal){
+					colorSample.r = 0.0;
+				}
+				if (colorSample.g > maxrangeVal){
+					colorSample.g = 0.0;
+				}
+				if (colorSample.b > maxrangeVal){
+					colorSample.b = 0.0;
+				}
 
-			if (colorSample2.r > maxrangeVal){
-				colorSample2.r = 0.0;
-			}
-			if (colorSample2.g > maxrangeVal){
-				colorSample2.g = 0.0;
-			}
-			if (colorSample2.b > maxrangeVal){
-				colorSample2.b = 0.0;
+				if (colorSample2.r > maxrangeVal){
+					colorSample2.r = 0.0;
+				}
+				if (colorSample2.g > maxrangeVal){
+					colorSample2.g = 0.0;
+				}
+				if (colorSample2.b > maxrangeVal){
+					colorSample2.b = 0.0;
+				}
 			}
 
 			// NOt being used
@@ -1467,7 +1540,7 @@
 
 			}
 
-			// // If polygon is of 7 sides and manual coloring is enabled
+			// If polygon is of 7 sides and manual coloring is enabled
 			if (polySide == 8.0 && brushMode == 1.0)
 			{
 				h = 0.0;
@@ -1605,6 +1678,189 @@
 				}
 
 			}
+
+			// ----------------------------------------------------------------------------------------------
+
+			// Define tolerance for comparison to account for floating-point precision issues
+			float epsilon = 0.001;
+
+			// Normalized clusterId values
+			float cluster0 = 0.0;
+			float cluster1 = 1.0 / 255.0;
+			float cluster2 = 2.0 / 255.0;
+			float cluster3 = 3.0 / 255.0;
+			float cluster4 = 4.0 / 255.0;
+			float cluster5 = 5.0 / 255.0;
+			float clusterOutlier = 50.0 / 255.0;
+
+			// Sample the red channel from the texture
+			float redValue = colorSample.r;
+			//gl_FragColor = vec4(redValue, 0.0, 0.0, 1.0);  // Output redValue for debugging
+
+
+			// If polygon is of 4 sides and region segmentation is enabled
+			if (polySide == 5.0 && brushMode == 2.0)
+			{
+				// Need to assign color to a voxel based on the region it belongs to
+				h = 0.0;
+				s = 0.0;
+				l = 0.0;
+
+				if (clusterMarkingComplete == 1.0)
+				{
+					if (abs(redValue - cluster0) < epsilon){
+						h = 0.0;
+						s = 0.0;
+						l = 0.0;
+					}
+					else if (abs(redValue - cluster1) < epsilon){
+						h = hslh1;
+						s = hsls1;
+						l = hsll;
+					}
+					else if (abs(redValue - cluster2) < epsilon){
+						h = hslh2;
+						s = hsls2;
+						l = hsll;
+					}
+					else if (abs(redValue - cluster3) < epsilon){
+						h = hslh3;
+						s = hsls3;
+						l = hsll;
+					}
+					else if (abs(redValue - cluster4) < epsilon){
+						h = hslh4;
+						s = hsls4;
+						l = hsll;
+					}
+					else if (abs(redValue - cluster5) < epsilon){
+						h = hslh5;
+						s = hsls5;
+						l = hsll;
+					}
+					else if (abs(redValue - clusterOutlier) < epsilon){
+						h = 0.0;
+						s = 0.0;
+						l = 0.0;
+					}
+				}
+			}
+
+			// If polygon is of 5 sides and region segmentation is enabled
+			if (polySide == 6.0 && brushMode == 2.0)
+			{
+				h = 0.0;
+				s = 0.0;
+				l = 0.0;
+
+				if (clusterMarkingComplete == 1.0)
+				{
+
+					if (colorSample.r == 1.0){
+						h = hslh1;
+						s = hsls1;
+						l = hsll;
+					}
+					if (colorSample.r == 2.0){
+						h = hslh2;
+						s = hsls2;
+						l = hsll;
+					}
+					if (colorSample.r == 3.0){
+						h = hslh3;
+						s = hsls3;
+						l = hsll;
+					}
+					if (colorSample.r == 4.0){
+						h = hslh4;
+						s = hsls4;
+						l = hsll;
+					}
+					if (colorSample.r == 5.0){
+						h = hslh5;
+						s = hsls5;
+						l = hsll;
+					}
+				}
+			}
+
+			// If polygon is of 6 sides and region segmentation is enabled
+			if (polySide == 7.0 && brushMode == 2.0)
+			{
+				h = 0.0;
+				s = 0.0;
+				l = 0.0;
+				
+				if (clusterMarkingComplete == 1.0)
+				{
+
+					if (colorSample.r == 1.0){
+						h = hslh1;
+						s = hsls1;
+						l = hsll;
+					}
+					if (colorSample.r == 2.0){
+						h = hslh2;
+						s = hsls2;
+						l = hsll;
+					}
+					if (colorSample.r == 3.0){
+						h = hslh3;
+						s = hsls3;
+						l = hsll;
+					}
+					if (colorSample.r == 4.0){
+						h = hslh4;
+						s = hsls4;
+						l = hsll;
+					}
+					if (colorSample.r == 5.0){
+						h = hslh5;
+						s = hsls5;
+						l = hsll;
+					}
+				}
+			}
+
+			// If polygon is of 7 sides and region segmentation is enabled
+			if (polySide == 8.0 && brushMode == 2.0)
+			{
+				h = 0.0;
+				s = 0.0;
+				l = 0.0;
+
+				if (clusterMarkingComplete == 1.0)
+				{
+
+					if (colorSample.r == 1.0){
+						h = hslh1;
+						s = hsls1;
+						l = hsll;
+					}
+					if (colorSample.r == 2.0){
+						h = hslh2;
+						s = hsls2;
+						l = hsll;
+					}
+					if (colorSample.r == 3.0){
+						h = hslh3;
+						s = hsls3;
+						l = hsll;
+					}
+					if (colorSample.r == 4.0){
+						h = hslh4;
+						s = hsls4;
+						l = hsll;
+					}
+					if (colorSample.r == 5.0){
+						h = hslh5;
+						s = hsls5;
+						l = hsll;
+					}
+				}
+			}
+
+			// ----------------------------------------------------------------------------------------------
 
 			HSL2IN.s = h/360.0;
 			HSL2IN.t = s;
@@ -1821,9 +2077,6 @@
 				//Get the voxel intensity value from the 3D texture.
 				colorSample = sampleAs3DTexture( currentPosition );
 				colorSample2 = sampleAs3DTexture2( currentPosition );
-
-				//console.log(colorSample);
-				//console.log(colorSample2);
 
 				if (modeGBC == 1.0)
 				{
@@ -2051,6 +2304,15 @@
 				// GUI controls have not changed, dont do anything
 			}
 			else {
+				// Print out which controls have changed
+				for (let key in guiControls) {
+					if (guiControls.hasOwnProperty(key) && newObj.hasOwnProperty(key)) {
+						if (guiControls[key] !== newObj[key]) {
+							console.log(`Control "${key}" changed from ${newObj[key]} to ${guiControls[key]}`);
+						}
+					}
+				}
+
 				// GUI controls have changed, perform necessary operations
 				Object.assign(newObj, guiControls)
 				helloWorld();
@@ -2071,6 +2333,9 @@
 
 			materialSecondPass.uniforms.modeGBC.value = guiControls.modeGBC;
 			materialSecondPass.uniforms.rotateVar3D.value = guiControls.rotateVar3D;
+
+			materialSecondPass.uniforms.volumeTex.value = window.volumeTexture;
+			materialSecondPass.uniforms.clusterMarkingComplete.value = guiControls.clusterMarkingComplete;
 
 			//  materialSecondPass.uniforms.colorSpaceWidth1.value = guiControls.colorSpaceWidth1;
 			materialSecondPass.uniforms.radialValue.value = guiControls.radialValue;

@@ -96,73 +96,88 @@ function brushingCode() {
   if (guiControls.polySide == 5.0) {
     if (pp1.length > 0) {
       guiControls.x1 = pp1[0][0];
-      guiControls.x2 = pp1[1][0];
-      guiControls.x3 = pp1[2][0];
-      guiControls.x4 = pp1[3][0];
-      guiControls.x5 = pp1[4][0];
-
       guiControls.y1 = pp1[0][1];
+
+      guiControls.x2 = pp1[1][0];
       guiControls.y2 = pp1[1][1];
+
+      guiControls.x3 = pp1[2][0];
       guiControls.y3 = pp1[2][1];
+
+      guiControls.x4 = pp1[3][0];
       guiControls.y4 = pp1[3][1];
-      guiControls.y5 = pp1[4][1];
+
+      // guiControls.x5 = pp1[4][0];
+      // guiControls.y5 = pp1[4][1];
 
     }
 
     if (pp2.length > 0) {
       guiControls.x11 = pp2[0][0];
-      guiControls.x12 = pp2[1][0];
-      guiControls.x13 = pp2[2][0];
-      guiControls.x14 = pp2[3][0];
-      guiControls.x15 = pp2[4][0];
-      
       guiControls.y11 = pp2[0][1];
+
+      guiControls.x12 = pp2[1][0];
       guiControls.y12 = pp2[1][1];
+
+      guiControls.x13 = pp2[2][0];
       guiControls.y13 = pp2[2][1];
+
+      guiControls.x14 = pp2[3][0];
       guiControls.y14 = pp2[3][1];
-      guiControls.y15 = pp2[4][1];
+
+      // guiControls.x15 = pp2[4][0];
+      // guiControls.y15 = pp2[4][1];
     }
 
     if (pp3.length > 0) {
       guiControls.x31 = pp3[0][0];
-      guiControls.x32 = pp3[1][0];
-      guiControls.x33 = pp3[2][0];
-      guiControls.x34 = pp3[3][0];
-      guiControls.x35 = pp3[4][0];
-
       guiControls.y31 = pp3[0][1];
+
+      guiControls.x32 = pp3[1][0];
       guiControls.y32 = pp3[1][1];
+
+      guiControls.x33 = pp3[2][0];
       guiControls.y33 = pp3[2][1];
+
+      guiControls.x34 = pp3[3][0];
       guiControls.y34 = pp3[3][1];
-      guiControls.y35 = pp3[4][1];
+
+      // guiControls.x35 = pp3[4][0];
+      // guiControls.y35 = pp3[4][1];
     }
 
     if (pp4.length > 0) {
       guiControls.x41 = pp4[0][0];
-      guiControls.x42 = pp4[1][0];
-      guiControls.x43 = pp4[2][0];
-      guiControls.x44 = pp4[3][0];
-      guiControls.x45 = pp4[4][0];
-
       guiControls.y41 = pp4[0][1];
+
+      guiControls.x42 = pp4[1][0];
       guiControls.y42 = pp4[1][1];
+
+      guiControls.x43 = pp4[2][0];
       guiControls.y43 = pp4[2][1];
+
+      guiControls.x44 = pp4[3][0];
       guiControls.y44 = pp4[3][1];
-      guiControls.y45 = pp4[4][1];
+
+      // guiControls.x45 = pp4[4][0];
+      // guiControls.y45 = pp4[4][1];
     }
 
     if (pp5.length > 0) {
       guiControls.x51 = pp5[0][0];
-      guiControls.x52 = pp5[1][0];
-      guiControls.x53 = pp5[2][0];
-      guiControls.x54 = pp5[3][0];
-      guiControls.x55 = pp5[4][0];
-
       guiControls.y51 = pp5[0][1];
+
+      guiControls.x52 = pp5[1][0];
       guiControls.y52 = pp5[1][1];
+
+      guiControls.x53 = pp5[2][0];
       guiControls.y53 = pp5[2][1];
+
+      guiControls.x54 = pp5[3][0];
       guiControls.y54 = pp5[3][1];
-      guiControls.y55 = pp5[4][1];
+
+      // guiControls.x55 = pp5[4][0];
+      // guiControls.y55 = pp5[4][1];
     }
 
   }
@@ -171,461 +186,360 @@ function brushingCode() {
 
     if (pp1.length > 0) {
       guiControls.x1 = pp1[0][0];
-      guiControls.x2 = pp1[1][0];
-      guiControls.x3 = pp1[2][0];
-      guiControls.x4 = pp1[3][0];
-      guiControls.x5 = pp1[4][0];
-      guiControls.x6 = pp1[5][0];
-
       guiControls.y1 = pp1[0][1];
+
+      guiControls.x2 = pp1[1][0];
       guiControls.y2 = pp1[1][1];
+
+      guiControls.x3 = pp1[2][0];
       guiControls.y3 = pp1[2][1];
+
+      guiControls.x4 = pp1[3][0];
       guiControls.y4 = pp1[3][1];
+
+      guiControls.x5 = pp1[4][0];
       guiControls.y5 = pp1[4][1];
-      guiControls.y6 = pp1[5][1];
+
+      // guiControls.x6 = pp1[5][0];
+      // guiControls.y6 = pp1[5][1];
     }
 
     if (pp2.length > 0) {
       guiControls.x11 = pp2[0][0];
-      guiControls.x12 = pp2[1][0];
-      guiControls.x13 = pp2[2][0];
-      guiControls.x14 = pp2[3][0];
-      guiControls.x15 = pp2[4][0];
-      guiControls.x16 = pp2[5][0];
-
       guiControls.y11 = pp2[0][1];
+
+      guiControls.x12 = pp2[1][0];
       guiControls.y12 = pp2[1][1];
+
+      guiControls.x13 = pp2[2][0];
       guiControls.y13 = pp2[2][1];
+
+      guiControls.x14 = pp2[3][0];
       guiControls.y14 = pp2[3][1];
+
+      guiControls.x15 = pp2[4][0];
       guiControls.y15 = pp2[4][1];
-      guiControls.y16 = pp2[5][1];
 
-      // Can delete if needed
-      // guiControls.x11 = pp2[1][0];
-      // guiControls.x12 = pp2[2][0];
-      // guiControls.x13 = pp2[3][0];
-      // guiControls.x14 = pp2[4][0];
-      // guiControls.x15 = pp2[5][0];
-      // guiControls.x16 = pp2[6][0];
+      // guiControls.x16 = pp2[5][0];
+      // guiControls.y16 = pp2[5][1];
 
-      // guiControls.y11 = pp2[1][1];
-      // guiControls.y12 = pp2[2][1];
-      // guiControls.y13 = pp2[3][1];
-      // guiControls.y14 = pp2[4][1];
-      // guiControls.y15 = pp2[5][1];
-      // guiControls.y16 = pp2[6][1];
     }
 
     if (pp3.length > 0) {
       guiControls.x31 = pp3[0][0];
-      guiControls.x32 = pp3[1][0];
-      guiControls.x33 = pp3[2][0];
-      guiControls.x34 = pp3[3][0];
-      guiControls.x35 = pp3[4][0];
-      guiControls.x36 = pp3[5][0];
-
       guiControls.y31 = pp3[0][1];
+
+      guiControls.x32 = pp3[1][0];
       guiControls.y32 = pp3[1][1];
+
+      guiControls.x33 = pp3[2][0];
       guiControls.y33 = pp3[2][1];
+
+      guiControls.x34 = pp3[3][0];
       guiControls.y34 = pp3[3][1];
+
+      guiControls.x35 = pp3[4][0];
       guiControls.y35 = pp3[4][1];
-      guiControls.y36 = pp3[5][1];
 
-      // Can delete if needed
-      // guiControls.x31 = pp3[1][0];
-      // guiControls.x32 = pp3[2][0];
-      // guiControls.x33 = pp3[3][0];
-      // guiControls.x34 = pp3[4][0];
-      // guiControls.x35 = pp3[5][0];
-      // guiControls.x36 = pp3[6][0];
+      // guiControls.x36 = pp3[5][0];
+      // guiControls.y36 = pp3[5][1];
 
-      // guiControls.y31 = pp3[1][1];
-      // guiControls.y32 = pp3[2][1];
-      // guiControls.y33 = pp3[3][1];
-      // guiControls.y34 = pp3[4][1];
-      // guiControls.y35 = pp3[5][1];
-      // guiControls.y36 = pp3[6][1];
     }
 
     if (pp4.length > 0) {
       guiControls.x41 = pp4[0][0];
-      guiControls.x42 = pp4[1][0];
-      guiControls.x43 = pp4[2][0];
-      guiControls.x44 = pp4[3][0];
-      guiControls.x45 = pp4[4][0];
-      guiControls.x46 = pp4[5][0];
-
       guiControls.y41 = pp4[0][1];
+
+      guiControls.x42 = pp4[1][0];
       guiControls.y42 = pp4[1][1];
+
+      guiControls.x43 = pp4[2][0];
       guiControls.y43 = pp4[2][1];
+
+      guiControls.x44 = pp4[3][0];
       guiControls.y44 = pp4[3][1];
+
+      guiControls.x45 = pp4[4][0];
       guiControls.y45 = pp4[4][1];
-      guiControls.y46 = pp4[5][1];
 
-      // Can delete if needed
-      // guiControls.x41 = pp4[1][0];
-      // guiControls.x42 = pp4[2][0];
-      // guiControls.x43 = pp4[3][0];
-      // guiControls.x44 = pp4[4][0];
-      // guiControls.x45 = pp4[5][0];
-      // guiControls.x46 = pp4[6][0];
+      // guiControls.x46 = pp4[5][0];
+      // guiControls.y46 = pp4[5][1];
 
-      // guiControls.y41 = pp4[1][1];
-      // guiControls.y42 = pp4[2][1];
-      // guiControls.y43 = pp4[3][1];
-      // guiControls.y44 = pp4[4][1];
-      // guiControls.y45 = pp4[5][1];
-      // guiControls.y46 = pp4[6][1];
     }
 
     if (pp5.length > 0) {
       guiControls.x51 = pp5[0][0];
-      guiControls.x52 = pp5[1][0];
-      guiControls.x53 = pp5[2][0];
-      guiControls.x54 = pp5[3][0];
-      guiControls.x55 = pp5[4][0];
-      guiControls.x56 = pp5[5][0];
-
       guiControls.y51 = pp5[0][1];
+
+      guiControls.x52 = pp5[1][0];
       guiControls.y52 = pp5[1][1];
+
+      guiControls.x53 = pp5[2][0];
       guiControls.y53 = pp5[2][1];
+
+      guiControls.x54 = pp5[3][0];
       guiControls.y54 = pp5[3][1];
+
+      guiControls.x55 = pp5[4][0];
       guiControls.y55 = pp5[4][1];
-      guiControls.y56 = pp5[5][1];
 
-      // Can delete if needed
-      // guiControls.x51 = pp5[1][0];
-      // guiControls.x52 = pp5[2][0];
-      // guiControls.x53 = pp5[3][0];
-      // guiControls.x54 = pp5[4][0];
-      // guiControls.x55 = pp5[5][0];
-      // guiControls.x56 = pp5[6][0];
+      // guiControls.x56 = pp5[5][0];
+      // guiControls.y56 = pp5[5][1];
 
-      // guiControls.y51 = pp5[1][1];
-      // guiControls.y52 = pp5[2][1];
-      // guiControls.y53 = pp5[3][1];
-      // guiControls.y54 = pp5[4][1];
-      // guiControls.y55 = pp5[5][1];
-      // guiControls.y56 = pp5[6][1];
     }
   }
 
   if (guiControls.polySide == 7.0) {
     if (pp1.length > 0) {
       guiControls.x1 = pp1[0][0];
-      guiControls.x2 = pp1[1][0];
-      guiControls.x3 = pp1[2][0];
-      guiControls.x4 = pp1[3][0];
-      guiControls.x5 = pp1[4][0];
-      guiControls.x6 = pp1[5][0];
-      guiControls.x7 = pp1[6][0];
-
       guiControls.y1 = pp1[0][1];
+
+      guiControls.x2 = pp1[1][0];
       guiControls.y2 = pp1[1][1];
+
+      guiControls.x3 = pp1[2][0];
       guiControls.y3 = pp1[2][1];
+
+      guiControls.x4 = pp1[3][0];
       guiControls.y4 = pp1[3][1];
+
+      guiControls.x5 = pp1[4][0];
       guiControls.y5 = pp1[4][1];
+
+      guiControls.x6 = pp1[5][0];
       guiControls.y6 = pp1[5][1];
-      guiControls.y7 = pp1[6][1];
+
+      // guiControls.x7 = pp1[6][0];
+      // guiControls.y7 = pp1[6][1];
     }
 
     if (pp2.length > 0) {
       guiControls.x11 = pp2[0][0];
-      guiControls.x12 = pp2[1][0];
-      guiControls.x13 = pp2[2][0];
-      guiControls.x14 = pp2[3][0];
-      guiControls.x15 = pp2[4][0];
-      guiControls.x16 = pp2[5][0];
-      guiControls.x17 = pp2[6][0];
-
       guiControls.y11 = pp2[0][1];
+
+      guiControls.x12 = pp2[1][0];
       guiControls.y12 = pp2[1][1];
+
+      guiControls.x13 = pp2[2][0];
       guiControls.y13 = pp2[2][1];
+
+      guiControls.x14 = pp2[3][0];
       guiControls.y14 = pp2[3][1];
+
+      guiControls.x15 = pp2[4][0];
       guiControls.y15 = pp2[4][1];
+
+      guiControls.x16 = pp2[5][0];
       guiControls.y16 = pp2[5][1];
-      guiControls.y17 = pp2[6][1];
 
-      // Can delete if needed
-      // guiControls.x11 = pp2[1][0];
-      // guiControls.x12 = pp2[2][0];
-      // guiControls.x13 = pp2[3][0];
-      // guiControls.x14 = pp2[4][0];
-      // guiControls.x15 = pp2[5][0];
-      // guiControls.x16 = pp2[6][0];
-      // guiControls.x17 = pp2[7][0];
+      // guiControls.x17 = pp2[6][0];
+      // guiControls.y17 = pp2[6][1];
 
-      // guiControls.y11 = pp2[1][1];
-      // guiControls.y12 = pp2[2][1];
-      // guiControls.y13 = pp2[3][1];
-      // guiControls.y14 = pp2[4][1];
-      // guiControls.y15 = pp2[5][1];
-      // guiControls.y16 = pp2[6][1];
-      // guiControls.y17 = pp2[7][1];
     }
 
     if (pp3.length > 0) {
       guiControls.x31 = pp3[0][0];
-      guiControls.x32 = pp3[1][0];
-      guiControls.x33 = pp3[2][0];
-      guiControls.x34 = pp3[3][0];
-      guiControls.x35 = pp3[4][0];
-      guiControls.x36 = pp3[5][0];
-      guiControls.x37 = pp3[6][0];
-
       guiControls.y31 = pp3[0][1];
+
+      guiControls.x32 = pp3[1][0];
       guiControls.y32 = pp3[1][1];
+
+      guiControls.x33 = pp3[2][0];
       guiControls.y33 = pp3[2][1];
+
+      guiControls.x34 = pp3[3][0];
       guiControls.y34 = pp3[3][1];
+
+      guiControls.x35 = pp3[4][0];
       guiControls.y35 = pp3[4][1];
+
+      guiControls.x36 = pp3[5][0];
       guiControls.y36 = pp3[5][1];
-      guiControls.y37 = pp3[6][1];
 
-      // Can delete if needed
-      // guiControls.x31 = pp3[1][0];
-      // guiControls.x32 = pp3[2][0];
-      // guiControls.x33 = pp3[3][0];
-      // guiControls.x34 = pp3[4][0];
-      // guiControls.x35 = pp3[5][0];
-      // guiControls.x36 = pp3[6][0];
-      // guiControls.x37 = pp3[7][0];
-
-      // guiControls.y31 = pp3[1][1];
-      // guiControls.y32 = pp3[2][1];
-      // guiControls.y33 = pp3[3][1];
-      // guiControls.y34 = pp3[4][1];
-      // guiControls.y35 = pp3[5][1];
-      // guiControls.y36 = pp3[6][1];
-      // guiControls.y37 = pp3[7][1];
+      // guiControls.x37 = pp3[6][0];
+      // guiControls.y37 = pp3[6][1];
     }
 
     if (pp4.length > 0) {
       guiControls.x41 = pp4[0][0];
-      guiControls.x42 = pp4[1][0];
-      guiControls.x43 = pp4[2][0];
-      guiControls.x44 = pp4[3][0];
-      guiControls.x45 = pp4[4][0];
-      guiControls.x46 = pp4[5][0];
-      guiControls.x47 = pp4[6][0];
-
       guiControls.y41 = pp4[0][1];
+
+      guiControls.x42 = pp4[1][0];
       guiControls.y42 = pp4[1][1];
+
+      guiControls.x43 = pp4[2][0];
       guiControls.y43 = pp4[2][1];
+
+      guiControls.x44 = pp4[3][0];
       guiControls.y44 = pp4[3][1];
+
+      guiControls.x45 = pp4[4][0];
       guiControls.y45 = pp4[4][1];
+
+      guiControls.x46 = pp4[5][0];
       guiControls.y46 = pp4[5][1];
-      guiControls.y47 = pp4[6][1];
 
-      // Can delete if needed
-      // guiControls.x41 = pp4[1][0];
-      // guiControls.x42 = pp4[2][0];
-      // guiControls.x43 = pp4[3][0];
-      // guiControls.x44 = pp4[4][0];
-      // guiControls.x45 = pp4[5][0];
-      // guiControls.x46 = pp4[6][0];
-      // guiControls.x47 = pp4[7][0];
+      // guiControls.x47 = pp4[6][0];
+      // guiControls.y47 = pp4[6][1];
 
-      // guiControls.y41 = pp4[1][1];
-      // guiControls.y42 = pp4[2][1];
-      // guiControls.y43 = pp4[3][1];
-      // guiControls.y44 = pp4[4][1];
-      // guiControls.y45 = pp4[5][1];
-      // guiControls.y46 = pp4[6][1];
-      // guiControls.y47 = pp4[7][1];
     }
 
     if (pp5.length > 0) {
       guiControls.x51 = pp5[0][0];
-      guiControls.x52 = pp5[1][0];
-      guiControls.x53 = pp5[2][0];
-      guiControls.x54 = pp5[3][0];
-      guiControls.x55 = pp5[4][0];
-      guiControls.x56 = pp5[5][0];
-      guiControls.x57 = pp5[6][0];
-
       guiControls.y51 = pp5[0][1];
+
+      guiControls.x52 = pp5[1][0];
       guiControls.y52 = pp5[1][1];
+
+      guiControls.x53 = pp5[2][0];
       guiControls.y53 = pp5[2][1];
+
+      guiControls.x54 = pp5[3][0];
       guiControls.y54 = pp5[3][1];
+
+      guiControls.x55 = pp5[4][0];
       guiControls.y55 = pp5[4][1];
+
+      guiControls.x56 = pp5[5][0];
       guiControls.y56 = pp5[5][1];
-      guiControls.y57 = pp5[6][1];
 
-      // Can delete if needed
-      // guiControls.x51 = pp5[1][0];
-      // guiControls.x52 = pp5[2][0];
-      // guiControls.x53 = pp5[3][0];
-      // guiControls.x54 = pp5[4][0];
-      // guiControls.x55 = pp5[5][0];
-      // guiControls.x56 = pp5[6][0];
-      // guiControls.x57 = pp5[7][0];
+      // guiControls.x57 = pp5[6][0];
+      // guiControls.y57 = pp5[6][1];
 
-      // guiControls.y51 = pp5[1][1];
-      // guiControls.y52 = pp5[2][1];
-      // guiControls.y53 = pp5[3][1];
-      // guiControls.y54 = pp5[4][1];
-      // guiControls.y55 = pp5[5][1];
-      // guiControls.y56 = pp5[6][1];
-      // guiControls.y57 = pp5[7][1];
     }
   }
 
   if (guiControls.polySide == 8.0) {
     if (pp1.length > 0) {
       guiControls.x1 = pp1[0][0];
-      guiControls.x2 = pp1[1][0];
-      guiControls.x3 = pp1[2][0];
-      guiControls.x4 = pp1[3][0];
-      guiControls.x5 = pp1[4][0];
-      guiControls.x6 = pp1[5][0];
-      guiControls.x7 = pp1[6][0];
-      guiControls.x8 = pp1[7][0];
-
       guiControls.y1 = pp1[0][1];
+
+      guiControls.x2 = pp1[1][0];
       guiControls.y2 = pp1[1][1];
+
+      guiControls.x3 = pp1[2][0];
       guiControls.y3 = pp1[2][1];
+
+      guiControls.x4 = pp1[3][0];
       guiControls.y4 = pp1[3][1];
+
+      guiControls.x5 = pp1[4][0];
       guiControls.y5 = pp1[4][1];
+
+      guiControls.x6 = pp1[5][0];
       guiControls.y6 = pp1[5][1];
+
+      guiControls.x7 = pp1[6][0];
       guiControls.y7 = pp1[6][1];
-      guiControls.x8 = pp1[7][0];
+
+      // guiControls.x8 = pp1[7][0];
+      // guiControls.x8 = pp1[7][0];
     }
 
     if (pp2.length > 0) {
       guiControls.x11 = pp2[0][0];
-      guiControls.x12 = pp2[1][0];
-      guiControls.x13 = pp2[2][0];
-      guiControls.x14 = pp2[3][0];
-      guiControls.x15 = pp2[4][0];
-      guiControls.x16 = pp2[5][0];
-      guiControls.x17 = pp2[6][0];
-      guiControls.x18 = pp2[7][0];
-
       guiControls.y11 = pp2[0][1];
+
+      guiControls.x12 = pp2[1][0];
       guiControls.y12 = pp2[1][1];
+
+      guiControls.x13 = pp2[2][0];
       guiControls.y13 = pp2[2][1];
+
+      guiControls.x14 = pp2[3][0];
       guiControls.y14 = pp2[3][1];
+
+      guiControls.x15 = pp2[4][0];
       guiControls.y15 = pp2[4][1];
+
+      guiControls.x16 = pp2[5][0];
       guiControls.y16 = pp2[5][1];
+
+      guiControls.x17 = pp2[6][0];
       guiControls.y17 = pp2[6][1];
-      guiControls.y18 = pp2[7][1];
+
+      // guiControls.x18 = pp2[7][0];
+      // guiControls.y18 = pp2[7][1];
     }
 
     if (pp3.length > 0) {
       guiControls.x31 = pp3[0][0];
-      guiControls.x32 = pp3[1][0];
-      guiControls.x33 = pp3[2][0];
-      guiControls.x34 = pp3[3][0];
-      guiControls.x35 = pp3[4][0];
-      guiControls.x36 = pp3[5][0];
-      guiControls.x37 = pp3[6][0];
-      guiControls.x38 = pp3[7][0];
-
       guiControls.y31 = pp3[0][1];
+
+      guiControls.x32 = pp3[1][0];
       guiControls.y32 = pp3[1][1];
+
+      guiControls.x33 = pp3[2][0];
       guiControls.y33 = pp3[2][1];
+
+      guiControls.x34 = pp3[3][0];
       guiControls.y34 = pp3[3][1];
+
+      guiControls.x35 = pp3[4][0];
       guiControls.y35 = pp3[4][1];
+
+      guiControls.x36 = pp3[5][0];
       guiControls.y36 = pp3[5][1];
+
+      guiControls.x37 = pp3[6][0];
       guiControls.y37 = pp3[6][1];
-      guiControls.y38 = pp3[7][1];
 
-      // Can delete if needed
-      // guiControls.x31 = pp3[1][0];
-      // guiControls.x32 = pp3[2][0];
-      // guiControls.x33 = pp3[3][0];
-      // guiControls.x34 = pp3[4][0];
-      // guiControls.x35 = pp3[5][0];
-      // guiControls.x36 = pp3[6][0];
-      // guiControls.x37 = pp3[7][0];
-      // guiControls.x38 = pp3[8][0];
+      // guiControls.x38 = pp3[7][0];
+      // guiControls.y38 = pp3[7][1];
 
-      // guiControls.y31 = pp3[1][1];
-      // guiControls.y32 = pp3[2][1];
-      // guiControls.y33 = pp3[3][1];
-      // guiControls.y34 = pp3[4][1];
-      // guiControls.y35 = pp3[5][1];
-      // guiControls.y36 = pp3[6][1];
-      // guiControls.y37 = pp3[7][1];
-      // guiControls.y38 = pp3[8][1];
     }
 
     if (pp4.length > 0) {
       guiControls.x41 = pp4[0][0];
-      guiControls.x42 = pp4[1][0];
-      guiControls.x43 = pp4[2][0];
-      guiControls.x44 = pp4[3][0];
-      guiControls.x45 = pp4[4][0];
-      guiControls.x46 = pp4[5][0];
-      guiControls.x47 = pp4[6][0];
-      guiControls.x48 = pp4[7][0];
-
       guiControls.y41 = pp4[0][1];
+
+      guiControls.x42 = pp4[1][0];
       guiControls.y42 = pp4[1][1];
+
+      guiControls.x43 = pp4[2][0];
       guiControls.y43 = pp4[2][1];
+
+      guiControls.x44 = pp4[3][0];
       guiControls.y44 = pp4[3][1];
+
+      guiControls.x45 = pp4[4][0];
       guiControls.y45 = pp4[4][1];
+
+      guiControls.x46 = pp4[5][0];
       guiControls.y46 = pp4[5][1];
+
+      guiControls.x47 = pp4[6][0];
       guiControls.y47 = pp4[6][1];
-      guiControls.y48 = pp4[7][1];
 
-      // Can delete if needed
-      // guiControls.x41 = pp4[1][0];
-      // guiControls.x42 = pp4[2][0];
-      // guiControls.x43 = pp4[3][0];
-      // guiControls.x44 = pp4[4][0];
-      // guiControls.x45 = pp4[5][0];
-      // guiControls.x46 = pp4[6][0];
-      // guiControls.x47 = pp4[7][0];
-      // guiControls.x48 = pp4[8][0];
+      // guiControls.x48 = pp4[7][0];
+      // guiControls.y48 = pp4[7][1];
 
-      // guiControls.y41 = pp4[1][1];
-      // guiControls.y42 = pp4[2][1];
-      // guiControls.y43 = pp4[3][1];
-      // guiControls.y44 = pp4[4][1];
-      // guiControls.y45 = pp4[5][1];
-      // guiControls.y46 = pp4[6][1];
-      // guiControls.y47 = pp4[7][1];
-      // guiControls.y48 = pp4[8][1];
     }
 
     if (pp5.length > 0) {
       guiControls.x51 = pp5[0][0];
-      guiControls.x52 = pp5[1][0];
-      guiControls.x53 = pp5[2][0];
-      guiControls.x54 = pp5[3][0];
-      guiControls.x55 = pp5[4][0];
-      guiControls.x56 = pp5[5][0];
-      guiControls.x57 = pp5[6][0];
-      guiControls.x58 = pp5[7][0];
-
       guiControls.y51 = pp5[0][1];
+
+      guiControls.x52 = pp5[1][0];
       guiControls.y52 = pp5[1][1];
+
+      guiControls.x53 = pp5[2][0];
       guiControls.y53 = pp5[2][1];
+
+      guiControls.x54 = pp5[3][0];
       guiControls.y54 = pp5[3][1];
+
+      guiControls.x55 = pp5[4][0];
       guiControls.y55 = pp5[4][1];
+
+      guiControls.x56 = pp5[5][0];
       guiControls.y56 = pp5[5][1];
+
+      guiControls.x57 = pp5[6][0];
       guiControls.y57 = pp5[6][1];
-      guiControls.y58 = pp5[7][1];
 
-      // Can delete if needed
-      // guiControls.x51 = pp5[1][0];
-      // guiControls.x52 = pp5[2][0];
-      // guiControls.x53 = pp5[3][0];
-      // guiControls.x54 = pp5[4][0];
-      // guiControls.x55 = pp5[5][0];
-      // guiControls.x56 = pp5[6][0];
-      // guiControls.x57 = pp5[7][0];
-      // guiControls.x58 = pp5[8][0];
-
-      // guiControls.y51 = pp5[1][1];
-      // guiControls.y52 = pp5[2][1];
-      // guiControls.y53 = pp5[3][1];
-      // guiControls.y54 = pp5[4][1];
-      // guiControls.y55 = pp5[5][1];
-      // guiControls.y56 = pp5[6][1];
-      // guiControls.y57 = pp5[7][1];
-      // guiControls.y58 = pp5[8][1];
+      // guiControls.x58 = pp5[7][0];
+      // guiControls.y58 = pp5[7][1];
     }
   }
 }
@@ -805,6 +719,9 @@ function checkClusterCompletion() {
       console.log("Cluster marking completed");
       segmentRegions(1,8);
     }
+    else{
+      guiControls.clusterMarkingComplete = 0.0;
+    }
   }
   else if (guiControls.clusters == 2.0){
     console.log("Do check");
@@ -824,6 +741,9 @@ function checkClusterCompletion() {
     else if (guiControls.polySide == 8.0 && pp1.length == 8 && pp2.length == 8) {
       console.log("Cluster marking completed");
       segmentRegions(2,8);
+    }
+    else{
+      guiControls.clusterMarkingComplete = 0.0;
     }
   }
   else if (guiControls.clusters == 3.0){
@@ -845,6 +765,9 @@ function checkClusterCompletion() {
       console.log("Cluster marking completed");
       segmentRegions(3,8);
     }
+    else{
+      guiControls.clusterMarkingComplete = 0.0;
+    }
   }
   else if (guiControls.clusters == 4.0){
     console.log("Do check");
@@ -865,6 +788,9 @@ function checkClusterCompletion() {
       console.log("Cluster marking completed");
       segmentRegions(4,8);
     }
+    else{
+      guiControls.clusterMarkingComplete = 0.0;
+    }
   }
   else if (guiControls.clusters == 5.0){
     console.log("Do check");
@@ -884,6 +810,9 @@ function checkClusterCompletion() {
     else if (guiControls.polySide == 8.0 && pp1.length == 8 && pp2.length == 8 && pp3.length == 8 && pp4.length == 8 && pp5.length == 8) {
       console.log("Cluster marking completed");
       segmentRegions(5,8);
+    }
+    else{
+      guiControls.clusterMarkingComplete = 0.0;
     }
   }
 }
@@ -1288,8 +1217,123 @@ function checkPNP(clusterNo, sideNo, newBoundaryArray, testx, testy){
   }
 }
 
+// Function to create array of 2D textures from 3D volume data
+function create2dTextures(volumeData){
+  console.log(volumeData);
+  const volumeWidth = volumeData.length;        // X dimension
+  const volumeHeight = volumeData[0].length;    // Y dimension
+  const volumeDepth = volumeData[0][0].length;  // Z dimension
+
+  // Create a 2D texture by packing 3D data into slices of a 2D texture
+  const textureSize = volumeWidth * volumeDepth;
+  const textureData = new Uint8Array(textureSize * volumeHeight * 4); // RGBA texture
+
+  // console.log(textureData);
+  // Pack the 3D volume data into the 2D texture
+  for (let z = 0; z < volumeDepth; z++) {
+    for (let y = 0; y < volumeHeight; y++) {
+      for (let x = 0; x < volumeWidth; x++) {
+        const clusterId = volumeData[x][y][z]; // Access your volumeData
+        
+        // const textureIndex = (x + z * volumeWidth + y * textureSize) * 4; // Index in 2D texture
+        const textureIndex = (x + y * volumeWidth + z * volumeWidth * volumeHeight) * 4;
+  
+        textureData[textureIndex] = clusterId;   // Store cluster ID in Red channel
+        textureData[textureIndex + 1] = 0;       // Unused
+        textureData[textureIndex + 2] = 0;       // Unused
+        textureData[textureIndex + 3] = 255;     // Full alpha
+      }
+    }
+  }
+
+  console.log(textureData);
+
+  // Find the number of unique values in the volume
+  const uniqueValues = new Set(textureData);
+  console.log(uniqueValues);
+
+  // Find index of first occurrence of a value in the texture data
+  // const firstIndex = textureData.indexOf(1);
+  // console.log(firstIndex);
+
+  // Create a WebGL texture from the packed 2D texture data
+  window.volumeTexture = new THREE.DataTexture(
+    textureData,
+    textureSize,
+    volumeHeight,
+    THREE.RGBAFormat,
+    THREE.UnsignedByteType
+  );
+  window.volumeTexture.needsUpdate = true;
+  window.volumeTexture.generateMipmaps = false;
+  window.volumeTexture.minFilter = THREE.NearestFilter;
+  window.volumeTexture.magFilter = THREE.NearestFilter;
+
+  console.log(window.volumeTexture);  // Verify the contents
+
+  guiControls.clusterMarkingComplete = 1.0;
+}
+
+function create2dTextures1(volumeData) {
+  const volumeWidth = volumeData.length;        // X dimension (256)
+  const volumeHeight = volumeData[0].length;    // Y dimension (256)
+  const volumeDepth = volumeData[0][0].length;  // Z dimension (256)
+
+  const gridSize = Math.ceil(Math.sqrt(volumeDepth)); // 16 for 256 slices
+  const textureSize = volumeWidth * gridSize;         // 256 * 16 = 4096
+  const textureData = new Uint8Array(textureSize * textureSize * 4); // RGBA texture
+
+  // Pack the 3D volume data into a 2D texture (16x16 grid of Z-slices)
+  for (let z = 0; z < volumeDepth; z++) {
+    const gridX = z % gridSize;
+    const gridY = Math.floor(z / gridSize);
+
+    for (let y = 0; y < volumeHeight; y++) {
+      for (let x = 0; x < volumeWidth; x++) {
+        const clusterId = volumeData[x][y][z]; // Access your volumeData
+
+        // Calculate 2D texture index for the slice in the grid
+        const textureX = gridX * volumeWidth + x;
+        const textureY = gridY * volumeHeight + y;
+        const textureIndex = (textureX + textureY * textureSize) * 4; // RGBA index
+
+        textureData[textureIndex] = clusterId;   // Store cluster ID in Red channel
+        textureData[textureIndex + 1] = 0;       // Unused
+        textureData[textureIndex + 2] = 0;       // Unused
+        textureData[textureIndex + 3] = 255;     // Full alpha
+      }
+    }
+  }
+
+  console.log(textureData);
+
+  // Find the number of unique values in the volume
+  const uniqueValues = new Set(textureData);
+  console.log(uniqueValues);
+
+  // Create the 2D texture in WebGL
+  window.volumeTexture = new THREE.DataTexture(
+    textureData,
+    textureSize,
+    textureSize,
+    THREE.RGBAFormat,
+    THREE.UnsignedByteType
+  );
+  window.volumeTexture.needsUpdate = true;
+  window.volumeTexture.generateMipmaps = false;
+  window.volumeTexture.minFilter = THREE.NearestFilter;
+  window.volumeTexture.magFilter = THREE.NearestFilter;
+
+  console.log(window.volumeTexture);  // Verify the contents
+
+  guiControls.clusterMarkingComplete = 1.0;
+}
+
 // Implement rehgion growing algorithm on volume in here
 function segmentRegions(clusterNo, sideNo) {
+  if (guiControls.clusterMarkingComplete == 1.0) {
+    return;
+  }
   console.log("Segment Regions");
   // console.log(window.npArray.data); // This is your volume data as a typed array
   // console.log(window.npArray.shape); // Shape of the numpy array
@@ -1419,8 +1463,8 @@ function segmentRegions(clusterNo, sideNo) {
         var testy = voxelGBCArray[i][j][k][1];
         // Process the NaN values present in the volume data
         if (testx == 0 && testy == 0){
-          // Assign them as outlier since cant perform region growing on them
-          voxelGBCArray[i][j][k].push(-1);
+          // Assign them as outlier since cant perform region growing on them (50 is a random number which is not a cluster number just to differentiate)
+          voxelGBCArray[i][j][k].push(50);
         }
         // Process the non-NaN values present in the volume data to assign them a cluster
         else{
@@ -1435,8 +1479,8 @@ function segmentRegions(clusterNo, sideNo) {
   console.log("All points clustered");
 
   // ----------------------------------------------------------------------------------------------------
-  // Save the clustered data to a file
 
+  // Save the clustered data to a file
   var clusterData = [];
   for(var i=0; i<shape[0]; i++){
     clusterData[i] = [];
@@ -1448,59 +1492,28 @@ function segmentRegions(clusterNo, sideNo) {
       }
     }
   }
-  console.log("Done extrscting cluster data");
+  console.log("Done extracting cluster data");
   // console.log(clusterData);
 
-  // Convert the 3D array to a JSON string
-  let arrayStr = JSON.stringify(clusterData);
-  console.log("Conversion done");
+  let saveCLusterData = false;
 
-  // Save the data to a file
-  // var blob = new Blob([arrayStr], {type: "application/json"});
-  // var url = URL.createObjectURL(blob);
-  // var a = document.createElement('a');
-  // a.href = url;
-  // a.download = 'clusteredData.json';
-  // a.click();
+  if (saveCLusterData) {
+    // Convert the 3D array to a JSON string
+    let arrayStr = JSON.stringify(clusterData);
+    console.log("Conversion done");
+
+    // Save the data to a file
+    var blob = new Blob([arrayStr], {type: "application/json"});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'clusteredData.json';
+    a.click();
+  }
 
   // ----------------------------------------------------------------------------------------------------
 
   // Function to create array of 2D textures from 3D volume data
-  create2dTextures(clusterData)
+  create2dTextures1(clusterData)
   console.log("Textures created");
-}
-
-// Function to create array of 2D textures from 3D volume data
-function create2dTextures(volumeData){
-  const volumeWidth = volumeData.length;        // X dimension
-  const volumeHeight = volumeData[0].length;    // Y dimension
-  const volumeDepth = volumeData[0][0].length;  // Z dimension
-
-  // Create a 2D texture by packing 3D data into slices of a 2D texture
-  const textureSize = volumeWidth * volumeDepth;
-  const textureData = new Uint8Array(textureSize * volumeHeight * 4); // RGBA texture
-
-  // Pack the 3D volume data into the 2D texture
-  for (let z = 0; z < volumeDepth; z++) {
-    for (let y = 0; y < volumeHeight; y++) {
-      for (let x = 0; x < volumeWidth; x++) {
-        const clusterId = volumeData[x][y][z]; // Access your volumeData
-        const textureIndex = (x + z * volumeWidth + y * textureSize) * 4; // Index in 2D texture
-  
-        textureData[textureIndex] = clusterId;   // Store cluster ID in Red channel
-        textureData[textureIndex + 1] = 0;       // Unused
-        textureData[textureIndex + 2] = 0;       // Unused
-        textureData[textureIndex + 3] = 255;     // Full alpha
-      }
-    }
-  }
-
-  // Create a WebGL texture from the packed 2D texture data
-  window.volumeTexture = new THREE.DataTexture(
-    textureData,
-    textureSize,
-    volumeHeight,
-    THREE.RGBAFormat
-  );
-  window.volumeTexture.needsUpdate = true;
 }
