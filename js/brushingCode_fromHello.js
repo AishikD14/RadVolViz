@@ -1327,6 +1327,26 @@ function create2dTextures1(volumeData) {
   console.log(window.volumeTexture);  // Verify the contents
 
   guiControls.clusterMarkingComplete = 1.0;
+
+  saveTexture = false;
+
+  // Save the 2D texture to a png file
+  if (saveTexture) {
+    const canvas = document.createElement('canvas');
+    canvas.width = textureSize;
+    canvas.height = textureSize;
+    const context = canvas.getContext('2d');
+    const imageData = context.createImageData(textureSize, textureSize);
+    imageData.data.set(textureData);
+    context.putImageData(imageData, 0, 0);
+
+    const image = canvas.toDataURL('image/png');
+    const a = document.createElement('a');
+    a.href = image;
+    a.download = '2DTexture.png';
+    a.click();
+  }
+  
 }
 
 // Implement rehgion growing algorithm on volume in here
@@ -1334,7 +1354,7 @@ function segmentRegions(clusterNo, sideNo) {
   if (guiControls.clusterMarkingComplete == 1.0) {
     return;
   }
-  console.log("Segment Regions");
+  console.log("Segmenting Regions");
   // console.log(window.npArray.data); // This is your volume data as a typed array
   // console.log(window.npArray.shape); // Shape of the numpy array
 
