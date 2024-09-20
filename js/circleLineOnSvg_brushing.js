@@ -1,6 +1,6 @@
 // Called from brushingCode_fromHello.js
 function pointLineonCir() {
-   console.log("pointLineonCir");
+   // console.log("pointLineonCir");
    if (guiControls.clusters == 1.0) {
       if (guiControls.startY != 0 && guiControls.startX != 0) {
          if (pp1.length == 0) {

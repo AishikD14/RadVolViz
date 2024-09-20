@@ -701,7 +701,7 @@ function getElement(data, shape, indices) {
 // Check if cluster marking is completed
 function checkClusterCompletion() {
   if (guiControls.clusters == 1.0){
-    console.log("Do check");
+    // console.log("Do check");
     console.log(pp1.length);
     if (guiControls.polySide == 5.0 && pp1.length == 5) {
       console.log("Cluster marking completed");
@@ -724,7 +724,7 @@ function checkClusterCompletion() {
     }
   }
   else if (guiControls.clusters == 2.0){
-    console.log("Do check");
+    // console.log("Do check");
     console.log(pp1.length, pp2.length);
     if (guiControls.polySide == 5.0 && pp1.length == 5 && pp2.length == 5) {
       console.log("Cluster marking completed");
@@ -747,7 +747,7 @@ function checkClusterCompletion() {
     }
   }
   else if (guiControls.clusters == 3.0){
-    console.log("Do check");
+    // console.log("Do check");
     console.log(pp1.length, pp2.length, pp3.length);
     if (guiControls.polySide == 5.0 && pp1.length == 5 && pp2.length == 5 && pp3.length == 5) {
       console.log("Cluster marking completed");
@@ -770,7 +770,7 @@ function checkClusterCompletion() {
     }
   }
   else if (guiControls.clusters == 4.0){
-    console.log("Do check");
+    // console.log("Do check");
     console.log(pp1.length, pp2.length, pp3.length, pp4.length);
     if (guiControls.polySide == 5.0 && pp1.length == 5 && pp2.length == 5 && pp3.length == 5 && pp4.length == 5) {
       console.log("Cluster marking completed");
@@ -793,7 +793,7 @@ function checkClusterCompletion() {
     }
   }
   else if (guiControls.clusters == 5.0){
-    console.log("Do check");
+    // console.log("Do check");
     console.log(pp1.length, pp2.length, pp3.length, pp4.length, pp5.length);
     if (guiControls.polySide == 5.0 && pp1.length == 5 && pp2.length == 5 && pp3.length == 5 && pp4.length == 5 && pp5.length == 5) {
       console.log("Cluster marking completed");
@@ -1310,6 +1310,10 @@ function create2dTextures1(volumeData) {
   // Find the number of unique values in the volume
   const uniqueValues = new Set(textureData);
   console.log(uniqueValues);
+
+  // Find the number of 1s in the volume
+  const countOnes = textureData.filter(value => value === 1).length;
+  console.log(countOnes);
 
   // Create the 2D texture in WebGL
   window.volumeTexture = new THREE.DataTexture(
