@@ -6,3 +6,6 @@ normalized_volume.npy
 /scripts/data10.csv
 node_modules/
 clusteredData.json
+labeled_volume.npy
+labeled_volume2.npy
+*.json

@@ -1363,7 +1363,7 @@ function segmentRegions(clusterNo, sideNo) {
   // console.log(window.npArray.shape); // Shape of the numpy array
 
   // Find number of unique values in the volume
-  const uniqueValues = new Set(window.npArray.data);
+  // const uniqueValues = new Set(window.npArray.data);
   // console.log(uniqueValues.size);
 
   // Find the minimum and maximum values in the volume
@@ -1375,17 +1375,17 @@ function segmentRegions(clusterNo, sideNo) {
   const data = window.npArray.data;    // TypedArray with flattened data
 
   // Access elements at indices [100, 100, 100]
-  const value1 = getElement(data, shape, [100, 100, 100, 0]);
-  const value2 = getElement(data, shape, [100, 100, 100, 1]);
-  const value3 = getElement(data, shape, [100, 100, 100, 2]);
-  const value4 = getElement(data, shape, [100, 100, 100, 3]);
+  // const value1 = getElement(data, shape, [100, 100, 100, 0]);
+  // const value2 = getElement(data, shape, [100, 100, 100, 1]);
+  // const value3 = getElement(data, shape, [100, 100, 100, 2]);
+  // const value4 = getElement(data, shape, [100, 100, 100, 3]);
   // console.log(value1, value2, value3, value4);
 
   // Get the GBC feature space coordinates corresponding to the volume coordinates
   var voxelGBCArray = [];
   var elementArray = new Array(shape[3]);
   
-  // Loop through the volume data
+  // Loop through the volume data to get the GBC feature space coordinates corresponding to each voxel of the volume data
   for(i=0; i<shape[0]; i++){
     voxelGBCArray[i] = [];
 
@@ -1412,7 +1412,7 @@ function segmentRegions(clusterNo, sideNo) {
 
         // return x and y coordinates of the GBC feature space
         if(isNanValue == false){
-          voxelGBCArray[i][j][k] = getGBCCoords(elementArray);
+          voxelGBCArray[i][j][k] = getGBCCoords(elementArray).concat(elementArray);
         }
         // If NaN value is present, assign 0 to the x and y coordinates
         else{
@@ -1421,7 +1421,9 @@ function segmentRegions(clusterNo, sideNo) {
       }
     }
   }
+
   // console.log(voxelGBCArray);
+  console.log("GBC feature space coordinates extracted");
 
   // ----------------------------------------------------------------------------------------------------
 
@@ -1478,6 +1480,7 @@ function segmentRegions(clusterNo, sideNo) {
   // console.log(newBoundaryArray);
 
   // ----------------------------------------------------------------------------------------------------
+  
   // Call PNP algorithm function here
   console.log("Call PNP function");
   for(var i=0; i<shape[0]; i++){
@@ -1502,8 +1505,6 @@ function segmentRegions(clusterNo, sideNo) {
   // console.log(voxelGBCArray);
   console.log("All points clustered");
 
-  // ----------------------------------------------------------------------------------------------------
-
   // Save the clustered data to a file
   var clusterData = [];
   for(var i=0; i<shape[0]; i++){
@@ -1511,7 +1512,6 @@ function segmentRegions(clusterNo, sideNo) {
     for(var j=0; j<shape[1]; j++){
       clusterData[i][j] = [];
       for(var k=0; k<shape[2]; k++){
-        // clusterData.push(voxelGBCArray[i][j][k].at(-1));
         clusterData[i][j][k] = voxelGBCArray[i][j][k].at(-1);
       }
     }
@@ -1523,7 +1523,8 @@ function segmentRegions(clusterNo, sideNo) {
 
   if (saveCLusterData) {
     // Convert the 3D array to a JSON string
-    let arrayStr = JSON.stringify(clusterData);
+    // let arrayStr = JSON.stringify(clusterData);
+    let arrayStr = JSON.stringify(voxelGBCArray);
     console.log("Conversion done");
 
     // Save the data to a file
@@ -1531,7 +1532,7 @@ function segmentRegions(clusterNo, sideNo) {
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
     a.href = url;
-    a.download = 'clusteredData.json';
+    a.download = 'clusteredDataRatio2.json';
     a.click();
   }
 
