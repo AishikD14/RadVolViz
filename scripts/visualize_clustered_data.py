@@ -161,8 +161,15 @@ for i in range(shape[0]):
 
 # -----------------------------------------------------------------------------------------------
 
+diff_plot = False
+
 # Compare all the values in the original and labeled volumes and print the number of differences 
 print("Number of differences:", np.sum(clusterData != clusterData1))
+
+# Mark the differences in the labeled volume wtih cluster number 6, keep the clusters with label 50 intact
+
+if diff_plot:
+    clusterData1[clusterData != clusterData1] = 6
 
 # quit()
 
@@ -174,53 +181,67 @@ volume1 = np.array(clusterData1.tolist()).reshape(shape)
 # -----------------------------------------------------------------------------------------------
 
 # Define the colormap for the clusters
-# cmap = mcolors.ListedColormap(['gray', 'red', 'blue', 'green', 'orange', 'purple', 'black'])
-# bounds = [-0.5, 0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 50.5]
-# norm = mcolors.BoundaryNorm(bounds, cmap.N)
+if diff_plot:
+    cmap = mcolors.ListedColormap(['gray', 'red', 'blue', 'green', 'orange', 'purple', 'yellow', 'black'])
+    bounds = [-0.5, 0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 50.5]
+    norm = mcolors.BoundaryNorm(bounds, cmap.N)
+else:
+    cmap = mcolors.ListedColormap(['gray', 'red', 'blue', 'green', 'orange', 'purple', 'black'])
+    bounds = [-0.5, 0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 50.5]
+    norm = mcolors.BoundaryNorm(bounds, cmap.N)
 
-# # Loop over each z-axis slice
-# slice_allowed = [90, 100, 130, 150, 170]
-# # slice_allowed = [130]
-# for x in range(volume.shape[0]):
-#     if x not in slice_allowed:
-#         continue
-#     slice_data = volume[x, :, :]
-#     slice_data1 = volume1[x, :, :]
+# Loop over each z-axis slice
+slice_allowed = [90, 100, 130, 150, 170]
+slice_allowed = [130]
+for x in range(volume.shape[0]):
+    if x not in slice_allowed:
+        continue
+    slice_data = volume[x, :, :]
+    slice_data1 = volume1[x, :, :]
 
-#     # Create a plot with two subplots
-#     fig, ax = plt.subplots(1, 2, figsize=(12, 6))
+    # Create a plot with two subplots
+    fig, ax = plt.subplots(1, 2, figsize=(12, 6))
 
-#     # Plot the original slice
-#     ax[0].imshow(slice_data, cmap=cmap, norm=norm)
-#     ax[0].set_title(f"Clustered Slice {x+1} along x-axis")
-#     ax[0].set_xlabel("Width (pixels)")
-#     ax[0].set_ylabel("Height (pixels)")
-#     ax[0].grid(False)
-#     ax[0].set_xticks([])
-#     ax[0].set_yticks([])
-#     ax[0].set_aspect('equal')
+    # Plot the original slice
+    ax[0].imshow(slice_data, cmap=cmap, norm=norm)
+    ax[0].set_title(f"Clustered Slice {x+1} along x-axis")
+    ax[0].set_xlabel("Width (pixels)")
+    ax[0].set_ylabel("Height (pixels)")
+    ax[0].grid(False)
+    ax[0].set_xticks([])
+    ax[0].set_yticks([])
+    ax[0].set_aspect('equal')
 
-#     # Plot the labeled slice
-#     ax[1].imshow(slice_data1, cmap=cmap, norm=norm)
-#     ax[1].set_title(f"Cluster + Region Growing Slice {x+1} along x-axis")
-#     ax[1].set_xlabel("Width (pixels)")
-#     ax[1].set_ylabel("Height (pixels)")
-#     ax[1].grid(False)
-#     ax[1].set_xticks([])
-#     ax[1].set_yticks([])
-#     ax[1].set_aspect('equal')
+    # Plot the labeled slice
+    ax[1].imshow(slice_data1, cmap=cmap, norm=norm)
+    ax[1].set_title(f"Cluster + Region Growing Slice {x+1} along x-axis")
+    ax[1].set_xlabel("Width (pixels)")
+    ax[1].set_ylabel("Height (pixels)")
+    ax[1].grid(False)
+    ax[1].set_xticks([])
+    ax[1].set_yticks([])
+    ax[1].set_aspect('equal')
 
-#     # Create a colorbar axis at the bottom of both subplots
-#     cbar_ax = fig.add_axes([0.25, 0.1, 0.5, 0.03])  # [left, bottom, width, height]
+    # Create a colorbar axis at the bottom of both subplots
+    cbar_ax = fig.add_axes([0.25, 0.1, 0.5, 0.03])  # [left, bottom, width, height]
 
-#     # Plot the colorbar
-#     cbar = fig.colorbar(plt.cm.ScalarMappable(cmap=cmap, norm=norm), cax=cbar_ax, orientation='horizontal')
-#     cbar.set_ticks([0, 1, 2, 3, 4, 5, 50])
-#     cbar.set_label('Cluster IDs')
+    cmap1 = mcolors.ListedColormap(['gray', 'red', 'blue', 'green', 'orange', 'purple', 'black'])
+    bounds1 = [-0.5, 0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 50.5]
+    norm1 = mcolors.BoundaryNorm(bounds1, cmap1.N)
 
-#     # Show the plot
-#     plt.tight_layout(rect=[0, 0.15, 1, 1])
-#     plt.show()
+    # Plot the colorbar
+    if diff_plot:
+        cbar = fig.colorbar(plt.cm.ScalarMappable(cmap=cmap1, norm=norm1), cax=cbar_ax, orientation='horizontal')
+        cbar.set_ticks([0, 1, 2, 3, 4, 5, 50])
+        cbar.set_label('Cluster IDs')
+    else:
+        cbar = fig.colorbar(plt.cm.ScalarMappable(cmap=cmap, norm=norm), cax=cbar_ax, orientation='horizontal')
+        cbar.set_ticks([0, 1, 2, 3, 4, 5, 50])
+        cbar.set_label('Cluster IDs')
+
+    # Show the plot
+    plt.tight_layout(rect=[0, 0.15, 1, 1])
+    plt.show()
 
     # ############################################################################
 
@@ -238,45 +259,58 @@ volume1 = np.array(clusterData1.tolist()).reshape(shape)
 # -----------------------------------------------------------------------------------------------
 
 # Define the colormap for the clusters
-colors = ['gray', 'red', 'blue', 'green', 'orange', 'purple', 'black']
-cmap = mcolors.ListedColormap([
-    [0.5, 0.5, 0.5, 1.0],  # gray (Cluster ID = 0, fully transparent)
-    [1.0, 0.0, 0.0, 1.0],  # red (Cluster ID = 1)
-    [0.0, 0.0, 1.0, 1.0],  # blue (Cluster ID = 2)
-    [0.0, 1.0, 0.0, 1.0],  # green (Cluster ID = 3)
-    [1.0, 0.65, 0.0, 1.0], # orange (Cluster ID = 4)
-    [0.5, 0.0, 0.5, 1.0],  # purple (Cluster ID = 5)
-    [0.0, 0.0, 0.0, 0.0]   # fully transparent (Cluster ID = 50)
-])
+# colors = ['gray', 'red', 'blue', 'green', 'orange', 'purple', 'black']
+# cmap = mcolors.ListedColormap([
+#     [0.5, 0.5, 0.5, 1.0],  # gray (Cluster ID = 0, fully transparent)
+#     [1.0, 0.0, 0.0, 1.0],  # red (Cluster ID = 1)
+#     [0.0, 0.0, 1.0, 1.0],  # blue (Cluster ID = 2)
+#     [0.0, 1.0, 0.0, 1.0],  # green (Cluster ID = 3)
+#     [1.0, 0.65, 0.0, 1.0], # orange (Cluster ID = 4)
+#     [0.5, 0.0, 0.5, 1.0],  # purple (Cluster ID = 5)
+#     [0.0, 0.0, 0.0, 0.0]   # fully transparent (Cluster ID = 50)
+# ])
 
-# Prepare the 3D volume
-dims = volume.shape
+# if diff_plot:
+#     colors = ['gray', 'red', 'blue', 'green', 'orange', 'purple', 'yellow', 'black']
+#     cmap = mcolors.ListedColormap([
+#         [0.5, 0.5, 0.5, 1.0],  # gray (Cluster ID = 0, fully transparent)
+#         [1.0, 0.0, 0.0, 1.0],  # red (Cluster ID = 1)
+#         [0.0, 0.0, 1.0, 1.0],  # blue (Cluster ID = 2)
+#         [0.0, 1.0, 0.0, 1.0],  # green (Cluster ID = 3)
+#         [1.0, 0.65, 0.0, 1.0], # orange (Cluster ID = 4)
+#         [0.5, 0.0, 0.5, 1.0],  # purple (Cluster ID = 5)
+#         [1.0, 1.0, 0.0, 1.0],  # yellow (Cluster ID = 6)
+#         [0.0, 0.0, 0.0, 0.0]   # fully transparent (Cluster ID = 50)
+#     ])
 
-# Create a grid structure to hold the volume data
-grid = pv.UniformGrid()
+# # Prepare the 3D volume
+# dims = volume.shape
 
-# Set the dimensions: (nx, ny, nz)
-grid.dimensions = dims
+# # Create a grid structure to hold the volume data
+# grid = pv.UniformGrid()
 
-# Set up the spacing (optional, can set actual voxel size here)
-grid.spacing = (1, 1, 1)
+# # Set the dimensions: (nx, ny, nz)
+# grid.dimensions = dims
 
-# Assign the volume data to the grid as scalar values
-grid.point_data["Cluster IDs"] = volume.flatten(order="F")  # Flatten in Fortran order for VTK compatibility
+# # Set up the spacing (optional, can set actual voxel size here)
+# grid.spacing = (1, 1, 1)
 
-# Create a custom opacity transfer function
-# Ensure both Cluster 0 and Cluster 50 are fully transparent
-opacity_transfer_function = np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0])  # Clusters 0 and 50 are fully transparent
+# # Assign the volume data to the grid as scalar values
+# grid.point_data["Cluster IDs"] = volume1.flatten(order="F")  # Flatten in Fortran order for VTK compatibility
 
-# Create a plotter for rendering
-plotter = pv.Plotter()
+# # Create a custom opacity transfer function
+# # Ensure both Cluster 0 and Cluster 50 are fully transparent
+# opacity_transfer_function = np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0])  # Clusters 0 and 50 are fully transparent
 
-# Add the volume to the plotter with the custom colormap and opacity function
-plotter.add_volume(grid, scalars="Cluster IDs", cmap=cmap, clim=[0, len(colors)-1], opacity=opacity_transfer_function, show_scalar_bar=False)
+# # Create a plotter for rendering
+# plotter = pv.Plotter()
 
-# Set plotter options
-plotter.add_axes()  # Optional: Add axes for better visualization
-plotter.show_bounds(grid="back")  # Show grid bounds
+# # Add the volume to the plotter with the custom colormap and opacity function
+# plotter.add_volume(grid, scalars="Cluster IDs", cmap=cmap, clim=[0, len(colors)-1], opacity=opacity_transfer_function, show_scalar_bar=False)
 
-# Render the entire volume
-plotter.show()
+# # Set plotter options
+# plotter.add_axes()  # Optional: Add axes for better visualization
+# plotter.show_bounds(grid="back")  # Show grid bounds
+
+# # Render the entire volume
+# plotter.show()
