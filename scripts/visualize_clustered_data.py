@@ -48,10 +48,7 @@ def is_similar(voxel1, voxel2, threshold=0.1):
     return distance < threshold
 
 # Function to apply region growing
-def region_growing(volume, seed_coords, cluster_id, threshold=0.1):
-    visited = np.zeros(volume.shape[:3], dtype=bool)  # Keep track of visited voxels
-    region = np.zeros_like(visited)                   # Mark the grown region
-    region[seed_coords] = 1                           # Start with the seed voxel
+def region_growing(volume, seed_coords, cluster_id, visited, threshold=0.1):
     visited[seed_coords] = True
     cluster_label = cluster_id
 
@@ -74,21 +71,22 @@ def region_growing(volume, seed_coords, cluster_id, threshold=0.1):
                     # Check similarity based on 4 channel values and ensure unclustered voxel (label 0)
                     if volume[nx, ny, nz, 4] == 0 and is_similar(volume[x, y, z], volume[nx, ny, nz], threshold):
                         volume[nx, ny, nz, 4] = cluster_label  # Assign the current cluster ID
-                        region[nx, ny, nz] = 1                # Mark as part of the region
+                        volume[nx, ny, nz, :4] = volume[x, y, z, :4]  # Assign the 4 channel values to prevent drift in original values
                         stack.append((nx, ny, nz))            # Add this voxel to the stack for further growth
     
-    return volume, region
+    return volume
 
 # Full region-growing across the entire 3D volume
 def apply_region_growing(volume, threshold=0.1):
     cluster_ids = [1, 2, 3, 4, 5]  # Cluster IDs to grow
+    visited = np.zeros(volume.shape[:3], dtype=bool)  # Keep track of visited voxels
     for x in range(volume.shape[0]):
         for y in range(volume.shape[1]):
             for z in range(volume.shape[2]):
                 cluster_id = volume[x, y, z, 4]  # Check cluster ID in 5th value
                 if cluster_id in cluster_ids:
                     # Apply region growing from this voxel if it's a valid cluster seed
-                    volume, _ = region_growing(volume, (x, y, z), cluster_id, threshold)
+                    volume = region_growing(volume, (x, y, z), cluster_id, visited, threshold)
     return volume
 
 # -----------------------------------------------------------------------------------------------
@@ -139,7 +137,7 @@ print(occurrences)
 # volume_with_regions = apply_region_growing(metalData, threshold)
 
 # # Save the labeled volume
-# np.save("labeled_volume2.npy", volume_with_regions)
+# np.save("labeled_volume4.npy", volume_with_regions)
 
 # print("Region growing completed.")
 
@@ -148,7 +146,7 @@ print(occurrences)
 # -----------------------------------------------------------------------------------------------
 
 # Load the labeled volume
-volume_with_regions = np.load("labeled_volume2.npy")
+volume_with_regions = np.load("labeled_volume4.npy")
 
 # Extract only the cluster IDs from the parsed array and mantain the 3D structure
 # 4th dimension is a list whose last value is the cluster ID, replace it with the cluster ID
@@ -192,7 +190,7 @@ else:
 
 # Loop over each z-axis slice
 slice_allowed = [90, 100, 130, 150, 170]
-slice_allowed = [130]
+# slice_allowed = [130]
 for x in range(volume.shape[0]):
     if x not in slice_allowed:
         continue
