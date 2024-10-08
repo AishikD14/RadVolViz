@@ -1532,7 +1532,7 @@ function segmentRegions(clusterNo, sideNo) {
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
     a.href = url;
-    a.download = 'clusteredDataRatio2.json';
+    a.download = 'clusteredDataRatio4.json';
     a.click();
   }
 

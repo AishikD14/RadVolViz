@@ -93,7 +93,7 @@ def apply_region_growing(volume, threshold=0.1):
 
 # Example: Parse the 'array3D.json' file
 # filename = 'clusteredData2.json'
-filename = 'clusteredDataRatio2.json'
+filename = 'clusteredDataRatio4.json'
 parsed_array = load_array_from_file(filename)
 
 shape = get_shape(parsed_array)
@@ -159,7 +159,7 @@ for i in range(shape[0]):
 
 # -----------------------------------------------------------------------------------------------
 
-diff_plot = False
+diff_plot = True
 
 # Compare all the values in the original and labeled volumes and print the number of differences 
 print("Number of differences:", np.sum(clusterData != clusterData1))
@@ -168,8 +168,6 @@ print("Number of differences:", np.sum(clusterData != clusterData1))
 
 if diff_plot:
     clusterData1[clusterData != clusterData1] = 6
-
-# quit()
 
 # -----------------------------------------------------------------------------------------------
 
