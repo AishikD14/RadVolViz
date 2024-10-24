@@ -145,7 +145,7 @@ print(occurrences)
 
 # -----------------------------------------------------------------------------------------------
 
-# Load the labeled volume
+# Load the labeled volume which is generated above
 volume_with_regions = np.load("labeled_volume4.npy")
 
 # Extract only the cluster IDs from the parsed array and mantain the 3D structure
@@ -186,7 +186,7 @@ else:
     bounds = [-0.5, 0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 50.5]
     norm = mcolors.BoundaryNorm(bounds, cmap.N)
 
-# Loop over each z-axis slice
+# Loop over each x-axis slice
 slice_allowed = [90, 100, 130, 150, 170]
 # slice_allowed = [130]
 for x in range(volume.shape[0]):
