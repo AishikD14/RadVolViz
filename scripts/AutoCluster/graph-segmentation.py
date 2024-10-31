@@ -59,7 +59,7 @@ def merge_mean_color_and_variance(graph, src, dst):
 # -------------------------------------------------------------------------------
 
 # Load the image
-image = imread('data3.jpg')
+image = imread('data1.jpg')
 
 # -------------------------------------------------------------------------------
 
