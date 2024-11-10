@@ -193,11 +193,12 @@ function helloWorld() {
 
     for (let i = xoffset; i < xoffset + diameter; i++) {
       for (let j = yoffset; j < yoffset + diameter; j++) {
-        // Inititate the information display for manual coloring (colorful display)
+        // Inititate the information display for manual coloring (colorless display)
+
         if (guiControls.brushMode == 1.0 || guiControls.brushMode == 2.0) {
           context.fillStyle = CoordToColor_ring(scaleGBC2Canvas.invert(j), scaleGBC2Canvas.invert(i), false);
         }
-        // Inititate the information display for data driven coloring (colorless display)
+        // Inititate the information display for data driven coloring (colorful display)
         else {
           context.fillStyle = CoordToColor(scaleGBC2Canvas.invert(j), scaleGBC2Canvas.invert(i), false);
         }
