@@ -358,10 +358,10 @@ def merge_mean_color_and_variance(graph, src, dst):
 # Load volume data
 volume = np.load('../volume.npy')
 
-# -------------------------------------------------------------------------------
-
 # Normalize the value of each voxel so that the sum of all channels is 1
 volume = volume / 255
+
+# -------------------------------------------------------------------------------
 
 # Create a list having all the voxels
 voxels = []
@@ -427,7 +427,6 @@ for x in range(volume.shape[0]):
         continue
 
     image = volume[x, :, :]
-
     print(image.shape)
 
     # -------------------------------------------------------------------------------
