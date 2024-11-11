@@ -13,6 +13,7 @@ import random
 import matplotlib.colors as mcolors
 import warnings
 import matplotlib.patheffects as patheffects
+import cv2
 
 # Ignore warnings
 warnings.filterwarnings("ignore")
@@ -114,9 +115,8 @@ def draw(hist, data, xedges, yedges, vararr, ss):
             canvas[j, i] = (np.array(color)[:3] * 255).astype(int)  # Use only RGB, ignore alpha & Scale to [0, 255] for display
 
     # Display the image using matplotlib
-    ax.imshow(canvas)
+    # ax.imshow(canvas)
     ax.axis('off')  # Turn off the axis
-    # plt.show()
 
     # Plot scatter points on the color space based on downsampled data Q
     num_ch = len(Q)  # Assuming Q is your downsampled data
@@ -129,9 +129,6 @@ def draw(hist, data, xedges, yedges, vararr, ss):
     scatter_y1 = [scale_gbc2canvas_y(d['GBCY'] * 0.997) for d in varPoints]
     ax.scatter(scatter_x1, scatter_y1, c=[GBCtoHCL_ring(d['GBCX'] * 0.997, d['GBCY'] * 0.997) for d in varPoints], s=15)
     
-    # for i, txt in enumerate(rowName):
-    #     ax.annotate(txt, (scatter_x1[i], scatter_y1[i]), fontsize=8, color='white')
-
     for d in varPoints:
         x = scale_gbc2canvas_x(d['GBCX'] * 0.997)
         y = scale_gbc2canvas_y(d['GBCY'] * 0.997)
@@ -159,7 +156,7 @@ def draw(hist, data, xedges, yedges, vararr, ss):
         # Add stroke effect for text
         text.set_path_effects([patheffects.withStroke(linewidth=2, foreground="white")])
 
-    plt.show()
+    # plt.show()
 
 # Function to constrain CX and CY values to the unit circle
 def ConstrainInUnit(CX, CY):
@@ -312,6 +309,14 @@ def CoordToColor(CX, CY):
     CX, CY = ConstrainInUnit(CX, CY)
     return GBCtoHCL2(CX, CY)
 
+# Function to get color from ratio
+def getColorfromRatio(ratio):
+    ss = GBC(np.array([ratio]), 0.0)[0][:2]
+
+    color = CoordToColor(ss[0], ss[1])
+
+    return (np.array(color)[:3] * 255).astype(int)
+
 # -------------------------------------------------------------------------------
 
 # Updated weight function to include both mean color and variance differences
@@ -380,36 +385,37 @@ print(voxels.shape)
 
 # -------------------------------------------------------------------------------
 
-embedMode = 1
-rotateVar = 0.0
+# embedMode = 1
+# rotateVar = 0.0
 
-if embedMode == 1:
-    ss = GBC(voxels, rotateVar)
+# # Get coordinate from metal ratios
+# if embedMode == 1:
+#     ss = GBC(voxels, rotateVar)
 
-row = len(ss)
-col = len(ss[0])
+# row = len(ss)
+# col = len(ss[0])
 
-# Get all data except the last 4 rows
-newarr = []
-for i in range(row - 4):
-    newarr.append([])
-    for j in range(col):
-        newarr[i].append(ss[i][j])
+# # Get all data except the last 4 rows
+# newarr = []
+# for i in range(row - 4):
+#     newarr.append([])
+#     for j in range(col):
+#         newarr[i].append(ss[i][j])
 
-vararr = []
-for i, j in zip(range(row - 4, row), range(4)):
-    vararr.append([ss[i][0], ss[i][1], 0, 0, 0, 0])
+# vararr = []
+# for i, j in zip(range(row - 4, row), range(4)):
+#     vararr.append([ss[i][0], ss[i][1], 0, 0, 0, 0])
 
-newarr = np.array(newarr)
-vararr = np.array(vararr)
+# newarr = np.array(newarr)
+# vararr = np.array(vararr)
 
 # Generate the 2D histogram
-hist, xedges, yedges = generate_histogram(newarr, bins=6, range_x=(-1, 1), range_y=(-1, 1))
+# hist, xedges, yedges = generate_histogram(newarr, bins=6, range_x=(-1, 1), range_y=(-1, 1))
 
 # Draw the scatter points based on the histogram
-draw(hist, newarr, xedges, yedges, vararr, ss)
+# draw(hist, newarr, xedges, yedges, vararr, ss)
 
-quit()
+# quit()
 
 # -------------------------------------------------------------------------------
 
@@ -423,57 +429,68 @@ for x in range(volume.shape[0]):
     image = volume[x, :, :]
 
     print(image.shape)
-    print(image[150][100])
-
-    quit()
-
-    segments = segmentation.slic(image, n_segments=200, compactness=10, start_label=1)
-
-    # Convert the segmented image to an RGB visualization
-    segmented_image = label2rgb(segments, image, kind='avg')
-
-    # Display the original and segmented images
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
-    ax1.imshow(image)
-    ax1.set_title('Original Image')
-    ax1.axis('off')
-
-    ax2.imshow(segmented_image)
-    ax2.set_title('SLIC Segmentation')
-    ax2.axis('off')
-
-    plt.show()
-
-    quit()
 
     # -------------------------------------------------------------------------------
-    
-    # Flatten the 4D data into a 2D array for PCA (pixels x channels)
-    flat_image = image.reshape(-1, 4)  # assuming image has 4 channels
+    # Zoom in on the center of the image
+    # -------------------------------------------------------------------------------
 
-    # Apply PCA to reduce to 3 channels
-    pca = PCA(n_components=3)
-    pca_image = pca.fit_transform(flat_image)
+    # Determine the center of the image
+    height, width = image.shape[:2]
+    center_x, center_y = width // 2, height // 2
 
-    # Reshape back to the original image shape with 3 channels
-    pca_image_reshaped = pca_image.reshape(image.shape[0], image.shape[1], 3)
+    # Define a zoom factor (increase this value to zoom in more)
+    zoom_factor = 1.85
 
-    # Apply SLIC to the PCA-reduced image
-    labels1 = segmentation.slic(pca_image_reshaped, compactness=30, n_segments=400, start_label=1)
+    # Calculate new dimensions for cropping
+    crop_width = int(width / zoom_factor)
+    crop_height = int(height / zoom_factor)
 
-    # Normalize the PCA-reduced image to the range [0, 1] for floats
-    pca_image_normalized = img_as_float(pca_image_reshaped)
+    # Define crop box around the center
+    left = center_x - crop_width // 2
+    right = center_x + crop_width // 2
+    top = center_y - crop_height // 2
+    bottom = center_y + crop_height // 2
+
+    # Ensure that the crop box is within bounds of the original image
+    left = max(left, 0)
+    right = min(right, width)
+    top = max(top, 0)
+    bottom = min(bottom, height)
+
+    # Crop the image using numpy slicing
+    cropped_image = image[top:bottom, left:right]
+
+    # Resize the cropped image back to the original size
+    resized_image = cv2.resize(cropped_image, (width, height), interpolation=cv2.INTER_LINEAR)
 
     # -------------------------------------------------------------------------------
 
-    # Step 2: Create a Region Adjacency Graph (RAG) based on the superpixels
-    rag = graph.rag_mean_color(pca_image_normalized, labels1)
+    # Create an input image to store the colors for each pixel
+    input_image = np.zeros_like(resized_image, dtype=np.uint8)
+    # Drop the alpha channel
+    input_image = input_image[:, :, :3]
+
+    # Loop though each pixel in the image and assign custom colors
+    for i in range(resized_image.shape[0]):
+        for j in range(resized_image.shape[1]):
+            # If all channels are 0, assign black color
+            if np.all(resized_image[i][j] == 0):
+                input_image[i][j] = [0, 0, 0]
+            else:
+                input_image[i][j] = getColorfromRatio(resized_image[i][j])
+
+    segments = segmentation.slic(input_image, n_segments=200, compactness=30, start_label=1)
+
+    # -------------------------------------------------------------------------------
+
+    # Create a Region Adjacency Graph (RAG) based on the superpixels
+    rag = graph.rag_mean_color(input_image, segments)
 
     # Initialize variance for each node in the RAG
     for region in rag.nodes:
         # Extract the pixels of the current superpixel
-        mask = (labels1 == region)
-        pixels = image[mask]
+        mask = (segments == region)
+        pixels = input_image[mask]
 
         # Calculate variance for each color channel (R, G, B)
         variance = np.var(pixels, axis=0)
@@ -483,31 +500,30 @@ for x in range(volume.shape[0]):
 
     # -------------------------------------------------------------------------------
 
-    # Step 5: Apply hierarchical merging using the mean color similarity
-    labels2 = graph.merge_hierarchical(labels1, rag, thresh=35, rag_copy=False,
+    # Apply hierarchical merging using the mean color similarity
+    labels2 = graph.merge_hierarchical(segments, rag, thresh=35, rag_copy=False,
                                     in_place_merge=True,
                                     merge_func=merge_mean_color_and_variance,
                                     weight_func=weight_mean_color_and_variance)
 
     # -------------------------------------------------------------------------------
 
-    # 1. Visualize the original 4-channel image (displaying only the first 3 channels for visualization)
     plt.figure(figsize=(16, 5))
 
-    # 2. Visualize the PCA-reduced image (normalized to [0, 1] range)
+    # Visualize the Original image 
     plt.subplot(1, 3, 1)
-    plt.imshow(pca_image_normalized)  # PCA-reduced and normalized image
-    plt.title('PCA Reduced Image (Normalized)')
+    plt.imshow(input_image) 
+    plt.title('Original Image')
     plt.axis('off')
 
-    # 3. Visualize the superpixel-boundary marked image
+    # Visualize the superpixel-boundary marked image
     plt.subplot(1, 3, 2)
-    plt.imshow(segmentation.mark_boundaries(pca_image_normalized, labels1, color=(0.38, 0.21, 0.06)))
-    plt.title('Superpixel Boundaries on PCA Image')
+    plt.imshow(mark_boundaries(input_image, segments))
+    plt.title('SLIC Superpixel')
     plt.axis('off')
 
     plt.subplot(1, 3, 3)
-    plt.imshow(segmentation.mark_boundaries(pca_image_normalized, labels2, color=(0.38, 0.21, 0.06)))
+    plt.imshow(mark_boundaries(input_image, labels2))
     plt.title('Hierarchical Clustering Segmentation')
     plt.axis('off')
 
