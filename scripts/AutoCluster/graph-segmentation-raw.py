@@ -317,6 +317,16 @@ def getColorfromRatio(ratio):
 
     return (np.array(color)[:3] * 255).astype(int)
 
+# Function to apply additive log-ratio (ALR) transformation
+def alr_transform(image):
+    # Avoid division by zero by adding a small constant (epsilon)
+    epsilon = 1e-10
+    # Use the last channel as the reference channel for ALR
+    reference_channel = image[..., -1]
+    # Perform ALR transformation on all other channels relative to the reference channel
+    alr_image = np.log((image[..., :-1] + epsilon) / (reference_channel[..., np.newaxis] + epsilon))
+    return alr_image
+
 # -------------------------------------------------------------------------------
 
 # Updated weight function to include both mean color and variance differences
@@ -469,7 +479,7 @@ for x in range(volume.shape[0]):
     # Drop the alpha channel
     input_image = input_image[:, :, :3]
 
-    # Loop though each pixel in the image and assign custom colors
+    # Loop though each pixel in the image and assign custom colors based on Radviz
     for i in range(resized_image.shape[0]):
         for j in range(resized_image.shape[1]):
             # If all channels are 0, assign black color
@@ -478,7 +488,16 @@ for x in range(volume.shape[0]):
             else:
                 input_image[i][j] = getColorfromRatio(resized_image[i][j])
 
-    segments = segmentation.slic(input_image, n_segments=200, compactness=30, start_label=1)
+    # -------------------------------------------------------------------------------
+
+    # Apply SLIC segmentation on the RGB values fro RadViz
+    # segments = segmentation.slic(input_image, n_segments=200, compactness=30, start_label=1)
+
+    # Apply ALR transformation to the 4-channel ratio data
+    alr_image = alr_transform(resized_image)
+
+    # Apply SLIC segmentation on the transformed image (now shape is (256, 256, 3))
+    segments = segmentation.slic(alr_image, n_segments=400, compactness=10, sigma=1)
 
     # -------------------------------------------------------------------------------
 
@@ -500,7 +519,7 @@ for x in range(volume.shape[0]):
     # -------------------------------------------------------------------------------
 
     # Apply hierarchical merging using the mean color similarity
-    labels2 = graph.merge_hierarchical(segments, rag, thresh=35, rag_copy=False,
+    labels = graph.merge_hierarchical(segments, rag, thresh=35, rag_copy=False,
                                     in_place_merge=True,
                                     merge_func=merge_mean_color_and_variance,
                                     weight_func=weight_mean_color_and_variance)
@@ -522,7 +541,7 @@ for x in range(volume.shape[0]):
     plt.axis('off')
 
     plt.subplot(1, 3, 3)
-    plt.imshow(mark_boundaries(input_image, labels2))
+    plt.imshow(mark_boundaries(input_image, labels))
     plt.title('Hierarchical Clustering Segmentation')
     plt.axis('off')
 
