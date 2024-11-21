@@ -141,6 +141,16 @@ def getColorfromRatio(ratio):
 
     return (np.array(color)[:3] * 255).astype(int)
 
+# Function to apply additive log-ratio (ALR) transformation
+def alr_transform(image):
+    # Avoid division by zero by adding a small constant (epsilon)
+    epsilon = 1e-10
+    # Use the last channel as the reference channel for ALR
+    reference_channel = image[..., -1]
+    # Perform ALR transformation on all other channels relative to the reference channel
+    alr_image = np.log((image[..., :-1] + epsilon) / (reference_channel[..., np.newaxis] + epsilon))
+    return alr_image
+
 # -------------------------------------------------------------------------------
 
 # Define the custom weight function based on both mean color and variance differences
@@ -233,7 +243,7 @@ def iterative_merge(image, labels, rag, iterations):
     while 1:
         # Perform one iteration of merging based on mean color and variance similarity
         labels = graph.merge_hierarchical(
-            labels, rag, thresh=20, rag_copy=False, in_place_merge=True,
+            labels, rag, thresh=28, rag_copy=False, in_place_merge=True,
             merge_func=merge_mean_color_and_variance, weight_func=weight_mean_color_and_variance
         )
 
@@ -273,7 +283,7 @@ intensity_threshold = 0.15  # Threshold to ignore black regions (adjust as neede
 
 # Loop over each x-axis slice
 slice_allowed = [90, 100, 130, 150, 170]
-slice_allowed = [170]
+slice_allowed = [130]
 for x in range(volume.shape[0]):
     if x not in slice_allowed:
         continue
@@ -329,7 +339,16 @@ for x in range(volume.shape[0]):
             else:
                 input_image[i][j] = getColorfromRatio(resized_image[i][j])
 
-    segments = segmentation.slic(input_image, n_segments=200, compactness=30, start_label=1)
+    # -------------------------------------------------------------------------------
+
+    # Apply SLIC segmentation on the RGB values fro RadViz
+    # segments = segmentation.slic(input_image, n_segments=200, compactness=30, start_label=1)
+
+    # Apply ALR transformation to the 4-channel ratio data
+    alr_image = alr_transform(resized_image)
+
+    # Apply SLIC segmentation on the transformed image (now shape is (256, 256, 3))
+    segments = segmentation.slic(alr_image, n_segments=400, compactness=10, sigma=1)
 
     # -------------------------------------------------------------------------------
 

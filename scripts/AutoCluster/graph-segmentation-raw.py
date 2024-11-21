@@ -14,6 +14,7 @@ import matplotlib.colors as mcolors
 import warnings
 import matplotlib.patheffects as patheffects
 import cv2
+from sklearn.metrics.pairwise import cosine_distances
 
 # Ignore warnings
 warnings.filterwarnings("ignore")
@@ -327,6 +328,28 @@ def alr_transform(image):
     alr_image = np.log((image[..., :-1] + epsilon) / (reference_channel[..., np.newaxis] + epsilon))
     return alr_image
 
+# Custom SLIC function with cosine distance metric
+def custom_slic(image, n_segments=100, compactness=10, sigma=1):
+    # Get initial superpixels using standard SLIC
+    segments = segmentation.slic(image, n_segments=n_segments, compactness=compactness, sigma=sigma, start_label=0)
+    
+    # Iterate over each segment and refine based on cosine distance between pixels in each segment
+    refined_segments = np.zeros_like(segments)
+    
+    for seg_val in np.unique(segments):
+        mask = segments == seg_val
+        
+        # Extract pixels belonging to this segment
+        segment_pixels = image[mask]
+        
+        # Compute pairwise cosine distances within this segment
+        distances = cosine_distances(segment_pixels)
+        
+        # Cluster pixels based on cosine distances (for simplicity, we keep it as one segment here)
+        refined_segments[mask] = seg_val
+    
+    return refined_segments
+
 # -------------------------------------------------------------------------------
 
 # Updated weight function to include both mean color and variance differences
@@ -363,6 +386,19 @@ def merge_mean_color_and_variance(graph, src, dst):
                                      total_pixels_src * graph.nodes[src]['variance']) /
                                     (total_pixels_dst + total_pixels_src))
     
+# Updated weight function to include both mean log-ratio (ALR) and variance differences
+def weight_mean_alr_and_variance(graph, src, dst, n):
+    """Calculate weight between two regions based on both mean log-ratio (ALR) and variance similarity."""
+    mean_diff = graph.nodes[src]['mean color'] - graph.nodes[dst]['mean color']
+    mean_alr_weight = np.linalg.norm(mean_diff)
+    
+    var_diff = graph.nodes[src]['variance'] - graph.nodes[dst]['variance']
+    var_weight = np.linalg.norm(var_diff)
+
+    total_weight = mean_alr_weight + var_weight
+    
+    return {'weight': total_weight}
+
 # -------------------------------------------------------------------------------
 
 # Load volume data
@@ -496,8 +532,15 @@ for x in range(volume.shape[0]):
     # Apply ALR transformation to the 4-channel ratio data
     alr_image = alr_transform(resized_image)
 
+    # Print the values of the first pixel before and after transformation
+    print(f'Original Pixel Value: {resized_image[125, 125]}')
+    print(f'ALR Transformed Pixel Value: {alr_image[125, 125]}')
+
     # Apply SLIC segmentation on the transformed image (now shape is (256, 256, 3))
     segments = segmentation.slic(alr_image, n_segments=400, compactness=10, sigma=1)
+
+    # Apply custom SLIC segmentation using cosine distance metric
+    # segments = custom_slic(resized_image, n_segments=400, compactness=10, sigma=1)
 
     # -------------------------------------------------------------------------------
 
@@ -519,7 +562,7 @@ for x in range(volume.shape[0]):
     # -------------------------------------------------------------------------------
 
     # Apply hierarchical merging using the mean color similarity
-    labels = graph.merge_hierarchical(segments, rag, thresh=35, rag_copy=False,
+    labels = graph.merge_hierarchical(segments, rag, thresh=2.5, rag_copy=False,
                                     in_place_merge=True,
                                     merge_func=merge_mean_color_and_variance,
                                     weight_func=weight_mean_color_and_variance)
