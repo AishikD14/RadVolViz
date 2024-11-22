@@ -10,3 +10,4 @@ labeled_volume.npy
 labeled_volume2.npy
 *.json
 *.npy
+*.pyc
