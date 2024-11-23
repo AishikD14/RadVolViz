@@ -178,7 +178,7 @@ intensity_threshold = 0.15  # Threshold to ignore black regions (adjust as neede
 
 # Loop over each x-axis slice
 slice_allowed = [90, 100, 130, 150, 170]
-slice_allowed = [100]
+slice_allowed = [130]
 for x in range(volume.shape[0]):
     if x not in slice_allowed:
         continue
