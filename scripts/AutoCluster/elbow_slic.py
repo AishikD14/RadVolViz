@@ -159,6 +159,7 @@ def calculate_variance(image, segments):
         mask = (segments == seg_val)
         segment_pixels = image[mask]
         total_variance += np.var(segment_pixels)
+        total_variance /= len(unique_segments)
     
     return total_variance
 
@@ -177,7 +178,7 @@ intensity_threshold = 0.15  # Threshold to ignore black regions (adjust as neede
 
 # Loop over each x-axis slice
 slice_allowed = [90, 100, 130, 150, 170]
-slice_allowed = [130]
+slice_allowed = [100]
 for x in range(volume.shape[0]):
     if x not in slice_allowed:
         continue
@@ -241,7 +242,7 @@ for x in range(volume.shape[0]):
     # Apply ALR transformation to the 4-channel ratio data
     alr_image = alr_transform(resized_image)
 
-    segment_counts = [50, 100, 150, 200, 250, 300, 350, 400]
+    segment_counts = [100, 150, 200, 250, 300, 350, 400, 450, 500]
     variances = []
 
     for n_segments in segment_counts:
@@ -252,17 +253,23 @@ for x in range(volume.shape[0]):
         variance = calculate_variance(input_image, segments)
         variances.append(variance)
 
+    # Extract the exponent values from the variance values
+    variances = np.array(variances)
+    variances = np.log(variances)
+
+    print(variances)
+
     # Plot the elbow graph
     plt.figure(figsize=(8, 6))
     plt.plot(segment_counts, variances, marker='o')
     plt.title("Elbow Plot for Optimal Number of Segments")
     plt.xlabel("Number of Segments")
-    plt.ylabel("Variance Retained")
+    plt.ylabel("Exponent values of Variance Retained")
     plt.grid(True)
     plt.show()
 
     # Apply SLIC segmentation on the transformed image (now shape is (256, 256, 3))
-    segments = segmentation.slic(input_image, n_segments=250, compactness=10, sigma=1)
+    segments = segmentation.slic(input_image, n_segments=350)
 
     # -------------------------------------------------------------------------------
 
