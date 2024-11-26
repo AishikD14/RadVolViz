@@ -39,7 +39,10 @@ index = np.unravel_index(np.argmax(volume == value_to_find), volume.shape)
 
 # Print value of all channels at a specific location
 z, y, x = 100, 100, 101
-print("Values at location (100, 100, 100):", volume[z, y, x])
+print("Values at location (100, 100, 100):", volume[z, y, x], sum(volume[z, y, x]))
+print("Values at location (100, 100, 109):", volume[100, 100, 109], sum(volume[z, y, x]))
+print("Values at location (100, 100, 105):", volume[100, 100, 105], sum(volume[z, y, x]))
+print("Values at location (100, 100, 107):", volume[100, 100, 107], sum(volume[z, y, x]))
 
 # Optionally: visualize a slice using matplotlib
 # plt.imshow(volume[depth // 2], cmap='gray')  # Show the middle slice
