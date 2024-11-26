@@ -148,53 +148,11 @@ def alr_transform(image):
     alr_image = np.log((image[..., :-1] + epsilon) / (reference_channel[..., np.newaxis] + epsilon))
     return alr_image
 
-# -------------------------------------------------------------------------------
-
-def calculate_variance(image, segments):
-    """Calculate variance retained within superpixel segments."""
-    unique_segments = np.unique(segments)
-    total_variance = 0
-    
-    for seg_val in unique_segments:
-        mask = (segments == seg_val)
-        segment_pixels = image[mask]
-        total_variance += np.var(segment_pixels)
-        total_variance /= len(unique_segments)
-    
-    return total_variance
-
-# -------------------------------------------------------------------------------
-
-# Load volume data
-volume = np.load('../volume.npy')
-
-# Normalize the value of each voxel so that the sum of all channels is 1
-volume = volume / 255
-
-# -------------------------------------------------------------------------------
-
-# Initialize variance and filter based on mean intensity
-intensity_threshold = 0.15  # Threshold to ignore black regions (adjust as needed)
-
-# Loop over each x-axis slice
-slice_allowed = [90, 100, 130, 150, 170]
-slice_allowed = [130]
-for x in range(volume.shape[0]):
-    if x not in slice_allowed:
-        continue
-
-    image = volume[x, :, :]
-
-    # -------------------------------------------------------------------------------
-    # Zoom in on the center of the image
-    # -------------------------------------------------------------------------------
-
-    # Determine the center of the image
-    height, width = image.shape[:2]
+# Zoom in on the center of the image
+def cropImage(image, zoom_factor):
+    # Calculate new dimensions for cropping
+    width, height = image.shape[:2]
     center_x, center_y = width // 2, height // 2
-
-    # Define a zoom factor (increase this value to zoom in more)
-    zoom_factor = 1.85
 
     # Calculate new dimensions for cropping
     crop_width = int(width / zoom_factor)
@@ -217,6 +175,64 @@ for x in range(volume.shape[0]):
 
     # Resize the cropped image back to the original size
     resized_image = cv2.resize(cropped_image, (width, height), interpolation=cv2.INTER_LINEAR)
+
+    return resized_image
+
+# -------------------------------------------------------------------------------
+
+# Function to calculate variance retained within superpixel segments
+def calculate_variance(image, segments):
+    """Calculate variance retained within superpixel segments."""
+    unique_segments = np.unique(segments)
+    total_variance = 0
+    segment_length = 0
+    
+    for seg_val in unique_segments:
+        mask = (segments == seg_val)
+        segment_pixels = image[mask]
+
+        segment_variance = np.var(segment_pixels)
+        
+        if np.mean(segment_pixels) == 0:
+            # print("Black superpixel found")
+            pass
+        else:
+            total_variance += segment_variance
+            segment_length += 1
+
+    # print(segment_length)
+    return total_variance/segment_length
+
+# -------------------------------------------------------------------------------
+
+# Load volume data
+volume = np.load('../volume.npy')
+
+# Normalize the value of each voxel so that the sum of all channels is 1
+# volume = volume / 255
+
+# -------------------------------------------------------------------------------
+
+# Initialize variance and filter based on mean intensity
+intensity_threshold = 0.15  # Threshold to ignore black regions (adjust as needed)
+
+# Loop over each x-axis slice
+slice_allowed = [90, 100, 130, 150, 170]
+slice_allowed = [130]
+for x in range(volume.shape[0]):
+    if x not in slice_allowed:
+        continue
+
+    image = volume[x, :, :]
+
+    # -------------------------------------------------------------------------------
+    # Zoom in on the center of the image
+    # -------------------------------------------------------------------------------
+
+    # Define a zoom factor (increase this value to zoom in more)
+    zoom_factor = 1.85
+
+    resized_image = cropImage(image, zoom_factor)
 
     # -------------------------------------------------------------------------------
 
@@ -253,23 +269,29 @@ for x in range(volume.shape[0]):
         variance = calculate_variance(input_image, segments)
         variances.append(variance)
 
-    # Extract the exponent values from the variance values
-    variances = np.array(variances)
-    variances = np.log(variances)
-
     print(variances)
+
+    # quit()
+
+    # Extract the exponent values from the variance values
+    # variances = np.array(variances)
+    # variances = np.log(variances)
+
+    # print(variances)
 
     # Plot the elbow graph
     plt.figure(figsize=(8, 6))
     plt.plot(segment_counts, variances, marker='o')
     plt.title("Elbow Plot for Optimal Number of Segments")
     plt.xlabel("Number of Segments")
-    plt.ylabel("Exponent values of Variance Retained")
+    plt.ylabel("Values of Variance Retained")
     plt.grid(True)
     plt.show()
 
+    # quit()
+
     # Apply SLIC segmentation on the transformed image (now shape is (256, 256, 3))
-    segments = segmentation.slic(input_image, n_segments=350)
+    segments = segmentation.slic(input_image, n_segments=400)
 
     # -------------------------------------------------------------------------------
 
