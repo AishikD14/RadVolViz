@@ -186,21 +186,24 @@ def calculate_variance(image, segments):
     unique_segments = np.unique(segments)
     total_variance = 0
     segment_length = 0
+    ignore_black = True
     
     for seg_val in unique_segments:
         mask = (segments == seg_val)
         segment_pixels = image[mask]
 
         segment_variance = np.var(segment_pixels)
-        
-        if np.mean(segment_pixels) == 0:
-            # print("Black superpixel found")
-            pass
+
+        if ignore_black:
+            if np.mean(segment_pixels) == 0:
+                pass
+            else:
+                total_variance += segment_variance
+                segment_length += 1
         else:
             total_variance += segment_variance
             segment_length += 1
 
-    # print(segment_length)
     return total_variance/segment_length
 
 # -------------------------------------------------------------------------------
