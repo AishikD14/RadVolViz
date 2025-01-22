@@ -180,6 +180,73 @@ def cropImage(image, zoom_factor):
 
 # -------------------------------------------------------------------------------
 
+def initialize_cluster_centers(data, num_superpixels, grid_spacing):
+    """
+    Initialize cluster centers based on a uniform grid.
+    """
+    rows, cols, _ = data.shape
+    centers = []
+    for r in range(grid_spacing // 2, rows, grid_spacing):
+        for c in range(grid_spacing // 2, cols, grid_spacing):
+            centers.append([r, c] + list(data[r, c]))
+    return np.array(centers)
+
+def calculate_distance(pixel, center, spatial_weight, feature_weight):
+    """
+    Compute the combined distance between a pixel and a cluster center.
+    """
+    spatial_dist = np.linalg.norm(pixel[:2] - center[:2])
+    feature_dist = np.linalg.norm(pixel[2:] - center[2:])
+    return np.sqrt((spatial_dist / spatial_weight)**2 + (feature_dist / feature_weight)**2)
+
+# Custom SLIC function with cosine distance metric
+def custom_slic(data, num_superpixels, spatial_weight=10):
+    """
+    Perform SLIC segmentation on 4D input data (metal concentrations per pixel).
+    """
+    rows, cols, num_features = data.shape
+    grid_spacing = int(np.sqrt((rows * cols) / num_superpixels))
+    feature_weight = np.std(data.reshape(-1, num_features), axis=0).mean()
+
+    # Initialize cluster centers
+    cluster_centers = initialize_cluster_centers(data, num_superpixels, grid_spacing)
+    labels = -1 * np.ones((rows, cols), dtype=int)
+    distances = np.full((rows, cols), np.inf)
+
+    # Iterate until convergence
+    for _ in range(20):  # Number of iterations
+        for idx, center in enumerate(cluster_centers):
+            r, c = int(center[0]), int(center[1])
+            for dr in range(-grid_spacing, grid_spacing + 1):
+                for dc in range(-grid_spacing, grid_spacing + 1):
+                    rr, cc = r + dr, c + dc
+                    if 0 <= rr < rows and 0 <= cc < cols:
+                        pixel = [rr, cc] + list(data[rr, cc])
+                        distance = calculate_distance(pixel, center, spatial_weight, feature_weight)
+                        if distance < distances[rr, cc]:
+                            distances[rr, cc] = distance
+                            labels[rr, cc] = idx
+
+        # Update cluster centers
+        new_centers = np.zeros_like(cluster_centers)
+        counts = np.zeros(cluster_centers.shape[0], dtype=int)
+        for r in range(rows):
+            for c in range(cols):
+                label = labels[r, c]
+                new_centers[label][:2] += [r, c]
+                new_centers[label][2:] += data[r, c]
+                counts[label] += 1
+
+        for i in range(len(cluster_centers)):
+            if counts[i] > 0:
+                new_centers[i] /= counts[i]
+
+        cluster_centers = new_centers
+
+    return labels, cluster_centers
+
+# -------------------------------------------------------------------------------
+
 # Function to calculate variance retained within superpixel segments
 def calculate_variance(image, segments):
     """Calculate variance retained within superpixel segments."""
@@ -209,7 +276,8 @@ def calculate_variance(image, segments):
 # -------------------------------------------------------------------------------
 
 # Load volume data
-volume = np.load('../volume.npy')
+# volume = np.load('../volume.npy')
+volume = np.load('../../xray_volume.npy')
 
 # Normalize the value of each voxel so that the sum of all channels is 1
 # volume = volume / 255
@@ -233,7 +301,7 @@ for x in range(volume.shape[0]):
     # -------------------------------------------------------------------------------
 
     # Define a zoom factor (increase this value to zoom in more)
-    zoom_factor = 1.85
+    zoom_factor = 1.4
 
     resized_image = cropImage(image, zoom_factor)
 
@@ -259,28 +327,21 @@ for x in range(volume.shape[0]):
     # segments = segmentation.slic(input_image, n_segments=200, compactness=30, start_label=1)
 
     # Apply ALR transformation to the 4-channel ratio data
-    alr_image = alr_transform(resized_image)
+    # alr_image = alr_transform(resized_image)
 
     segment_counts = [100, 150, 200, 250, 300, 350, 400, 450, 500]
     variances = []
 
     for n_segments in segment_counts:
         # Perform SLIC superpixel segmentation
-        segments = segmentation.slic(input_image, n_segments=n_segments, sigma=1,  compactness=10, start_label=1)
+        # segments = segmentation.slic(input_image, n_segments=n_segments, sigma=1,  compactness=10, start_label=1)
+        segments, cluster_centers = custom_slic(resized_image, n_segments)
         
         # Calculate variance retained within segments
         variance = calculate_variance(input_image, segments)
         variances.append(variance)
 
     print(variances)
-
-    # quit()
-
-    # Extract the exponent values from the variance values
-    # variances = np.array(variances)
-    # variances = np.log(variances)
-
-    # print(variances)
 
     # Plot the elbow graph
     plt.figure(figsize=(8, 6))
@@ -291,10 +352,8 @@ for x in range(volume.shape[0]):
     plt.grid(True)
     plt.show()
 
-    # quit()
-
-    # Apply SLIC segmentation on the transformed image (now shape is (256, 256, 3))
-    segments = segmentation.slic(input_image, n_segments=400)
+    # Apply SLIC segmentation on the transformed image 
+    segments, cluster_centers = custom_slic(resized_image, segment_counts[variances.index(min(variances))])
 
     # -------------------------------------------------------------------------------
 
