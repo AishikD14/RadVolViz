@@ -200,7 +200,7 @@ def calculate_distance(pixel, center, spatial_weight, feature_weight):
     return np.sqrt((spatial_dist / spatial_weight)**2 + (feature_dist / feature_weight)**2)
 
 # Custom SLIC function with cosine distance metric
-def custom_slic(data, num_superpixels, spatial_weight=10):
+def custom_slic(data, num_superpixels, spatial_weight=5):
     """
     Perform SLIC segmentation on 4D input data (metal concentrations per pixel).
     """
