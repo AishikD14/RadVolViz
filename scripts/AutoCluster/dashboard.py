@@ -15,6 +15,7 @@ import plotly.express as px
 import dash
 from dash import dcc, html, Input, Output
 from scipy.spatial.distance import cdist
+from scipy.signal import find_peaks
 
 # Ignore warnings
 warnings.filterwarnings("ignore")
@@ -185,6 +186,31 @@ def cropImage(image, zoom_factor):
     resized_image = cv2.resize(cropped_image, (width, height), interpolation=cv2.INTER_LINEAR)
 
     return resized_image
+
+def find_optimal_threshold(distances, bins=50):
+    hist, bin_edges = np.histogram(distances, bins=bins, density=True)
+    bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
+    
+    # Find peaks in the histogram
+    peaks, _ = find_peaks(hist)
+    
+    if len(peaks) > 0:
+        elbow_index = peaks[0]  # Take the first significant peak
+        optimal_threshold = bin_centers[elbow_index]
+    else:
+        optimal_threshold = np.percentile(distances, 5)  # Default to lower 5th percentile if no clear peak
+    
+    # Plot histogram and chosen threshold
+    plt.figure(figsize=(8, 6))
+    plt.hist(distances, bins=bins, alpha=0.7, color='blue', density=True)
+    plt.axvline(optimal_threshold, color='red', linestyle='dashed', linewidth=2, label=f'Threshold: {optimal_threshold:.4f}')
+    plt.xlabel("Distance")
+    plt.ylabel("Density")
+    plt.title("Optimal Distance Threshold Selection")
+    plt.legend()
+    plt.show()
+    
+    return optimal_threshold
 
 # -------------------------------------------------------------------------------
 
@@ -610,7 +636,8 @@ for x in range(volume.shape[0]):
 
     # Visualize the Original image
     plt.subplot(1, 2, 1)
-    plt.imshow(input_image)
+    # plt.imshow(input_image)
+    plt.imshow(mark_boundaries(input_image, segments))
     plt.title('Original Image')
     plt.axis('off')
 
@@ -628,8 +655,33 @@ for x in range(volume.shape[0]):
     
     # -------------------------------------------------------------------------------
 
-    # Initialize the distance array for visualising histogram of distances for calculating threshold
-    distanceArray = []
+    # Calculate the pairwise distance between all segments based on their centroids and plot a histogram
+
+    # Initialize the distance matrix
+    distance_matrix = np.zeros((len(segment_vectors), len(segment_vectors)))
+
+    # Compute pairwise distances between all segments
+    for i in range(len(segment_vectors)):
+        for j in range(i + 1, len(segment_vectors)):
+            distance = np.linalg.norm(segment_vectors[i] - segment_vectors[j])
+            distance_matrix[i, j] = distance
+            distance_matrix[j, i] = distance
+
+    # Flatten the distance matrix to get pairwise distances
+    pairwise_distances = distance_matrix.flatten()
+
+    # Plot a histogram of pairwise distances
+    plt.figure(figsize=(12, 5))
+    plt.hist(pairwise_distances, bins=50)
+    plt.xlabel('Distance')
+    plt.ylabel('Frequency')
+    plt.title('Histogram of Pairwise Distances between Segment Centroids')
+    # plt.show()
+
+    # threshold = find_optimal_threshold(pairwise_distances)
+    # print("Optimal threshold:", threshold)
+
+    # -------------------------------------------------------------------------------
 
     # Function to determine if two segments should be merged based on distance
     def should_merge(segment_a, segment_b, threshold=0.006):
@@ -639,7 +691,6 @@ for x in range(volume.shape[0]):
         centroid_a = segment_a_array.mean(axis=0)  # Compute centroid of segment A
         centroid_b = segment_b_array.mean(axis=0)  # Compute centroid of segment B
         distance = np.linalg.norm(centroid_a - centroid_b)  # Euclidean distance
-        distanceArray.append(distance)
         return distance < threshold
 
     # Function to merge multiple segments into one
@@ -708,17 +759,6 @@ for x in range(volume.shape[0]):
     print("---------------------------------")
     print("Initial Segment Clusters:", final_clusters)
     print("---------------------------------")
-
-    # -------------------------------------------------------------------------------
-
-    # Plot histogram of distances to determine threshold
-
-    # plt.figure(figsize=(12, 5))
-    # plt.hist(distanceArray, bins=50)
-    # plt.xlabel('Distance')
-    # plt.ylabel('Frequency')
-    # plt.title('Histogram of Distances between Segment Centroids')
-    # plt.show()
 
     # -------------------------------------------------------------------------------
 
@@ -800,6 +840,28 @@ for x in range(volume.shape[0]):
     plt.suptitle(f'Volume Slice {x}')
 
     plt.tight_layout()
-    plt.show()
+    # plt.show()
 
     # -------------------------------------------------------------------------------
+
+    # Plot final image with superpixel boundaries on top
+
+    plt.figure(figsize=(12, 5))
+
+    # Visualize the Original image 
+    plt.subplot(1, 2, 1)
+    plt.imshow(final_segmented_image)  
+    plt.title('Original Image')
+    plt.axis('off')
+
+    # 3. Visualize the superpixel-boundary marked image
+    plt.subplot(1, 2, 2)
+    plt.imshow(mark_boundaries(final_segmented_image, segments))
+    plt.title('Superpixel Boundaries')
+    plt.axis('off')
+
+    # Set an overall title for the figure
+    plt.suptitle(f'Volume Slice {x}')
+
+    plt.tight_layout()
+    plt.show()
