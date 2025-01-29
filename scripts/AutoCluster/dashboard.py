@@ -472,7 +472,7 @@ for x in range(volume.shape[0]):
 
     # -------------------------------------------------------------------------------
 
-    # Apply SLIC segmentation on the RGB values fro RadViz
+    # Apply SLIC segmentation on the RGB values from RadViz
     # segments = segmentation.slic(input_image, n_segments=200, compactness=30, start_label=1)
 
     # Apply ALR transformation to the 4-channel ratio data
@@ -483,8 +483,8 @@ for x in range(volume.shape[0]):
 
     segments, cluster_centers = custom_slic(resized_image, 450)
 
-    print(segments.shape)
-    print(cluster_centers.shape)
+    # print(segments.shape)
+    # print(cluster_centers.shape)
     print(len(cluster_centers))
     print(segments)
     print("Segment range:", segments.min(), "to", segments.max())
@@ -539,7 +539,6 @@ for x in range(volume.shape[0]):
             segmentCordDict[segments[i][j]].append((i, j))
 
     # print(segmentCordDict.keys())
-    # quit()
 
     # -------------------------------------------------------------------------------
 
@@ -555,7 +554,7 @@ for x in range(volume.shape[0]):
     # Convert the list of vectors to a NumPy array
     segment_vectors = np.array(segment_vectors)
 
-    print(segment_vectors.shape)
+    print("Segment vector shape ", segment_vectors.shape)
 
     # -------------------------------------------------------------------------------
 
@@ -595,7 +594,7 @@ for x in range(volume.shape[0]):
     # Convert the RGBA values to integers in the range [0, 255]
     segment_colors_255 = (segment_colors[:, :3] * 255).astype(np.uint8)
 
-    # print(segment_colors_255.shape)
+    # print("Shape of colors for first t-sne is ", segment_colors_255.shape)
 
     # Create an image to store the colors for each pixel
     mapback_image = np.zeros_like(resized_image, dtype=np.uint8)
@@ -629,14 +628,18 @@ for x in range(volume.shape[0]):
     
     # -------------------------------------------------------------------------------
 
+    # Initialize the distance array for visualising histogram of distances for calculating threshold
+    distanceArray = []
+
     # Function to determine if two segments should be merged based on distance
-    def should_merge(segment_a, segment_b, threshold=0.5):
+    def should_merge(segment_a, segment_b, threshold=0.006):
         # Convert lists of NumPy arrays into single NumPy arrays
         segment_a_array = np.vstack(segment_a)  # Stack all arrays in segment_a into one array
         segment_b_array = np.vstack(segment_b)  # Stack all arrays in segment_b into one array
         centroid_a = segment_a_array.mean(axis=0)  # Compute centroid of segment A
         centroid_b = segment_b_array.mean(axis=0)  # Compute centroid of segment B
         distance = np.linalg.norm(centroid_a - centroid_b)  # Euclidean distance
+        distanceArray.append(distance)
         return distance < threshold
 
     # Function to merge multiple segments into one
@@ -648,8 +651,15 @@ for x in range(volume.shape[0]):
     remaining_segments = list(segmentDict.keys())  # Start with all initial segments
     initial_segment_clusters = {seg_id: {seg_id} for seg_id in remaining_segments}  # Track initial clusters
 
+    prevCount = len(remaining_segments)
+
+    print("---------------------------------")
+    print("Starting Iterative Merging Process...")
+
     # Iterative merging process
     while len(remaining_segments) > 5:
+        print("Remaining segments: ", len(remaining_segments))
+
         new_remaining_segments = []   # To store updated list of remaining segments after merging
         already_merged = set()        # Track which segments have been merged in this iteration
         
@@ -685,8 +695,111 @@ for x in range(volume.shape[0]):
         
         remaining_segments = new_remaining_segments
 
+        if prevCount == len(remaining_segments):  # No change in the number of segments
+            break
+        else:
+            prevCount = len(remaining_segments)
+
     # Final clusters and their corresponding initial segments
     final_clusters = {seg_id: initial_segment_clusters[seg_id] for seg_id in remaining_segments}
 
+    print("Total Clusters:", len(remaining_segments))
     print("Final Segments:", remaining_segments)
+    print("---------------------------------")
     print("Initial Segment Clusters:", final_clusters)
+    print("---------------------------------")
+
+    # -------------------------------------------------------------------------------
+
+    # Plot histogram of distances to determine threshold
+
+    # plt.figure(figsize=(12, 5))
+    # plt.hist(distanceArray, bins=50)
+    # plt.xlabel('Distance')
+    # plt.ylabel('Frequency')
+    # plt.title('Histogram of Distances between Segment Centroids')
+    # plt.show()
+
+    # -------------------------------------------------------------------------------
+
+    # Modify the t-sne plot to show the final clusters after merging
+
+    # Create a new scatter plot of the t-SNE reduced data
+
+    # Create a list of cluster IDs for each segment
+    cluster_labels = np.zeros(len(segment_labels), dtype=int) - 1  # Initialize with -1
+    for cluster_id, segment_ids in final_clusters.items():
+        for segment_id in segment_ids:
+            cluster_labels[segment_id] = cluster_id
+
+    # Create a scatter plot of the t-SNE reduced data with cluster labels
+    plt.figure(figsize=(10, 8))
+    scatter = plt.scatter(reduced_data[:, 0], reduced_data[:, 1], c=cluster_labels, cmap='viridis', alpha=0.7)
+
+    # Add color bar and legend
+    plt.colorbar(scatter)
+    plt.title('t-SNE Visualization of Segments (After Merging)')
+    plt.xlabel('t-SNE Component 1')
+    plt.ylabel('t-SNE Component 2')
+    plt.grid(True)
+    # plt.show()
+
+    # -------------------------------------------------------------------------------
+
+    # Extract the color codes for the final clusters to create the final segmented image
+
+    # Get the colormap
+    cmap = plt.get_cmap('viridis')
+
+    # Normalize the segment labels to the range [0, 1]
+    norm = plt.Normalize(vmin=min(cluster_labels), vmax=max(cluster_labels))
+
+    # Map segment labels to colors
+    cluster_colors = cmap(norm(cluster_labels))
+
+    # Convert the RGBA values to integers in the range [0, 255]
+    cluster_colors_255 = (cluster_colors[:, :3] * 255).astype(np.uint8)
+
+    # Get unique cluster IDs from the cluster labels and store the corresponding colors in a dictionary
+    cluster_color_dict = dict()
+    for cluster_id in np.unique(cluster_labels):
+        if cluster_id != -1:
+            cluster_color_dict[cluster_id] = cluster_colors_255[cluster_labels == cluster_id][0]
+
+    print("Cluster Color Dictionary for final segments: ", cluster_color_dict)
+
+    # -------------------------------------------------------------------------------
+
+    # Create the final segmented image using the cluster colors
+
+    # Create an image to store the colors for each pixel
+    final_segmented_image = np.zeros_like(resized_image, dtype=np.uint8)
+    # Drop the alpha channel
+    final_segmented_image = final_segmented_image[:, :, :3]
+
+    for i in range(resized_image.shape[0]):
+        for j in range(resized_image.shape[1]):
+            final_segmented_image[i][j] = cluster_color_dict[cluster_labels[segments[i][j]]]
+
+    # Display the original image and the final segmented image
+    plt.figure(figsize=(12, 5))
+
+    # Visualize the Original image
+    plt.subplot(1, 2, 1)
+    plt.imshow(input_image)
+    plt.title('Original Image')
+    plt.axis('off')
+
+    # Visualize the Final Segmented image
+    plt.subplot(1, 2, 2)
+    plt.imshow(final_segmented_image)
+    plt.title('Final Segmented Image')
+    plt.axis('off')
+
+    # Set an overall title for the figure
+    plt.suptitle(f'Volume Slice {x}')
+
+    plt.tight_layout()
+    plt.show()
+
+    # -------------------------------------------------------------------------------
