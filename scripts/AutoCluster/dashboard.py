@@ -335,12 +335,6 @@ def custom_slic(data, num_superpixels, spatial_weight=5):
 # Define the custom weight function based on both mean color and variance differences
 def weight_mean_color_and_variance(graph, src, dst, n):
     """Calculate weight between two regions based on both mean color and variance similarity."""
-
-    # Check if any region is below the intensity threshold (black background)
-    if graph.nodes[src]['mean intensity'] < intensity_threshold or graph.nodes[dst]['mean intensity'] < intensity_threshold:
-        # print("source: ", src, "dest: ", dst)
-        # print(f"src intensity: {graph.nodes[src]['mean intensity']}, dst intensity: {graph.nodes[dst]['mean intensity']}")
-        return {'weight': 1e6}  # Prevent merging by assigning a very high weight
     
     mean_diff = graph.nodes[src]['mean color'] - graph.nodes[dst]['mean color']
     mean_color_weight = np.linalg.norm(mean_diff)
@@ -353,33 +347,6 @@ def weight_mean_color_and_variance(graph, src, dst, n):
     # print(total_weight)
     
     return {'weight': total_weight}
-
-    # """Calculate weight between two regions based on both mean color and variance similarity."""
-    # src_intensity = graph.nodes[src]['mean intensity']
-    # dst_intensity = graph.nodes[dst]['mean intensity']
-    
-    # # If both regions are below the intensity threshold (i.e., both black), allow merging
-    # if src_intensity < intensity_threshold and dst_intensity < intensity_threshold:
-    #     # Allow merging with a weight based on variance similarity
-    #     var_diff = graph.nodes[src]['variance'] - graph.nodes[dst]['variance']
-    #     var_weight = np.linalg.norm(var_diff)
-    #     return {'weight': var_weight}
-    
-    # # If one region is black and the other is not, prevent merging
-    # if src_intensity < intensity_threshold or dst_intensity < intensity_threshold:
-    #     return {'weight': np.inf}  # Prevent merging by assigning a very high weight
-    
-    # # For non-black regions, calculate weight based on mean color and variance
-    # mean_diff = graph.nodes[src]['mean color'] - graph.nodes[dst]['mean color']
-    # mean_color_weight = np.linalg.norm(mean_diff)
-    
-    # var_diff = graph.nodes[src]['variance'] - graph.nodes[dst]['variance']
-    # var_weight = np.linalg.norm(var_diff)
-    
-    # # Combine mean color and variance differences into the total weight
-    # total_weight = mean_color_weight + var_weight
-    
-    # return {'weight': total_weight}
 
 # Define the merging function to handle both mean color and variance updates
 def merge_mean_color_and_variance(graph, src, dst):
@@ -403,26 +370,17 @@ def merge_mean_color_and_variance(graph, src, dst):
                                           (total_pixels_dst + total_pixels_src)
 
 # Step 4: Iterative Merging Process
-def iterative_merge(image, labels, rag, iterations):
+def iterative_merge(image, labels, rag, iterations, threshold):
     """Perform iterative merging of regions for a specified number of iterations."""
     init_label = None
     iter = 0
 
-    # The edges are stored in the RAG, and you can access them using rag.edges.data()
-    edge_weights = np.array([rag[u][v]['weight'] for u, v in rag.edges])
-
-    # Step 2: Calculate mean and standard deviation of edge weights
-    mean_weight = np.mean(edge_weights)
-    std_weight = np.std(edge_weights)
-
-    # Example of setting a threshold based on mean and standard deviation
-    threshold = mean_weight + std_weight  # Adjust this formula as needed
-    print(f"Dynamic Threshold for Merging: {threshold}")
-
     while 1:
+        print(f"Iteration: {iter + 1}")
+
         # Perform one iteration of merging based on mean color and variance similarity
         labels = graph.merge_hierarchical(
-            labels, rag, thresh=28, rag_copy=False, in_place_merge=True,
+            labels, rag, thresh=threshold, rag_copy=False, in_place_merge=True,
             merge_func=merge_mean_color_and_variance, weight_func=weight_mean_color_and_variance
         )
 
@@ -431,6 +389,12 @@ def iterative_merge(image, labels, rag, iterations):
             break
         else:
             init_label = labels.copy()
+
+        num_regions = len(np.unique(labels))
+        print(f"Remaining regions after merging: {num_regions}")
+
+        if num_regions == 1:
+            break
 
         # Rebuild the RAG based on the newly merged labels
         rag = graph.rag_mean_color(image, labels)
@@ -443,23 +407,23 @@ def iterative_merge(image, labels, rag, iterations):
             rag.nodes[region]['variance'] = variance
             rag.nodes[region]['mean intensity'] = np.mean(color.rgb2gray(pixels))
 
+        # Update edge weights based on the new mean color and variance
+        for src, dst in rag.edges():
+            rag.edges[src, dst]['weight'] = weight_mean_color_and_variance(rag, src, dst, None)['weight']
+
         iter += 1
+
+        if iter >= iterations:
+            break
 
     return labels, iter
 
 # -------------------------------------------------------------------------------
 
 # Load volume data
-# volume = np.load('../volume.npy')
 volume = np.load('../../xray_volume.npy')
 
-# Normalize the value of each voxel so that the sum of all channels is 1
-# volume = volume / 255
-
 # -------------------------------------------------------------------------------
-
-# Initialize variance and filter based on mean intensity
-intensity_threshold = 0.15  # Threshold to ignore black regions (adjust as needed)
 
 # Loop over each x-axis slice
 slice_allowed = [90, 100, 130, 150, 170]
@@ -807,6 +771,7 @@ for x in range(volume.shape[0]):
             cluster_color_dict[cluster_id] = cluster_colors_255[cluster_labels == cluster_id][0]
 
     print("Cluster Color Dictionary for final segments: ", cluster_color_dict)
+    print("---------------------------------")
 
     # -------------------------------------------------------------------------------
 
@@ -856,7 +821,7 @@ for x in range(volume.shape[0]):
 
     # 3. Visualize the superpixel-boundary marked image
     plt.subplot(1, 2, 2)
-    plt.imshow(mark_boundaries(final_segmented_image, segments))
+    plt.imshow(mark_boundaries(final_segmented_image, segments, color=(0, 0, 0)))
     plt.title('Superpixel Boundaries')
     plt.axis('off')
 
@@ -864,4 +829,104 @@ for x in range(volume.shape[0]):
     plt.suptitle(f'Volume Slice {x}')
 
     plt.tight_layout()
-    plt.show()
+    # plt.show()
+
+    # -------------------------------------------------------------------------------
+
+    # Create a graph-based representation of the image using the mean color and variance of each segment
+
+    # Create a Region Adjacency Graph (RAG) based on the segments
+    rag = graph.rag_mean_color(final_segmented_image, segments)
+
+    # Add mean color and variance attributes to the graph nodes
+    for region in rag.nodes:
+        mask = (segments == region)
+        pixels = final_segmented_image[mask]
+
+        mean_color = np.mean(pixels, axis=0)
+        variance = np.var(pixels, axis=0)
+        rag.nodes[region]['mean color'] = mean_color
+        rag.nodes[region]['variance'] = variance
+        rag.nodes[region]['total color'] = np.sum(pixels, axis=0)
+        rag.nodes[region]['pixel count'] = len(pixels)
+        rag.nodes[region]['mean intensity'] = np.mean(color.rgb2gray(pixels))
+
+    # Update edge weights based on the mean color and variance of the regions
+    for src, dst in rag.edges():
+        rag.edges[src, dst]['weight'] = weight_mean_color_and_variance(rag, src, dst, None)['weight']
+
+    # -------------------------------------------------------------------------------
+
+    # Threshold selection based on edge weights
+
+    edge_weights = np.array([rag[u][v]['weight'] for u, v in rag.edges])
+    print(f"Min weight: {min(edge_weights)}, Max weight: {max(edge_weights)}")
+
+    plt.figure(figsize=(12, 5))
+    plt.hist(edge_weights, bins=50)
+    plt.xlabel("Edge Weight (Dissimilarity)")
+    plt.ylabel("Frequency")
+    plt.title("Distribution of Edge Weights")
+    # plt.show()
+
+    # threshold = np.percentile(edge_weights, 70)  # Example: using the 75th percentile
+    # print(f"Chosen Threshold: {threshold}")
+
+    # Extract sorted unique weights
+    # sorted_weights = np.sort(np.unique(edge_weights))
+
+    # # Compute the difference between consecutive weights
+    # weight_diffs = np.diff(sorted_weights)
+
+    # # Find the index of the largest gap
+    # max_gap_index = np.argmax(weight_diffs)
+
+    # Optimal threshold = value before the largest gap
+    # optimal_threshold = sorted_weights[max_gap_index]
+    # print(f"Optimal threshold based on largest gap: {optimal_threshold}")
+
+    # from skimage.filters import threshold_otsu
+
+    # # Compute Otsu's threshold
+    # threshold_otsu_val = threshold_otsu(np.array(edge_weights))
+    # print(f"Optimal threshold from Otsu's method: {threshold_otsu_val}")
+
+    # -------------------------------------------------------------------------------
+
+    # Perform iterative merging of regions based on mean color and variance similarity for 1 iteration
+
+    final_labels, num_iterations = iterative_merge(final_segmented_image, segments, rag, iterations=1, threshold=5)
+
+    # -------------------------------------------------------------------------------
+
+    # Plot the final segmented image with superpixel boundaries
+
+    plt.figure(figsize=(12, 5))
+
+    # Visualize the Original image
+    plt.subplot(1, 3, 1)
+    plt.imshow(final_segmented_image)
+    plt.title('Original Image')
+    plt.axis('off')
+
+    # Visualize the superpixel-boundary marked image
+    plt.subplot(1, 3, 2)
+    plt.imshow(mark_boundaries(final_segmented_image, segments, color=(0, 0, 0)))
+    plt.title('SLIC Superpixel')
+    plt.axis('off')
+
+    # Visualize the Final Segmented image with superpixel boundaries
+    plt.subplot(1, 3, 3)
+    plt.imshow(mark_boundaries(final_segmented_image, final_labels, color=(0, 0, 0)))
+    plt.title('Hierarchical Clustering for 1 Iteration')
+    plt.axis('off')
+
+    # Set an overall title for the figure
+    plt.suptitle(f'Volume Slice {x}')
+
+    plt.tight_layout()
+    # plt.show()
+
+    # -------------------------------------------------------------------------------
+
+    
