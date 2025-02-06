@@ -614,7 +614,7 @@ for x in range(volume.shape[0]):
     if pca:
 
         # Perform PCA for dimensionality reduction
-        pca = PCA(n_components=2)
+        pca = PCA(n_components=2, random_state=42)
         reduced_data = pca.fit_transform(segment_vectors)
 
         # Create dummy labels for visualization (use actual labels if available)
@@ -705,11 +705,26 @@ for x in range(volume.shape[0]):
 
         # Implementation of K-means clustering algorithm
 
-        # Perform K-means clustering on the segment vectors to get an initial set of clusters
+        # Create the elbow plot to determine the optimal number of clusters
+        distortions = []
+        K = range(1, 11)
+        for k in K:
+            kmeanModel = KMeans(n_clusters=k)
+            kmeanModel.fit(segment_vectors)
+            distortions.append(kmeanModel.inertia_)
 
-        # Perform t-SNE for dimensionality reduction
-        tsne = TSNE(n_components=2, random_state=42)
-        reduced_data = tsne.fit_transform(segment_vectors)
+        # Plot the elbow plot
+        plt.figure(figsize=(8, 6))
+
+        plt.plot(K, distortions, 'bx-')
+        plt.xlabel('k')
+        plt.ylabel('Distortion')
+        plt.title('Elbow Method for Optimal k')
+        # plt.show()
+
+        # -------------------------------------------------------------------------------
+
+        # Perform K-means clustering on the segment vectors to get an initial set of clusters
 
         # Number of clusters
         num_clusters = 5
