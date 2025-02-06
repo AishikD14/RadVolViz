@@ -16,6 +16,8 @@ import dash
 from dash import dcc, html, Input, Output
 from scipy.spatial.distance import cdist
 from scipy.signal import find_peaks
+import pandas as pd
+from sklearn.cluster import KMeans
 
 # Ignore warnings
 warnings.filterwarnings("ignore")
@@ -425,6 +427,20 @@ volume = np.load('../../xray_volume.npy')
 
 # -------------------------------------------------------------------------------
 
+# Clustering Algorithm in Use
+k_means = True
+region_growing = False
+
+# High-dimensional Visualization in Use
+t_sne = True
+pca = False
+
+# Colormap for the Visualization
+random_colormap = False
+radviz_colormap = True
+
+# -------------------------------------------------------------------------------
+
 # Loop over each x-axis slice
 slice_allowed = [90, 100, 130, 150, 170]
 slice_allowed = [130]
@@ -478,7 +494,6 @@ for x in range(volume.shape[0]):
     print(len(cluster_centers))
     print(segments)
     print("Segment range:", segments.min(), "to", segments.max())
-    # quit()
 
     # -------------------------------------------------------------------------------
 
@@ -532,6 +547,23 @@ for x in range(volume.shape[0]):
 
     # -------------------------------------------------------------------------------
 
+    # Make segment ID as the key and pixel colors as the value
+    segmentColorDict = dict()
+
+    for i in range(resized_image.shape[0]):
+        for j in range(resized_image.shape[1]):
+            if segments[i][j] not in segmentColorDict:
+                segmentColorDict[segments[i][j]] = []
+            segmentColorDict[segments[i][j]].append(input_image[i][j] / 255.0)
+
+    # Replace the segment ID with the mean color of the segment
+    for key in segmentColorDict.keys():
+        segmentColorDict[key] = np.mean(segmentColorDict[key], axis=0)
+
+    # print(segmentColorDict.keys())
+
+    # -------------------------------------------------------------------------------
+
     unique_segments = np.unique(segments)  # Get unique segment IDs
     segment_vectors = []
     
@@ -548,230 +580,332 @@ for x in range(volume.shape[0]):
 
     # -------------------------------------------------------------------------------
 
-    # Perform t-SNE for dimensionality reduction
-    tsne = TSNE(n_components=2)
-    reduced_data = tsne.fit_transform(segment_vectors)
+    if t_sne:
 
-    # Create dummy labels for visualization (use actual labels if available)
-    segment_labels = np.arange(len(reduced_data))
+        # Perform t-SNE for dimensionality reduction
+        tsne = TSNE(n_components=2)
+        reduced_data = tsne.fit_transform(segment_vectors)
 
-    # Create a scatter plot of the t-SNE reduced data
-    plt.figure(figsize=(10, 8))
-    scatter = plt.scatter(reduced_data[:, 0], reduced_data[:, 1], c=segment_labels, cmap='viridis', alpha=0.7)
+        # Create dummy labels for visualization (use actual labels if available)
+        segment_labels = np.arange(len(reduced_data))
 
-    # Add color bar and legend
-    plt.colorbar(scatter)
-    plt.title('t-SNE Visualization of Segments')
-    plt.xlabel('t-SNE Component 1')
-    plt.ylabel('t-SNE Component 2')
-    plt.grid(True)
-    # plt.show()
+        # Extract colors for each segment in the same order as `segment_ids`
+        color_array = np.array([segmentColorDict[seg_id] for seg_id in segment_labels])
+
+        # Create a scatter plot of the t-SNE reduced data
+        plt.figure(figsize=(10, 8))
+
+        if random_colormap:
+            scatter = plt.scatter(reduced_data[:, 0], reduced_data[:, 1], c=segment_labels, cmap='viridis', alpha=0.7)
+            plt.colorbar(scatter)
+
+        elif radviz_colormap:
+            scatter = plt.scatter(reduced_data[:, 0], reduced_data[:, 1], c=color_array, alpha=0.7)
+
+        plt.title('t-SNE Visualization of Segments')
+        plt.xlabel('t-SNE Component 1')
+        plt.ylabel('t-SNE Component 2')
+        plt.grid(True)
+        # plt.show()
+        # quit()
+
+    # -------------------------------------------------------------------------------
+
+    if pca:
+
+        # Perform PCA for dimensionality reduction
+        pca = PCA(n_components=2)
+        reduced_data = pca.fit_transform(segment_vectors)
+
+        # Create dummy labels for visualization (use actual labels if available)
+        segment_labels = np.arange(len(reduced_data))
+
+        # Extract colors for each segment in the same order as `segment_ids`
+        color_array = np.array([segmentColorDict[seg_id] for seg_id in segment_labels])
+
+        # Create a scatter plot of the PCA reduced data
+        plt.figure(figsize=(10, 8))
+
+        if random_colormap:
+            scatter = plt.scatter(reduced_data[:, 0], reduced_data[:, 1], c=segment_labels, cmap='viridis', alpha=0.7)
+            plt.colorbar(scatter)
+
+        elif radviz_colormap:
+            scatter = plt.scatter(reduced_data[:, 0], reduced_data[:, 1], c=color_array, alpha=0.7)
+
+        plt.title('PCA Visualization of Segments')
+        plt.xlabel('PCA Component 1')
+        plt.ylabel('PCA Component 2')
+        plt.grid(True)
+        # plt.show()
+        # quit()
+
+    # -------------------------------------------------------------------------------
+
+    # Perform bivariate analysis of the 4 features of the segment_vectors data using a scatter plot matrix
+    # df = pd.DataFrame(segment_vectors, columns=['Feature 1', 'Feature 2', 'Feature 3', 'Feature 4'])
+    # fig = px.scatter_matrix(df, title='Scatter Plot Matrix of Segment Features')
+    # fig.show()
     # quit()
 
     # -------------------------------------------------------------------------------
 
-    # Map the color from the T-SNE plot back to the original image to see which segments correspond to which colors
+    if random_colormap:
 
-    # Get the colormap
-    cmap = plt.get_cmap('viridis')
+        # Map the color from the T-SNE or PCA plot back to the original image to see which segments correspond to which colors
 
-    # Normalize the segment labels to the range [0, 1]
-    norm = plt.Normalize(vmin=min(segment_labels), vmax=max(segment_labels))
+        # Get the colormap
+        cmap = plt.get_cmap('viridis')
 
-    # Map segment labels to colors
-    segment_colors = cmap(norm(segment_labels))
+        # Normalize the segment labels to the range [0, 1]
+        norm = plt.Normalize(vmin=min(segment_labels), vmax=max(segment_labels))
 
-    # Convert the RGBA values to integers in the range [0, 255]
-    segment_colors_255 = (segment_colors[:, :3] * 255).astype(np.uint8)
+        # Map segment labels to colors
+        segment_colors = cmap(norm(segment_labels))
 
-    # print("Shape of colors for first t-sne is ", segment_colors_255.shape)
+        # Convert the RGBA values to integers in the range [0, 255]
+        segment_colors_255 = (segment_colors[:, :3] * 255).astype(np.uint8)
 
-    # Create an image to store the colors for each pixel
-    mapback_image = np.zeros_like(resized_image, dtype=np.uint8)
-    # Drop the alpha channel
-    mapback_image = mapback_image[:, :, :3]
+        # print("Shape of colors for first t-sne is ", segment_colors_255.shape)
 
-    for i in range(resized_image.shape[0]):
-        for j in range(resized_image.shape[1]):
-            mapback_image[i][j] = segment_colors_255[segments[i][j]]
+        # Create an image to store the colors for each pixel
+        mapback_image = np.zeros_like(resized_image, dtype=np.uint8)
+        # Drop the alpha channel
+        mapback_image = mapback_image[:, :, :3]
 
-    # Display the original image and the mapped image
-    plt.figure(figsize=(12, 5))
+        for i in range(resized_image.shape[0]):
+            for j in range(resized_image.shape[1]):
+                mapback_image[i][j] = segment_colors_255[segments[i][j]]
 
-    # Visualize the Original image
-    plt.subplot(1, 2, 1)
-    # plt.imshow(input_image)
-    plt.imshow(mark_boundaries(input_image, segments))
-    plt.title('Original Image')
-    plt.axis('off')
+        # Display the original image and the mapped image
+        plt.figure(figsize=(12, 5))
 
-    # Visualize the Mapped image
-    plt.subplot(1, 2, 2)
-    plt.imshow(mapback_image)
-    plt.title('Mapped Image')
-    plt.axis('off')
+        # Visualize the Original image
+        plt.subplot(1, 2, 1)
+        # plt.imshow(input_image)
+        plt.imshow(mark_boundaries(input_image, segments))
+        plt.title('Original Image')
+        plt.axis('off')
 
-    # Set an overall title for the figure
-    plt.suptitle(f'Volume Slice {x}')
+        # Visualize the Mapped image
+        plt.subplot(1, 2, 2)
+        plt.imshow(mapback_image)
+        plt.title('Mapped Image')
+        plt.axis('off')
 
-    plt.tight_layout()
-    # plt.show()
+        # Set an overall title for the figure
+        plt.suptitle(f'Volume Slice {x}')
+
+        plt.tight_layout()
+        # plt.show()
     
     # -------------------------------------------------------------------------------
 
-    # Calculate the pairwise distance between all segments based on their centroids and plot a histogram
+    if k_means:
 
-    # Initialize the distance matrix
-    distance_matrix = np.zeros((len(segment_vectors), len(segment_vectors)))
+        # Implementation of K-means clustering algorithm
 
-    # Compute pairwise distances between all segments
-    for i in range(len(segment_vectors)):
-        for j in range(i + 1, len(segment_vectors)):
-            distance = np.linalg.norm(segment_vectors[i] - segment_vectors[j])
-            distance_matrix[i, j] = distance
-            distance_matrix[j, i] = distance
+        # Perform K-means clustering on the segment vectors to get an initial set of clusters
 
-    # Flatten the distance matrix to get pairwise distances
-    pairwise_distances = distance_matrix.flatten()
+        # Perform t-SNE for dimensionality reduction
+        tsne = TSNE(n_components=2, random_state=42)
+        reduced_data = tsne.fit_transform(segment_vectors)
 
-    # Plot a histogram of pairwise distances
-    plt.figure(figsize=(12, 5))
-    plt.hist(pairwise_distances, bins=50)
-    plt.xlabel('Distance')
-    plt.ylabel('Frequency')
-    plt.title('Histogram of Pairwise Distances between Segment Centroids')
-    # plt.show()
+        # Number of clusters
+        num_clusters = 5
 
-    # threshold = find_optimal_threshold(pairwise_distances)
-    # print("Optimal threshold:", threshold)
+        # Perform K-means clustering
+        kmeans = KMeans(n_clusters=num_clusters, random_state=42)
+        cluster_labels = kmeans.fit_predict(segment_vectors)
+
+        colormap = plt.get_cmap("tab10")
+
+        # Create a scatter plot of the t-SNE reduced data with cluster labels
+        plt.figure(figsize=(10, 8))
+        for i in range(num_clusters):  # 5 clusters
+            plt.scatter(reduced_data[cluster_labels == i, 0], reduced_data[cluster_labels == i, 1], color=colormap(i), label=f'Cluster {i+1}')
+
+        # Add legend
+        plt.legend()
+
+        plt.title('t-sne Visualization of Segments after K-means Clustering')
+        plt.xlabel('t-sne Component 1')
+        plt.ylabel('t-sne Component 2')
+        plt.grid(True)
+        # plt.show()
+
+        # -------------------------------------------------------------------------------
+
+        # Extract the color codes for the final clusters to create the final segmented image
+
+        # Get unique cluster IDs from the cluster labels and store the corresponding colors in a dictionary
+        cluster_color_dict = dict()
+        for cluster_id in np.unique(cluster_labels):
+            cluster_color_dict[cluster_id] = tuple(map(lambda x: int(x * 255), colormap(cluster_id)[:3]))
+
+        print("Cluster Color Dictionary for K-means clusters: ", cluster_color_dict)
+        print("---------------------------------")
+        # quit()
 
     # -------------------------------------------------------------------------------
 
-    # Function to determine if two segments should be merged based on distance
-    def should_merge(segment_a, segment_b, threshold=0.006):
-        # Convert lists of NumPy arrays into single NumPy arrays
-        segment_a_array = np.vstack(segment_a)  # Stack all arrays in segment_a into one array
-        segment_b_array = np.vstack(segment_b)  # Stack all arrays in segment_b into one array
-        centroid_a = segment_a_array.mean(axis=0)  # Compute centroid of segment A
-        centroid_b = segment_b_array.mean(axis=0)  # Compute centroid of segment B
-        distance = np.linalg.norm(centroid_a - centroid_b)  # Euclidean distance
-        return distance < threshold
+    if region_growing:
 
-    # Function to merge multiple segments into one
-    def merge_segments(segments, segmentDict):
-        new_segment = np.vstack([segmentDict[seg] for seg in segments])  # Combine all points
-        return new_segment
+        # Implementation of Region Growing Algorithm
 
-    # Initialize tracking structures
-    remaining_segments = list(segmentDict.keys())  # Start with all initial segments
-    initial_segment_clusters = {seg_id: {seg_id} for seg_id in remaining_segments}  # Track initial clusters
+        # Calculate the pairwise distance between all segments based on their centroids and plot a histogram
 
-    prevCount = len(remaining_segments)
+        # Initialize the distance matrix
+        distance_matrix = np.zeros((len(segment_vectors), len(segment_vectors)))
 
-    print("---------------------------------")
-    print("Starting Iterative Merging Process...")
+        # Compute pairwise distances between all segments
+        for i in range(len(segment_vectors)):
+            for j in range(i + 1, len(segment_vectors)):
+                distance = np.linalg.norm(segment_vectors[i] - segment_vectors[j])
+                distance_matrix[i, j] = distance
+                distance_matrix[j, i] = distance
 
-    # Iterative merging process
-    while len(remaining_segments) > 5:
-        print("Remaining segments: ", len(remaining_segments))
+        # Flatten the distance matrix to get pairwise distances
+        pairwise_distances = distance_matrix.flatten()
 
-        new_remaining_segments = []   # To store updated list of remaining segments after merging
-        already_merged = set()        # Track which segments have been merged in this iteration
-        
-        for i in range(len(remaining_segments)):
-            if remaining_segments[i] in already_merged:
-                continue
+        # Plot a histogram of pairwise distances
+        plt.figure(figsize=(12, 5))
+        plt.hist(pairwise_distances, bins=50)
+        plt.xlabel('Distance')
+        plt.ylabel('Frequency')
+        plt.title('Histogram of Pairwise Distances between Segment Centroids')
+        # plt.show()
+
+        # threshold = find_optimal_threshold(pairwise_distances)
+        # print("Optimal threshold:", threshold)
+
+        # -------------------------------------------------------------------------------
+
+        # Function to determine if two segments should be merged based on distance
+        def should_merge(segment_a, segment_b, threshold=0.006):
+            # Convert lists of NumPy arrays into single NumPy arrays
+            segment_a_array = np.vstack(segment_a)  # Stack all arrays in segment_a into one array
+            segment_b_array = np.vstack(segment_b)  # Stack all arrays in segment_b into one array
+            centroid_a = segment_a_array.mean(axis=0)  # Compute centroid of segment A
+            centroid_b = segment_b_array.mean(axis=0)  # Compute centroid of segment B
+            distance = np.linalg.norm(centroid_a - centroid_b)  # Euclidean distance
+            return distance < threshold
+
+        # Function to merge multiple segments into one
+        def merge_segments(segments, segmentDict):
+            new_segment = np.vstack([segmentDict[seg] for seg in segments])  # Combine all points
+            return new_segment
+
+        # Initialize tracking structures
+        remaining_segments = list(segmentDict.keys())  # Start with all initial segments
+        initial_segment_clusters = {seg_id: {seg_id} for seg_id in remaining_segments}  # Track initial clusters
+
+        prevCount = len(remaining_segments)
+
+        print("---------------------------------")
+        print("Starting Iterative Merging Process...")
+
+        # Iterative merging process
+        while len(remaining_segments) > 5:
+            print("Remaining segments: ", len(remaining_segments))
+
+            new_remaining_segments = []   # To store updated list of remaining segments after merging
+            already_merged = set()        # Track which segments have been merged in this iteration
             
-            seg_i = remaining_segments[i]
-            merge_candidates = [seg_i]
+            for i in range(len(remaining_segments)):
+                if remaining_segments[i] in already_merged:
+                    continue
+                
+                seg_i = remaining_segments[i]
+                merge_candidates = [seg_i]
+                
+                for j in range(i + 1, len(remaining_segments)):
+                    seg_j = remaining_segments[j]
+                    
+                    if should_merge(segmentDict[seg_i], segmentDict[seg_j]):
+                        merge_candidates.append(seg_j)
+                        already_merged.add(seg_j)
+                
+                if len(merge_candidates) > 1:
+                    # Merge all candidates into a new segment
+                    new_segment = merge_segments(merge_candidates, segmentDict)
+                    new_segment_id = len(segmentDict)   # Assign a new ID to the merged segment
+                    segmentDict[new_segment_id] = new_segment
+                    
+                    # Update cluster tracking
+                    initial_cluster_set = set()
+                    for seg in merge_candidates:
+                        initial_cluster_set.update(initial_segment_clusters[seg])
+                    initial_segment_clusters[new_segment_id] = initial_cluster_set
+                    
+                    new_remaining_segments.append(new_segment_id)
+                else:
+                    new_remaining_segments.append(seg_i)
             
-            for j in range(i + 1, len(remaining_segments)):
-                seg_j = remaining_segments[j]
-                
-                if should_merge(segmentDict[seg_i], segmentDict[seg_j]):
-                    merge_candidates.append(seg_j)
-                    already_merged.add(seg_j)
-            
-            if len(merge_candidates) > 1:
-                # Merge all candidates into a new segment
-                new_segment = merge_segments(merge_candidates, segmentDict)
-                new_segment_id = len(segmentDict)   # Assign a new ID to the merged segment
-                segmentDict[new_segment_id] = new_segment
-                
-                # Update cluster tracking
-                initial_cluster_set = set()
-                for seg in merge_candidates:
-                    initial_cluster_set.update(initial_segment_clusters[seg])
-                initial_segment_clusters[new_segment_id] = initial_cluster_set
-                
-                new_remaining_segments.append(new_segment_id)
+            remaining_segments = new_remaining_segments
+
+            if prevCount == len(remaining_segments):  # No change in the number of segments
+                break
             else:
-                new_remaining_segments.append(seg_i)
-        
-        remaining_segments = new_remaining_segments
+                prevCount = len(remaining_segments)
 
-        if prevCount == len(remaining_segments):  # No change in the number of segments
-            break
-        else:
-            prevCount = len(remaining_segments)
+        # Final clusters and their corresponding initial segments
+        final_clusters = {seg_id: initial_segment_clusters[seg_id] for seg_id in remaining_segments}
 
-    # Final clusters and their corresponding initial segments
-    final_clusters = {seg_id: initial_segment_clusters[seg_id] for seg_id in remaining_segments}
+        print("Total Clusters:", len(remaining_segments))
+        print("Final Segments:", remaining_segments)
+        print("---------------------------------")
+        print("Initial Segment Clusters:", final_clusters)
+        print("---------------------------------")
 
-    print("Total Clusters:", len(remaining_segments))
-    print("Final Segments:", remaining_segments)
-    print("---------------------------------")
-    print("Initial Segment Clusters:", final_clusters)
-    print("---------------------------------")
+        # -------------------------------------------------------------------------------
 
-    # -------------------------------------------------------------------------------
+        # Modify the t-sne plot to show the final clusters after merging
 
-    # Modify the t-sne plot to show the final clusters after merging
+        # Create a new scatter plot of the t-SNE reduced data
 
-    # Create a new scatter plot of the t-SNE reduced data
+        # Create a list of cluster IDs for each segment
+        cluster_labels = np.zeros(len(segment_labels), dtype=int) - 1  # Initialize with -1
+        for cluster_id, segment_ids in final_clusters.items():
+            for segment_id in segment_ids:
+                cluster_labels[segment_id] = cluster_id
 
-    # Create a list of cluster IDs for each segment
-    cluster_labels = np.zeros(len(segment_labels), dtype=int) - 1  # Initialize with -1
-    for cluster_id, segment_ids in final_clusters.items():
-        for segment_id in segment_ids:
-            cluster_labels[segment_id] = cluster_id
+        # Create a scatter plot of the t-SNE reduced data with cluster labels
+        plt.figure(figsize=(10, 8))
+        scatter = plt.scatter(reduced_data[:, 0], reduced_data[:, 1], c=cluster_labels, cmap='viridis', alpha=0.7)
 
-    # Create a scatter plot of the t-SNE reduced data with cluster labels
-    plt.figure(figsize=(10, 8))
-    scatter = plt.scatter(reduced_data[:, 0], reduced_data[:, 1], c=cluster_labels, cmap='viridis', alpha=0.7)
+        # Add color bar and legend
+        plt.colorbar(scatter)
+        plt.title('t-SNE Visualization of Segments (After Region Growing)')
+        plt.xlabel('t-SNE Component 1')
+        plt.ylabel('t-SNE Component 2')
+        plt.grid(True)
+        # plt.show()
 
-    # Add color bar and legend
-    plt.colorbar(scatter)
-    plt.title('t-SNE Visualization of Segments (After Merging)')
-    plt.xlabel('t-SNE Component 1')
-    plt.ylabel('t-SNE Component 2')
-    plt.grid(True)
-    # plt.show()
+        # -------------------------------------------------------------------------------
 
-    # -------------------------------------------------------------------------------
+        # Extract the color codes for the final clusters to create the final segmented image
 
-    # Extract the color codes for the final clusters to create the final segmented image
+        # Get the colormap
+        cmap = plt.get_cmap('viridis')
 
-    # Get the colormap
-    cmap = plt.get_cmap('viridis')
+        # Normalize the segment labels to the range [0, 1]
+        norm = plt.Normalize(vmin=min(cluster_labels), vmax=max(cluster_labels))
 
-    # Normalize the segment labels to the range [0, 1]
-    norm = plt.Normalize(vmin=min(cluster_labels), vmax=max(cluster_labels))
+        # Map segment labels to colors
+        cluster_colors = cmap(norm(cluster_labels))
 
-    # Map segment labels to colors
-    cluster_colors = cmap(norm(cluster_labels))
+        # Convert the RGBA values to integers in the range [0, 255]
+        cluster_colors_255 = (cluster_colors[:, :3] * 255).astype(np.uint8)
 
-    # Convert the RGBA values to integers in the range [0, 255]
-    cluster_colors_255 = (cluster_colors[:, :3] * 255).astype(np.uint8)
+        # Get unique cluster IDs from the cluster labels and store the corresponding colors in a dictionary
+        cluster_color_dict = dict()
+        for cluster_id in np.unique(cluster_labels):
+            if cluster_id != -1:
+                cluster_color_dict[cluster_id] = cluster_colors_255[cluster_labels == cluster_id][0]
 
-    # Get unique cluster IDs from the cluster labels and store the corresponding colors in a dictionary
-    cluster_color_dict = dict()
-    for cluster_id in np.unique(cluster_labels):
-        if cluster_id != -1:
-            cluster_color_dict[cluster_id] = cluster_colors_255[cluster_labels == cluster_id][0]
-
-    print("Cluster Color Dictionary for final segments: ", cluster_color_dict)
-    print("---------------------------------")
+        print("Cluster Color Dictionary for Region Growing Clusters: ", cluster_color_dict)
+        print("---------------------------------")
 
     # -------------------------------------------------------------------------------
 
@@ -806,6 +940,7 @@ for x in range(volume.shape[0]):
 
     plt.tight_layout()
     # plt.show()
+    # quit()
 
     # -------------------------------------------------------------------------------
 
@@ -829,7 +964,8 @@ for x in range(volume.shape[0]):
     plt.suptitle(f'Volume Slice {x}')
 
     plt.tight_layout()
-    # plt.show()
+    plt.show()
+    quit()
 
     # -------------------------------------------------------------------------------
 
@@ -927,6 +1063,115 @@ for x in range(volume.shape[0]):
     plt.tight_layout()
     # plt.show()
 
+    # -----------------------------------------------------------------------------------------------------------------------------------------------
+
+    # Visualize the final segmented image with superpixel boundaries for 2nd round
+    plt.close('all')  # Closes all open figures
+
+    print("-------------------------------------------------------------------------------------------------")
+    print("Segment range:", final_labels.min(), "to", final_labels.max())
+
+    plt.figure(figsize=(12, 5))
+
+    # Visualize the Original image 
+    plt.subplot(1, 2, 1)
+    plt.imshow(final_segmented_image)  
+    plt.title('Original Image')
+    plt.axis('off')
+
+    # Visualize the superpixel-boundary marked image
+    plt.subplot(1, 2, 2)
+    plt.imshow(mark_boundaries(final_segmented_image, final_labels, color=(0, 0, 0)))
+    plt.title('Superpixel Boundaries')
+    plt.axis('off')
+
+    # Set an overall title for the figure
+    plt.suptitle(f'Volume Slice {x}')
+
+    plt.tight_layout()
+    # plt.show()
+
     # -------------------------------------------------------------------------------
 
+    unique_segments = np.unique(final_labels)  # Get unique segment IDs
+    segment_vectors = []
     
+    # Loop through each segment ID and compute mean feature vector
+    for segment_id in unique_segments:
+        mask = (final_labels == segment_id)  # Mask for current segment
+        mean_color = np.mean(final_segmented_image[mask], axis=0)  # Mean of pixel values in this segment
+        segment_vectors.append(mean_color)
+
+    # Convert the list of vectors to a NumPy array
+    segment_vectors = np.array(segment_vectors)
+
+    print("Segment vector shape ", segment_vectors.shape)
+
+    # -------------------------------------------------------------------------------
+
+    # Perform t-SNE for dimensionality reduction
+    tsne = TSNE(n_components=2)
+    reduced_data = tsne.fit_transform(segment_vectors)
+
+    # Create dummy labels for visualization (use actual labels if available)
+    segment_labels = np.arange(len(reduced_data))
+
+    # Create a scatter plot of the t-SNE reduced data
+    plt.figure(figsize=(10, 8))
+    scatter = plt.scatter(reduced_data[:, 0], reduced_data[:, 1], c=segment_labels, cmap='viridis', alpha=0.7)
+
+    # Add color bar and legend
+    plt.colorbar(scatter)
+    plt.title('t-SNE Visualization of Segments 2nd Round')
+    plt.xlabel('t-SNE Component 1')
+    plt.ylabel('t-SNE Component 2')
+    plt.grid(True)
+    # plt.show()
+    
+    # -------------------------------------------------------------------------------
+
+    # Map the color from the T-SNE plot back to the original image to see which segments correspond to which colors
+
+    # Get the colormap
+    cmap = plt.get_cmap('viridis')
+
+    # Normalize the segment labels to the range [0, 1]
+    norm = plt.Normalize(vmin=min(segment_labels), vmax=max(segment_labels))
+
+    # Map segment labels to colors
+    segment_colors = cmap(norm(segment_labels))
+
+    # Convert the RGBA values to integers in the range [0, 255]
+    segment_colors_255 = (segment_colors[:, :3] * 255).astype(np.uint8)
+
+    # print("Shape of colors for first t-sne is ", segment_colors_255.shape)
+
+    # Create an image to store the colors for each pixel
+    mapback_image = np.zeros_like(final_segmented_image, dtype=np.uint8)
+    # Drop the alpha channel
+    mapback_image = mapback_image[:, :, :3]
+
+    for i in range(final_segmented_image.shape[0]):
+        for j in range(final_segmented_image.shape[1]):
+            mapback_image[i][j] = segment_colors_255[final_labels[i][j]]
+
+    # Display the original image and the mapped image
+    plt.figure(figsize=(12, 5))
+
+    # Visualize the Original image
+    plt.subplot(1, 2, 1)
+    plt.imshow(mark_boundaries(final_segmented_image, final_labels, color=(0, 0, 0)))
+    plt.title('Original Image')
+    plt.axis('off')
+
+    # Visualize the Mapped image
+    plt.subplot(1, 2, 2)
+    plt.imshow(mapback_image)
+    plt.title('Mapped Image')
+    plt.axis('off')
+
+    # Set an overall title for the figure
+    plt.suptitle(f'Volume Slice {x}')
+
+    plt.tight_layout()
+    plt.show()
