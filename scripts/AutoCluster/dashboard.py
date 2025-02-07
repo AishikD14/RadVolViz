@@ -583,7 +583,7 @@ for x in range(volume.shape[0]):
     if t_sne:
 
         # Perform t-SNE for dimensionality reduction
-        tsne = TSNE(n_components=2)
+        tsne = TSNE(n_components=2, random_state=42)
         reduced_data = tsne.fit_transform(segment_vectors)
 
         # Create dummy labels for visualization (use actual labels if available)
@@ -709,7 +709,7 @@ for x in range(volume.shape[0]):
         distortions = []
         K = range(1, 11)
         for k in K:
-            kmeanModel = KMeans(n_clusters=k)
+            kmeanModel = KMeans(n_clusters=k, random_state=42)
             kmeanModel.fit(segment_vectors)
             distortions.append(kmeanModel.inertia_)
 
@@ -979,8 +979,8 @@ for x in range(volume.shape[0]):
     plt.suptitle(f'Volume Slice {x}')
 
     plt.tight_layout()
-    plt.show()
-    quit()
+    # plt.show()
+    # quit()
 
     # -------------------------------------------------------------------------------
 
@@ -1019,6 +1019,7 @@ for x in range(volume.shape[0]):
     plt.ylabel("Frequency")
     plt.title("Distribution of Edge Weights")
     # plt.show()
+    # quit()
 
     # threshold = np.percentile(edge_weights, 70)  # Example: using the 75th percentile
     # print(f"Chosen Threshold: {threshold}")
@@ -1046,7 +1047,7 @@ for x in range(volume.shape[0]):
 
     # Perform iterative merging of regions based on mean color and variance similarity for 1 iteration
 
-    final_labels, num_iterations = iterative_merge(final_segmented_image, segments, rag, iterations=1, threshold=5)
+    final_labels, num_iterations = iterative_merge(final_segmented_image, segments, rag, iterations=1, threshold=30)
 
     # -------------------------------------------------------------------------------
 
@@ -1076,7 +1077,8 @@ for x in range(volume.shape[0]):
     plt.suptitle(f'Volume Slice {x}')
 
     plt.tight_layout()
-    # plt.show()
+    plt.show()
+    quit()
 
     # -----------------------------------------------------------------------------------------------------------------------------------------------
 
