@@ -429,9 +429,9 @@ volume = np.load('../../xray_volume.npy')
 # -------------------------------------------------------------------------------
 
 # Clustering Algorithm in Use
-k_means = False
+k_means = True
 region_growing = False
-gmm_model = True
+gmm_model = False
 
 # High-dimensional Visualization in Use
 t_sne = True
