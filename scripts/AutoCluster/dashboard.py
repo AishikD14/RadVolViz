@@ -18,6 +18,7 @@ from scipy.spatial.distance import cdist
 from scipy.signal import find_peaks
 import pandas as pd
 from sklearn.cluster import KMeans
+from sklearn.mixture import GaussianMixture
 
 # Ignore warnings
 warnings.filterwarnings("ignore")
@@ -428,8 +429,9 @@ volume = np.load('../../xray_volume.npy')
 # -------------------------------------------------------------------------------
 
 # Clustering Algorithm in Use
-k_means = True
+k_means = False
 region_growing = False
+gmm_model = True
 
 # High-dimensional Visualization in Use
 t_sne = True
@@ -442,7 +444,7 @@ radviz_colormap = True
 # -------------------------------------------------------------------------------
 
 # Loop over each x-axis slice
-slice_allowed = [90, 100, 130, 150, 170]
+slice_allowed = [90, 100, 130, 150]
 slice_allowed = [130]
 for x in range(volume.shape[0]):
     if x not in slice_allowed:
@@ -920,6 +922,50 @@ for x in range(volume.shape[0]):
                 cluster_color_dict[cluster_id] = cluster_colors_255[cluster_labels == cluster_id][0]
 
         print("Cluster Color Dictionary for Region Growing Clusters: ", cluster_color_dict)
+        print("---------------------------------")
+
+    # -------------------------------------------------------------------------------
+
+    if gmm_model:
+
+        # Implementation of Gaussian Mixture Model (GMM) Clustering Algorithm
+
+        # Perform GMM clustering on the segment vectors to get an initial set of clusters
+
+        # Number of clusters
+        num_clusters = 5
+
+        # Perform GMM clustering
+        gmm = GaussianMixture(n_components=num_clusters, random_state=42)
+        cluster_labels = gmm.fit_predict(segment_vectors)
+
+        colormap = plt.get_cmap("tab10")
+
+        # Create a scatter plot of the t-SNE reduced data with cluster labels
+        plt.figure(figsize=(10, 8))
+        for i in range(num_clusters):  # 5 clusters
+            plt.scatter(reduced_data[cluster_labels == i, 0], reduced_data[cluster_labels == i, 1], color=colormap(i), label=f'Cluster {i+1}')
+
+        # Add legend
+        plt.legend()
+
+        plt.title('t-sne Visualization of Segments after GMM Clustering')
+        plt.xlabel('t-sne Component 1')
+        plt.ylabel('t-sne Component 2')
+        plt.grid(True)
+        # plt.show()
+        # quit()
+
+        # -------------------------------------------------------------------------------
+
+        # Extract the color codes for the final clusters to create the final segmented image
+
+        # Get unique cluster IDs from the cluster labels and store the corresponding colors in a dictionary
+        cluster_color_dict = dict()
+        for cluster_id in np.unique(cluster_labels):
+            cluster_color_dict[cluster_id] = tuple(map(lambda x: int(x * 255), colormap(cluster_id)[:3]))
+
+        print("Cluster Color Dictionary for GMM clusters: ", cluster_color_dict)
         print("---------------------------------")
 
     # -------------------------------------------------------------------------------
