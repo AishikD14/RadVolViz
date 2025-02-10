@@ -7,6 +7,7 @@ import math
 import matplotlib.colors as mcolors
 from sklearn.cluster import KMeans
 from sklearn.manifold import TSNE
+import time
 
 # Ignore warnings
 warnings.filterwarnings("ignore")
@@ -314,12 +315,16 @@ else:
         
         # Perform K-means clustering on the segment vectors to get an initial set of clusters
 
+        start_time = time.time()
+
         # Number of clusters
         num_clusters = 5
 
         # Perform K-means clustering
         kmeans = KMeans(n_clusters=num_clusters, random_state=42)
         cluster_labels = kmeans.fit_predict(vector)
+
+        print(f"K-means clustering completed in {time.time() - start_time:.2f} seconds")
 
         colormap = plt.get_cmap("tab10")
 
