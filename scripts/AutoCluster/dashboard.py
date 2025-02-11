@@ -445,7 +445,7 @@ radviz_colormap = True
 # -------------------------------------------------------------------------------
 
 # Loop over each x-axis slice
-slice_allowed = [90, 100, 130, 150]
+slice_allowed = [80, 90, 100, 130, 150]
 slice_allowed = [130]
 for x in range(volume.shape[0]):
     if x not in slice_allowed:
@@ -585,9 +585,13 @@ for x in range(volume.shape[0]):
 
     if t_sne:
 
+        start_time_tsne = time.time()
+
         # Perform t-SNE for dimensionality reduction
         tsne = TSNE(n_components=2, random_state=42)
         reduced_data = tsne.fit_transform(segment_vectors)
+
+        print(f"t-SNE completed in {time.time() - start_time_tsne:.2f} seconds")
 
         # Create dummy labels for visualization (use actual labels if available)
         segment_labels = np.arange(len(reduced_data))
@@ -616,9 +620,13 @@ for x in range(volume.shape[0]):
 
     if pca:
 
+        start_time_pca = time.time()
+
         # Perform PCA for dimensionality reduction
         pca = PCA(n_components=2, random_state=42)
         reduced_data = pca.fit_transform(segment_vectors)
+
+        print(f"PCA completed in {time.time() - start_time_pca:.2f} seconds")
 
         # Create dummy labels for visualization (use actual labels if available)
         segment_labels = np.arange(len(reduced_data))
@@ -740,30 +748,88 @@ for x in range(volume.shape[0]):
 
         print(f"K-means clustering completed in {time.time() - start_time:.2f} seconds")
 
-        colormap = plt.get_cmap("tab10")
+        # colormap = plt.get_cmap("tab10")
 
-        # Create a scatter plot of the t-SNE reduced data with cluster labels
-        plt.figure(figsize=(10, 8))
-        for i in range(num_clusters):  # 5 clusters
-            plt.scatter(reduced_data[cluster_labels == i, 0], reduced_data[cluster_labels == i, 1], color=colormap(i), label=f'Cluster {i+1}')
+        # # Create a scatter plot of the t-SNE reduced data with cluster labels
+        # plt.figure(figsize=(10, 8))
+        # for i in range(num_clusters):  # 5 clusters
+        #     plt.scatter(reduced_data[cluster_labels == i, 0], reduced_data[cluster_labels == i, 1], color=colormap(i), label=f'Cluster {i+1}')
 
-        # Add legend
-        plt.legend()
+        # # Add legend
+        # plt.legend()
 
-        plt.title('t-sne Visualization of Segments after K-means Clustering')
-        plt.xlabel('t-sne Component 1')
-        plt.ylabel('t-sne Component 2')
-        plt.grid(True)
+        # plt.title('t-sne Visualization of Segments after K-means Clustering')
+        # plt.xlabel('t-sne Component 1')
+        # plt.ylabel('t-sne Component 2')
+        # plt.grid(True)
         # plt.show()
+
+        # -------------------------------------------------------------------------------
+
+        # Initialize selected clusters for swapping
+        selected_clusters = []
+        cluster_color_dict = {}
+
+        colormap = plt.cm.get_cmap("tab10")
+
+        # Function to handle click event
+        def on_click(event):
+            global selected_clusters, cluster_labels
+
+            if event.inaxes is None:
+                return  # Ignore clicks outside the plot
+
+            # Find the nearest point clicked
+            distances = np.linalg.norm(reduced_data - np.array([event.xdata, event.ydata]), axis=1)
+            clicked_idx = np.argmin(distances)
+            clicked_cluster = cluster_labels[clicked_idx]
+
+            if clicked_cluster not in selected_clusters:
+                selected_clusters.append(clicked_cluster)
+
+            # If two clusters are selected, swap them
+            if len(selected_clusters) == 2:
+                cluster_map = {selected_clusters[0]: selected_clusters[1], selected_clusters[1]: selected_clusters[0]}
+                cluster_labels = np.array([cluster_map.get(label, label) for label in cluster_labels])
+                selected_clusters.clear()
+                redraw_plot()
+
+        # Function to redraw plot after swapping
+        def redraw_plot():
+            plt.cla()
+            cluster_colors = {}
+            for i in range(num_clusters):  # 5 clusters
+                color = colormap(i)
+                cluster_colors[i] = color
+                plt.scatter(reduced_data[cluster_labels == i, 0], reduced_data[cluster_labels == i, 1], label=f'Cluster {i+1}')
+            plt.legend()
+            plt.title('t-sne Visualization of Segments after K-means Clustering')
+            plt.xlabel('t-sne Component 1')
+            plt.ylabel('t-sne Component 2')
+            plt.grid(True)
+            plt.draw()
+
+            # Store final colors globally for later use
+            global cluster_color_dict
+            cluster_color_dict = cluster_colors
+
+        # Plot the initial clusters
+        fig, ax = plt.subplots()
+        redraw_plot()
+        fig.canvas.mpl_connect('button_press_event', on_click)
+
+        plt.show()
+        # quit()
 
         # -------------------------------------------------------------------------------
 
         # Extract the color codes for the final clusters to create the final segmented image
 
         # Get unique cluster IDs from the cluster labels and store the corresponding colors in a dictionary
-        cluster_color_dict = dict()
+        # cluster_color_dict = dict()
         for cluster_id in np.unique(cluster_labels):
-            cluster_color_dict[cluster_id] = tuple(map(lambda x: int(x * 255), colormap(cluster_id)[:3]))
+            # cluster_color_dict[cluster_id] = tuple(map(lambda x: int(x * 255), colormap(cluster_id)[:3]))
+            cluster_color_dict[cluster_id] = tuple(map(lambda x: int(x * 255), cluster_color_dict[cluster_id][:3]))
 
         print("Cluster Color Dictionary for K-means clusters: ", cluster_color_dict)
         print("---------------------------------")
@@ -935,6 +1001,8 @@ for x in range(volume.shape[0]):
 
         # Implementation of Gaussian Mixture Model (GMM) Clustering Algorithm
 
+        start_time_gmm = time.time()
+
         # Perform GMM clustering on the segment vectors to get an initial set of clusters
 
         # Number of clusters
@@ -944,29 +1012,88 @@ for x in range(volume.shape[0]):
         gmm = GaussianMixture(n_components=num_clusters, random_state=42)
         cluster_labels = gmm.fit_predict(segment_vectors)
 
-        colormap = plt.get_cmap("tab10")
+        print(f"GMM clustering completed in {time.time() - start_time_gmm:.2f} seconds")
 
-        # Create a scatter plot of the t-SNE reduced data with cluster labels
-        plt.figure(figsize=(10, 8))
-        for i in range(num_clusters):  # 5 clusters
-            plt.scatter(reduced_data[cluster_labels == i, 0], reduced_data[cluster_labels == i, 1], color=colormap(i), label=f'Cluster {i+1}')
+        # colormap = plt.get_cmap("tab10")
 
-        # Add legend
-        plt.legend()
+        # # Create a scatter plot of the t-SNE reduced data with cluster labels
+        # plt.figure(figsize=(10, 8))
+        # for i in range(num_clusters):  # 5 clusters
+        #     plt.scatter(reduced_data[cluster_labels == i, 0], reduced_data[cluster_labels == i, 1], color=colormap(i), label=f'Cluster {i+1}')
 
-        plt.title('t-sne Visualization of Segments after GMM Clustering')
-        plt.xlabel('t-sne Component 1')
-        plt.ylabel('t-sne Component 2')
-        plt.grid(True)
+        # # Add legend
+        # plt.legend()
+
+        # plt.title('t-sne Visualization of Segments after GMM Clustering')
+        # plt.xlabel('t-sne Component 1')
+        # plt.ylabel('t-sne Component 2')
+        # plt.grid(True)
         # plt.show()
         # quit()
 
         # -------------------------------------------------------------------------------
 
+        # Initialize selected clusters for swapping
+        selected_clusters = []
+        cluster_color_dict = {}
+
+        colormap = plt.cm.get_cmap("tab10")
+
+        # Function to handle click event
+        def on_click(event):
+            global selected_clusters, cluster_labels
+
+            if event.inaxes is None:
+                return  # Ignore clicks outside the plot
+
+            # Find the nearest point clicked
+            distances = np.linalg.norm(reduced_data - np.array([event.xdata, event.ydata]), axis=1)
+            clicked_idx = np.argmin(distances)
+            clicked_cluster = cluster_labels[clicked_idx]
+
+            if clicked_cluster not in selected_clusters:
+                selected_clusters.append(clicked_cluster)
+
+            # If two clusters are selected, swap them
+            if len(selected_clusters) == 2:
+                cluster_map = {selected_clusters[0]: selected_clusters[1], selected_clusters[1]: selected_clusters[0]}
+                cluster_labels = np.array([cluster_map.get(label, label) for label in cluster_labels])
+                selected_clusters.clear()
+                redraw_plot()
+
+        # Function to redraw plot after swapping
+        def redraw_plot():
+            plt.cla()
+            cluster_colors = {}
+            for i in range(num_clusters):  # 5 clusters
+                color = colormap(i)
+                cluster_colors[i] = color
+                plt.scatter(reduced_data[cluster_labels == i, 0], reduced_data[cluster_labels == i, 1], label=f'Cluster {i+1}')
+            plt.legend()
+            plt.title('t-sne Visualization of Segments after GMM Clustering')
+            plt.xlabel('t-sne Component 1')
+            plt.ylabel('t-sne Component 2')
+            plt.grid(True)
+            plt.draw()
+
+            # Store final colors globally for later use
+            global cluster_color_dict
+            cluster_color_dict = cluster_colors
+
+        # Plot the initial clusters
+        fig, ax = plt.subplots()
+        redraw_plot()
+        fig.canvas.mpl_connect('button_press_event', on_click)
+
+        plt.show()
+        # quit()
+
+        # -----------------------------------------------------------------------------------------------
+
         # Extract the color codes for the final clusters to create the final segmented image
 
         # Get unique cluster IDs from the cluster labels and store the corresponding colors in a dictionary
-        cluster_color_dict = dict()
+        # cluster_color_dict = dict()
         for cluster_id in np.unique(cluster_labels):
             cluster_color_dict[cluster_id] = tuple(map(lambda x: int(x * 255), colormap(cluster_id)[:3]))
 
