@@ -409,6 +409,31 @@ def create_tsne_plot(segment_vectors, segmentColorDict):
 
     return fig
 
+# Function to create elbow plot for KMeans clustering
+def create_elbow_plot(segment_vectors, clustering):
+    distortions = []
+    K = range(1, 11)
+
+    if clustering == 'gmm':
+        for k in K:
+            gmm = GaussianMixture(n_components=k, random_state=42)
+            gmm.fit(segment_vectors)
+            distortions.append(gmm.bic(segment_vectors))
+
+        fig = px.line(x=K, y=distortions, title='Elbow Plot for GMM Clustering', labels={'x': 'Number of Clusters', 'y': 'BIC'})
+
+        return fig
+    
+    elif clustering == 'kmeans':
+        for k in K:
+            kmeans = KMeans(n_clusters=k, random_state=42)
+            kmeans.fit(segment_vectors)
+            distortions.append(kmeans.inertia_)
+
+        fig = px.line(x=K, y=distortions, title='Elbow Plot for KMeans Clustering', labels={'x': 'Number of Clusters', 'y': 'Distortion'})
+
+    return fig
+
 # -------------------------------------------------------------------------------
 
 # Initialize Dash app
@@ -418,161 +443,192 @@ app = dash.Dash(__name__)
 app.layout = html.Div([
     # html.H1(children='Dashboard'),
 
-    html.Div(children=[
-        # Control Panel
-        html.Div(children=[
-            html.H2(children='Control Panel'),
+    html.Div(
+        children=[
+            # Control Panel
+            html.Div(
+                children=[
+                    html.H2(children='Control Panel'),
 
-            # Radio Button for selection of axis for slicing
-            html.Label('Select axis for slicing volume:'),
-            dcc.RadioItems(
-                id='axis-radio',
-                options=[
-                    {'label': 'X Axis', 'value': 'x'},
-                    {'label': 'Y Axis', 'value': 'y'},
-                    {'label': 'Z Axis', 'value': 'z'}
+                    # Radio Button for selection of axis for slicing
+                    html.Label('Select axis for slicing volume:'),
+                    dcc.RadioItems(
+                        id='axis-radio',
+                        options=[
+                            {'label': 'X Axis', 'value': 'x'},
+                            {'label': 'Y Axis', 'value': 'y'},
+                            {'label': 'Z Axis', 'value': 'z'}
+                        ],
+                        value = 'x'
+                    ),
+
+                    # -------------------------------------------------------------------------------
+
+                    # Add break
+                    html.Br(),
+
+                    # -------------------------------------------------------------------------------
+
+                    # Slider for selecting slice
+                    html.Label('Select slice:'),
+                    dcc.Slider(
+                        id='slice-slider',
+                        min=1,
+                        max=volume.shape[0],
+                        step=1,
+                        value=130,
+                        marks={1: str(1), volume.shape[0]: str(volume.shape[0])}
+                    ),
+
+                    # -------------------------------------------------------------------------------
+
+                    # Add break
+                    html.Br(),
+
+                    # -------------------------------------------------------------------------------
+
+                    # Checkbox to enable/disable segmentation
+                    dcc.Checklist(
+                        id='segmentation-checkbox',
+                        options=[
+                            {'label': 'Superpixel segmentation', 'value': 'enable'}
+                        ],
+                        value=['enable']
+                    ),
+
+                    # -------------------------------------------------------------------------------
+
+                    # Add break
+                    html.Br(),
+
+                    # -------------------------------------------------------------------------------
+
+                    # Radio Button for selection Visualization Technique
+                    html.Label('Select Visualization Technique:'),
+                    dcc.RadioItems(
+                        id='visualization-radio',
+                        options=[
+                            {'label': 'PCA', 'value': 'pca'},
+                            {'label': 't-SNE', 'value': 'tsne'}
+                        ],
+                        value='tsne'
+                    ),
+
+                    # -------------------------------------------------------------------------------
+
+                    # Add break
+                    html.Br(),
+                    
+                    # -------------------------------------------------------------------------------
+
+                    # Radio Button for selection Clustering Technique
+                    html.Label('Select Clustering Technique:'),
+                    dcc.RadioItems(
+                        id='clustering-radio',
+                        options=[
+                            {'label': 'KMeans', 'value': 'kmeans'},
+                            {'label': 'GMM', 'value': 'gmm'}
+                        ],
+                        value='kmeans'
+                    ),
+                
                 ],
-                value = 'x'
+                className="control-panel"
             ),
 
             # -------------------------------------------------------------------------------
 
-            # Add break
-            html.Br(),
+            # Display Panel
+            html.Div(
+                children=[
 
-            # -------------------------------------------------------------------------------
+                    # Top Half Display
+                    html.Div(
+                        children=[
 
-            # Slider for selecting slice
-            html.Label('Select slice:'),
-            dcc.Slider(
-                id='slice-slider',
-                min=1,
-                max=volume.shape[0],
-                step=1,
-                value=130,
-                marks={1: str(1), volume.shape[0]: str(volume.shape[0])}
-            ),
+                            # Original Slice
+                            html.Div(
+                                children=[
+                                    html.H3(children='Original Slice'),
+                                    dcc.Graph(
+                                        id='slice-plot'
+                                    ),
+                                ], 
+                                style={'width': '33%', 'display': 'inline-block', 'text-align': 'center'}
+                            ),
 
-            # -------------------------------------------------------------------------------
+                            # -------------------------------------------------------------------------------
 
-            # Add break
-            html.Br(),
+                            # Superpixel Segmentation
+                            html.Div(
+                                children=[
+                                    html.H3(children='Superpixel Segmentation'),
+                                    dcc.Graph(
+                                        id='superpixel-plot'
+                                    ),
+                                ], 
+                                style={'width': '33%', 'display': 'inline-block', 'text-align': 'center'}
+                            ),
 
-            # -------------------------------------------------------------------------------
+                            # -------------------------------------------------------------------------------
 
-            # Checkbox to enable/disable segmentation
-            dcc.Checklist(
-                id='segmentation-checkbox',
-                options=[
-                    {'label': 'Superpixel segmentation', 'value': 'enable'}
+                            # Final Segmented Slice
+                            html.Div(
+                                children=[
+                                    html.H3(children='Final Segmented Slice'),
+                                    dcc.Graph(
+                                        id='final-plot'
+                                    ),
+                                ], 
+                                style={'width': '33%', 'display': 'inline-block', 'text-align': 'center'}
+                            ),
+
+                        ],
+                        className="top-half-display"
+                    ),
+
+                    # -------------------------------------------------------------------------------
+
+                    # Bottom Half Display
+                    html.Div(
+                        children=[
+
+                            # Vector Space Visualization
+                            html.Div(
+                                children=[
+                                    html.H3(children='Vector Space Visualization'),
+                                    dcc.Graph(
+                                        id='vector-plot'
+                                    ),
+                                ], 
+                                style={'width': '50%', 'display': 'inline-block', 'text-align': 'center'}
+                            ),
+
+                            # -------------------------------------------------------------------------------
+
+                            # Elbow Plot for Clustering
+                            html.Div(
+                                children=[
+                                    html.H3(children='Elbow Plot for Clustering'),
+                                    dcc.Graph(
+                                        id='elbow-plot'
+                                    ),
+                                ],
+                                style={'width': '50%', 'display': 'inline-block', 'text-align': 'center'}
+                            ),
+                        ],
+                        className="bottom-half-display"
+                    ),
+
                 ],
-                value=['enable']
+                className="display-panel"
             ),
 
-            # -------------------------------------------------------------------------------
+        ], 
+        style={'display': 'flex'}
+    ),
 
-            # Add break
-            html.Br(),
-
-            # -------------------------------------------------------------------------------
-
-            # Radio Button for selection Visualization Technique
-            html.Label('Select Visualization Technique:'),
-            dcc.RadioItems(
-                id='visualization-radio',
-                options=[
-                    {'label': 'PCA', 'value': 'pca'},
-                    {'label': 't-SNE', 'value': 'tsne'}
-                ],
-                value='tsne'
-            ),
-
-            # -------------------------------------------------------------------------------
-
-            # Add break
-            html.Br(),
-            
-            # -------------------------------------------------------------------------------
-
-            # Radio Button for selection Clustering Technique
-            html.Label('Select Clustering Technique:'),
-            dcc.RadioItems(
-                id='clustering-radio',
-                options=[
-                    {'label': 'KMeans', 'value': 'kmeans'},
-                    {'label': 'GMM', 'value': 'gmm'}
-                ],
-                value='kmeans'
-            ),
-        
-        ], style={'width': '20%', 'display': 'inline-block'}),
-
-        # -------------------------------------------------------------------------------
-
-        # Display Panel
-        html.Div(children=[
-
-            # Top Half Display
-            html.Div(children=[
-
-                # Original Slice
-                html.Div(children=[
-                    html.H3(children='Original Slice'),
-                    dcc.Graph(
-                        id='slice-plot'
-                    ),
-                ], style={'width': '33%', 'display': 'inline-block', 'text-align': 'center'}),
-
-                # -------------------------------------------------------------------------------
-
-                # Superpixel Segmentation
-                html.Div(children=[
-                    html.H3(children='Superpixel Segmentation'),
-                    dcc.Graph(
-                        id='superpixel-plot'
-                    ),
-                ], style={'width': '33%', 'display': 'inline-block', 'text-align': 'center'}),
-
-                # -------------------------------------------------------------------------------
-
-                # Final Segmented Slice
-                html.Div(children=[
-                    html.H3(children='Final Segmented Slice'),
-                    dcc.Graph(
-                        id='final-plot'
-                    ),
-                ], style={'width': '33%', 'display': 'inline-block', 'text-align': 'center'}),
-
-            ]),
-
-            # -------------------------------------------------------------------------------
-
-            # Bottom Half Display
-            html.Div(children=[
-
-                # Elbow Plot for Clustering
-                html.Div(children=[
-                    html.H3(children='Elbow Plot for Clustering'),
-                    dcc.Graph(
-                        id='elbow-plot'
-                    ),
-                ], style={'width': '50%', 'display': 'inline-block', 'text-align': 'center'}),
-
-                # -------------------------------------------------------------------------------
-
-                # Vector Space Visualization
-                html.Div(children=[
-                    html.H3(children='Vector Space Visualization'),
-                    dcc.Graph(
-                        id='vector-plot'
-                    ),
-                ], style={'width': '50%', 'display': 'inline-block', 'text-align': 'center'}),
-
-            ]),
-
-        ], style={'width': '80%'}),
-
-    ], style={'display': 'flex'}),
+    # -------------------------------------------------------------------------------
 
     # Hidden store to hold intermediate data
     dcc.Store(id='slice-data'),
@@ -629,7 +685,6 @@ def update_superpixel_plot(jsonified_slice_data):
 def update_vector_plot(jsonified_slice_data, jsonified_superpixel_data, visualization):
     slice_data = json.loads(jsonified_slice_data)
     superpixel_data = json.loads(jsonified_superpixel_data)
-    print(visualization)
     
     print("Updating vector plot...")
     start_time = time.time()
@@ -681,7 +736,33 @@ def update_vector_plot(jsonified_slice_data, jsonified_superpixel_data, visualiz
         vector_space_fig = create_tsne_plot(segment_vectors, segmentColorDict)
     
     print('Vector plot ready in:', time.time() - start_time)
-    return vector_space_fig, json.dumps({'pca_df': ""})
+    return vector_space_fig, json.dumps({'segment_vectors': segment_vectors.tolist()})
+
+# -------------------------------------------------------------------------------
+
+# Callback for Elbow Plot
+@app.callback(
+    Output('elbow-plot', 'figure'),
+    [Input('vector-data', 'data'), Input('clustering-radio', 'value')]
+)
+def update_elbow_plot(jsonified_vector_data, clustering):
+    vector_data = json.loads(jsonified_vector_data)
+
+    print("Updating elbow plot...")
+    start_time = time.time()
+
+    # Convert stored lists back to numpy arrays
+    # resized_image = np.array(slice_data['resized_image'])
+    # input_image = np.array(slice_data['input_image'], dtype=np.uint8)
+    # segments = np.array(superpixel_data['segments'])
+    segment_vectors = np.array(vector_data['segment_vectors'])
+
+    # -------------------------------------------------------------------------------
+
+    elbow_fig = create_elbow_plot(segment_vectors, clustering)
+
+    print('Elbow plot ready in:', time.time() - start_time)
+    return elbow_fig
 
 # -------------------------------------------------------------------------------
 
