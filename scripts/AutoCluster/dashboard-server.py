@@ -330,8 +330,44 @@ def create_superpixels(resized_image, input_image, num_superpixels):
     return fig, segments
 
 # Function to create PCA plot
-def create_pca_plot(segment_vectors):
-    pass
+def create_pca_plot(segment_vectors, segmentColorDict):
+    # Perform PCA for dimensionality reduction
+        pca = PCA(n_components=2, random_state=42)
+        reduced_data = pca.fit_transform(segment_vectors)
+
+        # Create dummy labels for visualization (use actual labels if available)
+        segment_labels = np.arange(len(reduced_data))
+
+        # Create a DataFrame for easier plotting
+        df_tsne = pd.DataFrame(reduced_data, columns=['PCA Dimension 1', 'PCA Dimension 2'])
+        df_tsne['Segment ID'] = segment_labels
+
+        # Extract colors for each segment in the same order as `segment_ids`
+        color_array = [tuple(segmentColorDict[seg_id].tolist()) for seg_id in segment_labels]
+
+        # Convert to 0-255 range
+        color_array = [(int(r * 255), int(g * 255), int(b * 255)) for r, g, b in color_array]
+
+        # Format as "rgb(R, G, B)"
+        color_array = [f'rgb{color}' for color in color_array]
+
+        # Normalized levels
+        normalized_levels = np.linspace(0, 1, len(reduced_data))
+
+        # Create color scale of format [[level, color], ...]
+        color_scale = [[level, color] for level, color in zip(normalized_levels, color_array)]
+
+        fig = px.scatter(
+            df_tsne,
+            x='PCA Dimension 1',
+            y='PCA Dimension 2',
+            title='Interactive PCA Visualization of Segments',
+            hover_data=['Segment ID'],
+        )
+
+        fig.update_traces(marker=dict(color=segment_labels, colorscale=color_scale))
+
+        return fig
 
 # Function to create t-SNE plot
 def create_tsne_plot(segment_vectors, segmentColorDict):
@@ -380,7 +416,7 @@ app = dash.Dash(__name__)
 
 # Layout of the app
 app.layout = html.Div([
-    html.H1(children='Dashboard'),
+    # html.H1(children='Dashboard'),
 
     html.Div(children=[
         # Control Panel
@@ -481,7 +517,7 @@ app.layout = html.Div([
 
                 # Original Slice
                 html.Div(children=[
-                    html.H2(children='Original Slice'),
+                    html.H3(children='Original Slice'),
                     dcc.Graph(
                         id='slice-plot'
                     ),
@@ -491,7 +527,7 @@ app.layout = html.Div([
 
                 # Superpixel Segmentation
                 html.Div(children=[
-                    html.H2(children='Superpixel Segmentation'),
+                    html.H3(children='Superpixel Segmentation'),
                     dcc.Graph(
                         id='superpixel-plot'
                     ),
@@ -501,7 +537,7 @@ app.layout = html.Div([
 
                 # Final Segmented Slice
                 html.Div(children=[
-                    html.H2(children='Final Segmented Slice'),
+                    html.H3(children='Final Segmented Slice'),
                     dcc.Graph(
                         id='final-plot'
                     ),
@@ -516,7 +552,7 @@ app.layout = html.Div([
 
                 # Elbow Plot for Clustering
                 html.Div(children=[
-                    html.H2(children='Elbow Plot for Clustering'),
+                    html.H3(children='Elbow Plot for Clustering'),
                     dcc.Graph(
                         id='elbow-plot'
                     ),
@@ -526,7 +562,7 @@ app.layout = html.Div([
 
                 # Vector Space Visualization
                 html.Div(children=[
-                    html.H2(children='Vector Space Visualization'),
+                    html.H3(children='Vector Space Visualization'),
                     dcc.Graph(
                         id='vector-plot'
                     ),
@@ -639,7 +675,7 @@ def update_vector_plot(jsonified_slice_data, jsonified_superpixel_data, visualiz
     vector_space_fig = {}
 
     if visualization == 'pca':
-        vector_space_fig = create_pca_plot(segment_vectors)
+        vector_space_fig = create_pca_plot(segment_vectors, segmentColorDict)
 
     elif visualization == 'tsne':
         vector_space_fig = create_tsne_plot(segment_vectors, segmentColorDict)
