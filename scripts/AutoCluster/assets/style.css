@@ -1,3 +1,7 @@
+body{
+    background-color: #1b263b;
+    color: white;
+}
 .control-panel{
     width: 20%;
     display: inline-block;
@@ -11,4 +15,33 @@
 .top-half-display{
     border-bottom: 2px solid black;
     padding-bottom: 10px;
+}
+.bottom-half-display{
+    border-top: 2px solid black;
+    padding-left: 10px;
+}
+.original-slice, .superpixel-segmentation, .final-segmented-slice{
+    width: 33%;
+    display: inline-block;
+    text-align: center;
+}
+.vector-space-visualization, .elbow-plot{
+    width: 50%;
+    display: inline-block;
+    text-align: center;
+}
+#slice-plot .svg-container .main-svg:first-child{
+    background: none !important;
+}
+#superpixel-plot .svg-container .main-svg:first-child{
+    background: none !important;
+}
+#final-plot .svg-container .main-svg:first-child{
+    background: none !important;
+}
+#vector-plot .svg-container .main-svg:first-child{
+    background: none !important;
+}
+#elbow-plot .svg-container .main-svg:first-child{
+    background: none !important;
 }

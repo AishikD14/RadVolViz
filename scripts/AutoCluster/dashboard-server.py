@@ -332,42 +332,64 @@ def create_superpixels(resized_image, input_image, num_superpixels):
 # Function to create PCA plot
 def create_pca_plot(segment_vectors, segmentColorDict):
     # Perform PCA for dimensionality reduction
-        pca = PCA(n_components=2, random_state=42)
-        reduced_data = pca.fit_transform(segment_vectors)
+    pca = PCA(n_components=2, random_state=42)
+    reduced_data = pca.fit_transform(segment_vectors)
 
-        # Create dummy labels for visualization (use actual labels if available)
-        segment_labels = np.arange(len(reduced_data))
+    # Create dummy labels for visualization (use actual labels if available)
+    segment_labels = np.arange(len(reduced_data))
 
-        # Create a DataFrame for easier plotting
-        df_tsne = pd.DataFrame(reduced_data, columns=['PCA Dimension 1', 'PCA Dimension 2'])
-        df_tsne['Segment ID'] = segment_labels
+    # Create a DataFrame for easier plotting
+    df_tsne = pd.DataFrame(reduced_data, columns=['PCA Dimension 1', 'PCA Dimension 2'])
+    df_tsne['Segment ID'] = segment_labels
 
-        # Extract colors for each segment in the same order as `segment_ids`
-        color_array = [tuple(segmentColorDict[seg_id].tolist()) for seg_id in segment_labels]
+    # Extract colors for each segment in the same order as `segment_ids`
+    color_array = [tuple(segmentColorDict[seg_id].tolist()) for seg_id in segment_labels]
 
-        # Convert to 0-255 range
-        color_array = [(int(r * 255), int(g * 255), int(b * 255)) for r, g, b in color_array]
+    # Convert to 0-255 range
+    color_array = [(int(r * 255), int(g * 255), int(b * 255)) for r, g, b in color_array]
 
-        # Format as "rgb(R, G, B)"
-        color_array = [f'rgb{color}' for color in color_array]
+    # Format as "rgb(R, G, B)"
+    color_array = [f'rgb{color}' for color in color_array]
 
-        # Normalized levels
-        normalized_levels = np.linspace(0, 1, len(reduced_data))
+    # Normalized levels
+    normalized_levels = np.linspace(0, 1, len(reduced_data))
 
-        # Create color scale of format [[level, color], ...]
-        color_scale = [[level, color] for level, color in zip(normalized_levels, color_array)]
+    # Create color scale of format [[level, color], ...]
+    color_scale = [[level, color] for level, color in zip(normalized_levels, color_array)]
 
-        fig = px.scatter(
-            df_tsne,
-            x='PCA Dimension 1',
-            y='PCA Dimension 2',
-            title='Interactive PCA Visualization of Segments',
-            hover_data=['Segment ID'],
-        )
+    fig = px.scatter(
+        df_tsne,
+        x='PCA Dimension 1',
+        y='PCA Dimension 2',
+        hover_data=['Segment ID'],
+    )
 
-        fig.update_traces(marker=dict(color=segment_labels, colorscale=color_scale))
+    fig.update_traces(marker=dict(color=segment_labels, colorscale=color_scale))
 
-        return fig
+    fig.update_layout(
+        xaxis_title={
+            'font': {
+                'color': 'white'
+            }
+        },
+        yaxis_title={
+            'font': {
+                'color': 'white'
+            }
+        },
+        xaxis={
+            'tickfont': {
+                'color': 'white'
+            }
+        },
+        yaxis={
+            'tickfont': {
+                'color': 'white'
+            }
+        }
+    )
+
+    return fig
 
 # Function to create t-SNE plot
 def create_tsne_plot(segment_vectors, segmentColorDict):
@@ -401,11 +423,33 @@ def create_tsne_plot(segment_vectors, segmentColorDict):
         df_tsne,
         x='t-SNE Dimension 1',
         y='t-SNE Dimension 2',
-        title='Interactive t-SNE Visualization of Segments',
-        hover_data=['Segment ID'],
+        hover_data=['Segment ID']
     )
 
     fig.update_traces(marker=dict(color=segment_labels, colorscale=color_scale))
+
+    fig.update_layout(
+        xaxis_title={
+            'font': {
+                'color': 'white'
+            }
+        },
+        yaxis_title={
+            'font': {
+                'color': 'white'
+            }
+        },
+        xaxis={
+            'tickfont': {
+                'color': 'white'
+            }
+        },
+        yaxis={
+            'tickfont': {
+                'color': 'white'
+            }
+        }
+    )
 
     return fig
 
@@ -420,7 +464,30 @@ def create_elbow_plot(segment_vectors, clustering):
             gmm.fit(segment_vectors)
             distortions.append(gmm.bic(segment_vectors))
 
-        fig = px.line(x=K, y=distortions, title='Elbow Plot for GMM Clustering', labels={'x': 'Number of Clusters', 'y': 'BIC'})
+        fig = px.line(x=K, y=distortions, labels={'x': 'Number of Clusters', 'y': 'BIC'})
+
+        fig.update_layout(
+            xaxis_title={
+                'font': {
+                    'color': 'white'
+                }
+            },
+            yaxis_title={
+                'font': {
+                    'color': 'white'
+                }
+            },
+            xaxis={
+                'tickfont': {
+                    'color': 'white'
+                }
+            },
+            yaxis={
+                'tickfont': {
+                    'color': 'white'
+                }
+            }
+        )
 
         return fig
     
@@ -430,7 +497,30 @@ def create_elbow_plot(segment_vectors, clustering):
             kmeans.fit(segment_vectors)
             distortions.append(kmeans.inertia_)
 
-        fig = px.line(x=K, y=distortions, title='Elbow Plot for KMeans Clustering', labels={'x': 'Number of Clusters', 'y': 'Distortion'})
+        fig = px.line(x=K, y=distortions, labels={'x': 'Number of Clusters', 'y': 'Distortion'})
+
+        fig.update_layout(
+            xaxis_title={
+                'font': {
+                    'color': 'white'
+                }
+            },
+            yaxis_title={
+                'font': {
+                    'color': 'white'
+                }
+            },
+            xaxis={
+                'tickfont': {
+                    'color': 'white'
+                }
+            },
+            yaxis={
+                'tickfont': {
+                    'color': 'white'
+                }
+            }
+        )
 
     return fig
 
@@ -553,8 +643,8 @@ app.layout = html.Div([
                                     dcc.Graph(
                                         id='slice-plot'
                                     ),
-                                ], 
-                                style={'width': '33%', 'display': 'inline-block', 'text-align': 'center'}
+                                ],
+                                className="original-slice"
                             ),
 
                             # -------------------------------------------------------------------------------
@@ -566,8 +656,8 @@ app.layout = html.Div([
                                     dcc.Graph(
                                         id='superpixel-plot'
                                     ),
-                                ], 
-                                style={'width': '33%', 'display': 'inline-block', 'text-align': 'center'}
+                                ],
+                                className="superpixel-segmentation"
                             ),
 
                             # -------------------------------------------------------------------------------
@@ -579,8 +669,8 @@ app.layout = html.Div([
                                     dcc.Graph(
                                         id='final-plot'
                                     ),
-                                ], 
-                                style={'width': '33%', 'display': 'inline-block', 'text-align': 'center'}
+                                ],
+                                className="final-segmented-slice"
                             ),
 
                         ],
@@ -600,8 +690,8 @@ app.layout = html.Div([
                                     dcc.Graph(
                                         id='vector-plot'
                                     ),
-                                ], 
-                                style={'width': '50%', 'display': 'inline-block', 'text-align': 'center'}
+                                ],
+                                className="vector-space-visualization"
                             ),
 
                             # -------------------------------------------------------------------------------
@@ -614,7 +704,7 @@ app.layout = html.Div([
                                         id='elbow-plot'
                                     ),
                                 ],
-                                style={'width': '50%', 'display': 'inline-block', 'text-align': 'center'}
+                                className="elbow-plot"
                             ),
                         ],
                         className="bottom-half-display"
