@@ -896,7 +896,7 @@ app.layout = html.Div([
 
 # Callback for Slice Plot
 @app.callback(
-    [Output('slice-plot', 'figure'), Output('slice-data', 'data')],
+    [Output('slice-plot', 'figure'), Output('slice-data', 'data'), Output('clustering-checkbox', 'value')],
     [Input('axis-radio', 'value'), Input('slice-slider', 'value')]
 )
 def update_slice_plot(axis, slice_num):
@@ -907,7 +907,7 @@ def update_slice_plot(axis, slice_num):
     original_slice_fig, resized_image, input_image = create_original_slice(axis, slice_num)
     
     print('Slice plot ready in:', time.time() - start_time)
-    return original_slice_fig, json.dumps({'resized_image': resized_image.tolist(), 'input_image': input_image.tolist()})
+    return original_slice_fig, json.dumps({'resized_image': resized_image.tolist(), 'input_image': input_image.tolist()}), []
 
 # -------------------------------------------------------------------------------
 
