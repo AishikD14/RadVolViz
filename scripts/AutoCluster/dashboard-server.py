@@ -629,6 +629,29 @@ def create_cluster_vector_plot(reduced_data, cluster_labels, cluster_color_dict,
 
     return fig
 
+# Function to create final segmented slice
+def create_final_image(cluster_labels, cluster_color_dict, input_image, resized_image, segments):
+    # Create an image to store the colors for each pixel
+    final_segmented_image = np.zeros_like(resized_image, dtype=np.uint8)
+    # Drop the alpha channel
+    final_segmented_image = final_segmented_image[:, :, :3]
+
+    for i in range(resized_image.shape[0]):
+        for j in range(resized_image.shape[1]):
+            final_segmented_image[i][j] = cluster_color_dict[cluster_labels[segments[i][j]]]
+
+    # Create a plotly figure
+    fig = px.imshow(final_segmented_image)
+
+    # Update the layout of the figure
+    fig.update_layout(
+        margin=dict(l=0, r=0, b=0, t=0),
+        xaxis=dict(visible=False),
+        yaxis=dict(visible=False)
+    )
+
+    return fig
+
 # -------------------------------------------------------------------------------
 
 # Initialize Dash app
@@ -1069,20 +1092,34 @@ def update_cluster_vector_plot(jsonified_vector_data, jsonified_cluster_data, vi
 # Callback for Final Segmented Slice
 @app.callback(
     Output('final-plot', 'figure'),
-    [Input('clustering-checkbox', 'value')]
+    [Input('cluster-data', 'data'), Input('slice-data', 'data'), Input('superpixel-data', 'data')]
 )
-def update_final_plot(checkbox_value):
-    # if 'enable' in checkbox_value:
-    #     print("Updating final plot...")
-    #     start_time = time.time()
+def update_final_plot(jsonified_cluster_data, jsonified_slice_data, jsonified_superpixel_data):
+    cluster_data = json.loads(jsonified_cluster_data)
+    slice_data = json.loads(jsonified_slice_data)
+    superpixel_data = json.loads(jsonified_superpixel_data)
 
-    #     # Placeholder for final segmented slice
-    #     final_fig = px.imshow(np.zeros((1, 1)))
+    print("Updating final segmented slice...")
+    start_time = time.time()
 
-    #     print('Final plot ready in:', time.time() - start_time)
-    #     return final_fig
-    # else:
-    return {}
+    # Convert stored lists back to numpy arrays
+    cluster_labels = np.array(cluster_data['cluster_labels'])
+    cluster_color_dict = cluster_data['cluster_color_dict']
+    resized_image = np.array(slice_data['resized_image'])
+    input_image = np.array(slice_data['input_image'], dtype=np.uint8)
+    segments = np.array(superpixel_data['segments'])
+
+    # Convert the keys of the dictionary to integers
+    cluster_color_dict = {int(k): v for k, v in cluster_color_dict.items()}
+
+    # convert the values of the dictionary to tuples
+    cluster_color_dict = {k: tuple(v) for k, v in cluster_color_dict.items()}
+
+    # -------------------------------------------------------------------------------
+
+    final_fig = create_final_image(cluster_labels, cluster_color_dict, input_image, resized_image, segments)
+
+    return final_fig
 
 # -------------------------------------------------------------------------------
 
