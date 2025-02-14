@@ -457,7 +457,7 @@ def create_tsne_plot(segment_vectors, segmentColorDict):
         }
     )
 
-    return fig
+    return fig, reduced_data
 
 # Function to create elbow plot for KMeans clustering
 def create_elbow_plot(segment_vectors, clustering):
@@ -561,6 +561,73 @@ def create_clusters(segment_vectors, clustering):
     print("Cluster Color Dictionary for K-means clusters: ", cluster_color_dict)
 
     return cluster_labels, cluster_color_dict
+
+# Function to create cluster vector plot
+def create_cluster_vector_plot(reduced_data, cluster_labels, cluster_color_dict, visualization):
+    # Create a DataFrame for easier plotting\
+    if visualization == 'pca':
+        df_tsne = pd.DataFrame(reduced_data, columns=['PCA Dimension 1', 'PCA Dimension 2'])
+    elif visualization == 'tsne':
+        df_tsne = pd.DataFrame(reduced_data, columns=['t-SNE Dimension 1', 't-SNE Dimension 2'])
+    df_tsne['Cluster ID'] = cluster_labels
+
+    # Extract colors for each segment in the same order as `segment_ids`
+    color_array = [cluster_color_dict[cluster_id] for cluster_id in cluster_labels]
+
+    # Convert to 0-255 range
+    # color_array = [(int(r * 255), int(g * 255), int(b * 255)) for r, g, b in color_array]
+
+    # Format as "rgb(R, G, B)"
+    color_array = [f'rgb{color}' for color in color_array]
+
+    # Normalized levels
+    normalized_levels = np.linspace(0, 1, len(reduced_data))
+
+    # Create color scale of format [[level, color], ...]
+    color_scale = [[level, color] for level, color in zip(normalized_levels, color_array)]
+
+    if visualization == 'pca':
+        fig = px.scatter(
+            df_tsne,
+            x='PCA Dimension 1',
+            y='PCA Dimension 2',
+            hover_data=['Cluster ID']
+        )
+
+    elif visualization == 'tsne':
+        fig = px.scatter(
+            df_tsne,
+            x='t-SNE Dimension 1',
+            y='t-SNE Dimension 2',
+            hover_data=['Cluster ID']
+        )
+
+    fig.update_traces(marker=dict(color=cluster_labels, colorscale=color_scale))
+
+    fig.update_layout(
+        xaxis_title={
+            'font': {
+                'color': 'white'
+            }
+        },
+        yaxis_title={
+            'font': {
+                'color': 'white'
+            }
+        },
+        xaxis={
+            'tickfont': {
+                'color': 'white'
+            }
+        },
+        yaxis={
+            'tickfont': {
+                'color': 'white'
+            }
+        }
+    )
+
+    return fig
 
 # -------------------------------------------------------------------------------
 
@@ -896,13 +963,13 @@ def update_vector_plot(jsonified_slice_data, jsonified_superpixel_data, visualiz
     vector_space_fig = {}
 
     if visualization == 'pca':
-        vector_space_fig = create_pca_plot(segment_vectors, segmentColorDict)
+        vector_space_fig, reduced_data = create_pca_plot(segment_vectors, segmentColorDict)
 
     elif visualization == 'tsne':
-        vector_space_fig = create_tsne_plot(segment_vectors, segmentColorDict)
+        vector_space_fig, reduced_data = create_tsne_plot(segment_vectors, segmentColorDict)
     
     print('Vector plot ready in:', time.time() - start_time)
-    return vector_space_fig, json.dumps({'segment_vectors': segment_vectors.tolist()})
+    return vector_space_fig, json.dumps({'segment_vectors': segment_vectors.tolist(), 'reduced_data': reduced_data.tolist()})
 
 # -------------------------------------------------------------------------------
 
@@ -963,6 +1030,39 @@ def perform_clustering(jsonified_vector_data, clustering):
     print('Clustering done in:', time.time() - start_time)
 
     return json.dumps({'cluster_labels': cluster_labels.tolist(), 'cluster_color_dict': cluster_color_dict})
+
+# -------------------------------------------------------------------------------
+
+# Callback for updating vector plot with clustering
+@app.callback(
+    Output('cluster-vector-plot', 'figure'),
+    [Input('vector-data', 'data'), Input('cluster-data', 'data'), Input('visualization-radio', 'value')]
+)
+def update_cluster_vector_plot(jsonified_vector_data, jsonified_cluster_data, visualization):
+    vector_data = json.loads(jsonified_vector_data)
+    cluster_data = json.loads(jsonified_cluster_data)
+
+    print("Updating cluster vector plot...")
+    start_time = time.time()
+
+    # Convert stored lists back to numpy arrays
+    reduced_data = np.array(vector_data['reduced_data'])
+    cluster_labels = np.array(cluster_data['cluster_labels'])
+    cluster_color_dict = cluster_data['cluster_color_dict']
+
+    # Convert the keys of the dictionary to integers
+    cluster_color_dict = {int(k): v for k, v in cluster_color_dict.items()}
+
+    # convert the values of the dictionary to tuples
+    cluster_color_dict = {k: tuple(v) for k, v in cluster_color_dict.items()}
+
+    # -------------------------------------------------------------------------------
+
+    cluster_vector_plot_fig = create_cluster_vector_plot(reduced_data, cluster_labels, cluster_color_dict, visualization)
+
+    print('Cluster vector plot ready in:', time.time() - start_time)
+
+    return cluster_vector_plot_fig
 
 # -------------------------------------------------------------------------------
 
