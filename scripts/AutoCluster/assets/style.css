@@ -15,6 +15,7 @@ body{
 .top-half-display{
     border-bottom: 2px solid black;
     padding-bottom: 10px;
+    display: flex;
 }
 .bottom-half-display{
     border-top: 2px solid black;
@@ -44,4 +45,15 @@ body{
 }
 #elbow-plot .svg-container .main-svg:first-child{
     background: none !important;
+}
+.final-segmented-slice{
+    display: flex;
+    flex-direction: column;
+}
+#final-segmented-slice-text{
+    color: white;
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }

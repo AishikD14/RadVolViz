@@ -524,6 +524,38 @@ def create_elbow_plot(segment_vectors, clustering):
 
     return fig
 
+# Function to create clusters
+def create_clusters(segment_vectors, clustering):
+    num_clusters = 5
+
+    if clustering == 'gmm':
+        gmm = GaussianMixture(n_components=num_clusters, random_state=42)
+        cluster_labels = gmm.fit_predict(segment_vectors)
+
+    elif clustering == 'kmeans':
+        kmeans = KMeans(n_clusters=num_clusters, random_state=42)
+        cluster_labels = kmeans.fit_predict(segment_vectors)
+
+    # Initialize selected clusters for swapping
+    selected_clusters = []
+    cluster_color_dict = {}
+
+    colormap = plt.cm.get_cmap("tab10")
+
+    cluster_colors = {}
+    for i in range(num_clusters):  # 5 clusters
+        color = colormap(i)
+        cluster_colors[i] = color
+
+    cluster_color_dict = cluster_colors
+
+    for cluster_id in np.unique(cluster_labels):
+        cluster_color_dict[cluster_id] = tuple(map(lambda x: int(x * 255), cluster_color_dict[cluster_id][:3]))
+
+    print("Cluster Color Dictionary for K-means clusters: ", cluster_color_dict)
+
+    return cluster_labels, cluster_color_dict
+
 # -------------------------------------------------------------------------------
 
 # Initialize Dash app
@@ -621,6 +653,22 @@ app.layout = html.Div([
                         ],
                         value='kmeans'
                     ),
+
+                    # -------------------------------------------------------------------------------
+
+                    # Add break
+                    html.Br(),
+
+                    # -------------------------------------------------------------------------------
+
+                    # Checkbox to enable/disable clustering
+                    dcc.Checklist(
+                        id='clustering-checkbox',
+                        options=[
+                            {'label': 'Enable Clustering', 'value': 'enable'}
+                        ],
+                        value=[]
+                    ),
                 
                 ],
                 className="control-panel"
@@ -666,8 +714,16 @@ app.layout = html.Div([
                             html.Div(
                                 children=[
                                     html.H3(children='Final Segmented Slice'),
-                                    dcc.Graph(
-                                        id='final-plot'
+                                    html.Div(
+                                        "Enable clustering to view final segmented slice",
+                                        id="final-segmented-slice-text"
+                                    ),
+                                    html.Div(
+                                        children=[
+                                            dcc.Graph(
+                                                id='final-plot'
+                                            ),
+                                        ],
                                     ),
                                 ],
                                 className="final-segmented-slice"
@@ -724,6 +780,7 @@ app.layout = html.Div([
     dcc.Store(id='slice-data'),
     dcc.Store(id='superpixel-data'),
     dcc.Store(id='vector-data'),
+    dcc.Store(id='cluster-data')
 ])
 
 # -------------------------------------------------------------------------------
@@ -842,9 +899,6 @@ def update_elbow_plot(jsonified_vector_data, clustering):
     start_time = time.time()
 
     # Convert stored lists back to numpy arrays
-    # resized_image = np.array(slice_data['resized_image'])
-    # input_image = np.array(slice_data['input_image'], dtype=np.uint8)
-    # segments = np.array(superpixel_data['segments'])
     segment_vectors = np.array(vector_data['segment_vectors'])
 
     # -------------------------------------------------------------------------------
@@ -856,37 +910,60 @@ def update_elbow_plot(jsonified_vector_data, clustering):
 
 # -------------------------------------------------------------------------------
 
-# Callback for updating plots
-# @app.callback(
-#     [
-#         Output('slice-plot', 'figure'),
-#         Output('superpixel-plot', 'figure'),
-#         Output('final-plot', 'figure'),
-#         Output('elbow-plot', 'figure'),
-#         Output('vector-plot', 'figure')
-#     ],
-#     [
-#         Input('axis-radio', 'value'),
-#         Input('slice-slider', 'value'),
-#         Input('segmentation-checkbox', 'value'),
-#         Input('visualization-radio', 'value'),
-#         Input('clustering-radio', 'value')
-#     ]
-# )
-# def update_plots(axis, slice_num, segmentation, visualization, clustering):
-#     print("--------------------------------")
-#     print('Updating plots...')
-#     start_time = time.time()
+# Callback for enabling/disabling clustering
+@app.callback(
+    [Output('final-plot', 'style'), Output('final-segmented-slice-text', 'style')],
+    [Input('clustering-checkbox', 'value')]
+)
+def enable_clustering(checkbox_value):
+    if 'enable' in checkbox_value:
+        return {'display': 'block'}, {'display': 'none'}
+    else:
+        return {'display': 'none'}, {'display': 'flex'}
 
-#     print(axis, slice_num, segmentation, visualization, clustering)
+# -------------------------------------------------------------------------------
 
-#     original_slice_fig, resized_image, input_image = create_original_slice(axis, slice_num)
+# Callback for performing clustering
+@app.callback(
+    Output('cluster-data', 'data'),
+    [Input('vector-data', 'data'), Input('clustering-radio', 'value')]
+)
+def perform_clustering(jsonified_vector_data, clustering):
+    vector_data = json.loads(jsonified_vector_data)
 
-#     superpixel_fig, segments = create_superpixels(resized_image, input_image, 450)
+    print("Performing clustering...")
+    start_time = time.time()
 
-#     print('Time taken:', time.time() - start_time)
+    # Convert stored lists back to numpy arrays
+    segment_vectors = np.array(vector_data['segment_vectors'])
 
-#     return original_slice_fig, superpixel_fig, {}, {}, {}
+    # -------------------------------------------------------------------------------
+
+    cluster_labels, cluster_color_dict = create_clusters(segment_vectors, clustering)
+
+    print('Clustering done in:', time.time() - start_time)
+
+    return json.dumps({'cluster_labels': cluster_labels.tolist(), 'cluster_color_dict': cluster_color_dict})
+
+# -------------------------------------------------------------------------------
+
+# Callback for Final Segmented Slice
+@app.callback(
+    Output('final-plot', 'figure'),
+    [Input('clustering-checkbox', 'value')]
+)
+def update_final_plot(checkbox_value):
+    # if 'enable' in checkbox_value:
+    #     print("Updating final plot...")
+    #     start_time = time.time()
+
+    #     # Placeholder for final segmented slice
+    #     final_fig = px.imshow(np.zeros((1, 1)))
+
+    #     print('Final plot ready in:', time.time() - start_time)
+    #     return final_fig
+    # else:
+    return {}
 
 # -------------------------------------------------------------------------------
 
