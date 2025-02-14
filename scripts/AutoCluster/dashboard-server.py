@@ -339,8 +339,8 @@ def create_pca_plot(segment_vectors, segmentColorDict):
     segment_labels = np.arange(len(reduced_data))
 
     # Create a DataFrame for easier plotting
-    df_tsne = pd.DataFrame(reduced_data, columns=['PCA Dimension 1', 'PCA Dimension 2'])
-    df_tsne['Segment ID'] = segment_labels
+    df_pca = pd.DataFrame(reduced_data, columns=['PCA Dimension 1', 'PCA Dimension 2'])
+    df_pca['Segment ID'] = segment_labels
 
     # Extract colors for each segment in the same order as `segment_ids`
     color_array = [tuple(segmentColorDict[seg_id].tolist()) for seg_id in segment_labels]
@@ -358,7 +358,7 @@ def create_pca_plot(segment_vectors, segmentColorDict):
     color_scale = [[level, color] for level, color in zip(normalized_levels, color_array)]
 
     fig = px.scatter(
-        df_tsne,
+        df_pca,
         x='PCA Dimension 1',
         y='PCA Dimension 2',
         hover_data=['Segment ID'],
@@ -558,24 +558,24 @@ def create_clusters(segment_vectors, clustering):
     for cluster_id in np.unique(cluster_labels):
         cluster_color_dict[cluster_id] = tuple(map(lambda x: int(x * 255), cluster_color_dict[cluster_id][:3]))
 
-    print("Cluster Color Dictionary for K-means clusters: ", cluster_color_dict)
+    print("Cluster Color Dictionary for clusters: ", cluster_color_dict)
 
     return cluster_labels, cluster_color_dict
 
 # Function to create cluster vector plot
 def create_cluster_vector_plot(reduced_data, cluster_labels, cluster_color_dict, visualization):
-    # Create a DataFrame for easier plotting\
+    # Create a DataFrame for easier plotting
     if visualization == 'pca':
-        df_tsne = pd.DataFrame(reduced_data, columns=['PCA Dimension 1', 'PCA Dimension 2'])
+        df = pd.DataFrame(reduced_data, columns=['PCA Dimension 1', 'PCA Dimension 2'])
     elif visualization == 'tsne':
-        df_tsne = pd.DataFrame(reduced_data, columns=['t-SNE Dimension 1', 't-SNE Dimension 2'])
-    df_tsne['Cluster ID'] = cluster_labels
+        df = pd.DataFrame(reduced_data, columns=['t-SNE Dimension 1', 't-SNE Dimension 2'])
+
+    df['Cluster ID'] = cluster_labels
+    # Convert Cluster ID to a string to ensure it's treated as categorical
+    df['Cluster ID'] = df['Cluster ID'].astype(str)
 
     # Extract colors for each segment in the same order as `segment_ids`
     color_array = [cluster_color_dict[cluster_id] for cluster_id in cluster_labels]
-
-    # Convert to 0-255 range
-    # color_array = [(int(r * 255), int(g * 255), int(b * 255)) for r, g, b in color_array]
 
     # Format as "rgb(R, G, B)"
     color_array = [f'rgb{color}' for color in color_array]
@@ -588,21 +588,27 @@ def create_cluster_vector_plot(reduced_data, cluster_labels, cluster_color_dict,
 
     if visualization == 'pca':
         fig = px.scatter(
-            df_tsne,
+            df,
             x='PCA Dimension 1',
             y='PCA Dimension 2',
-            hover_data=['Cluster ID']
+            color='Cluster ID',
+            category_orders={"Cluster ID": ["0", "1", "2", "3", "4"]},
+            hover_data=['Cluster ID'],
+            labels={"Cluster ID": "Cluster ID"}
         )
 
     elif visualization == 'tsne':
         fig = px.scatter(
-            df_tsne,
+            df,
             x='t-SNE Dimension 1',
             y='t-SNE Dimension 2',
-            hover_data=['Cluster ID']
+            color='Cluster ID',
+            category_orders={"Cluster ID": ["0", "1", "2", "3", "4"]},
+            hover_data=['Cluster ID'],
+            labels={"Cluster ID": "Cluster ID"}
         )
 
-    fig.update_traces(marker=dict(color=cluster_labels, colorscale=color_scale))
+    # fig.update_traces(marker=dict(color=cluster_labels, colorscale=color_scale))
 
     fig.update_layout(
         xaxis_title={
