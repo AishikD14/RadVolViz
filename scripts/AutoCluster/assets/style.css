@@ -26,7 +26,7 @@ body{
     display: inline-block;
     text-align: center;
 }
-.vector-space-visualization, .elbow-plot{
+#vector-space-visualization, #cluster-vector-space-visualization, .elbow-plot{
     width: 50%;
     display: inline-block;
     text-align: center;
@@ -43,6 +43,9 @@ body{
 #vector-plot .svg-container .main-svg:first-child{
     background: none !important;
 }
+#cluster-vector-plot .svg-container .main-svg:first-child{
+    background: none !important;
+}
 #elbow-plot .svg-container .main-svg:first-child{
     background: none !important;
 }
@@ -56,4 +59,7 @@ body{
     display: flex;
     align-items: center;
     justify-content: center;
+}
+#cluster-vector-space-visualization{
+    display: none;
 }

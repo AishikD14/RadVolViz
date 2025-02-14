@@ -314,7 +314,7 @@ def create_original_slice(axis, slice_num):
 def create_superpixels(resized_image, input_image, num_superpixels):
     
     # segments, cluster_centers = custom_slic(resized_image, num_superpixels)
-    segments = segmentation.slic(input_image, n_segments=450, compactness=30, start_label=0)
+    segments = segmentation.slic(input_image, n_segments=num_superpixels, compactness=30, start_label=0)
 
     # Create a plotly figure
     fig = px.imshow(mark_boundaries(input_image, segments))
@@ -389,7 +389,7 @@ def create_pca_plot(segment_vectors, segmentColorDict):
         }
     )
 
-    return fig
+    return fig, reduced_data
 
 # Function to create t-SNE plot
 def create_tsne_plot(segment_vectors, segmentColorDict):
@@ -403,6 +403,10 @@ def create_tsne_plot(segment_vectors, segmentColorDict):
     # Create a DataFrame for easier plotting
     df_tsne = pd.DataFrame(reduced_data, columns=['t-SNE Dimension 1', 't-SNE Dimension 2'])
     df_tsne['Segment ID'] = segment_labels
+
+    # -------------------------------------------------------------------------------
+
+    # Create Radviz color scale
 
     # Extract colors for each segment in the same order as `segment_ids`
     color_array = [tuple(segmentColorDict[seg_id].tolist()) for seg_id in segment_labels]
@@ -418,6 +422,8 @@ def create_tsne_plot(segment_vectors, segmentColorDict):
 
     # Create color scale of format [[level, color], ...]
     color_scale = [[level, color] for level, color in zip(normalized_levels, color_array)]
+
+    # -------------------------------------------------------------------------------
 
     fig = px.scatter(
         df_tsne,
@@ -745,9 +751,22 @@ app.layout = html.Div([
                                     html.H3(children='Vector Space Visualization'),
                                     dcc.Graph(
                                         id='vector-plot'
+                                    )
+                                ],
+                                id="vector-space-visualization"
+                            ),
+
+                            # -------------------------------------------------------------------------------
+
+                            # Vector Space Visualization with Clustering
+                            html.Div(
+                                children=[
+                                    html.H3(children='Clustered Vector Space Visualization'),
+                                    dcc.Graph(
+                                        id='cluster-vector-plot'
                                     ),
                                 ],
-                                className="vector-space-visualization"
+                                id="cluster-vector-space-visualization"
                             ),
 
                             # -------------------------------------------------------------------------------
@@ -912,14 +931,14 @@ def update_elbow_plot(jsonified_vector_data, clustering):
 
 # Callback for enabling/disabling clustering
 @app.callback(
-    [Output('final-plot', 'style'), Output('final-segmented-slice-text', 'style')],
+    [Output('final-plot', 'style'), Output('final-segmented-slice-text', 'style'), Output('vector-space-visualization', 'style'), Output('cluster-vector-space-visualization', 'style')],
     [Input('clustering-checkbox', 'value')]
 )
 def enable_clustering(checkbox_value):
     if 'enable' in checkbox_value:
-        return {'display': 'block'}, {'display': 'none'}
+        return {'display': 'block'}, {'display': 'none'}, {'display': 'none'}, {'display': 'inline-block'}
     else:
-        return {'display': 'none'}, {'display': 'flex'}
+        return {'display': 'none'}, {'display': 'flex'}, {'display': 'inline-block'}, {'display': 'none'}
 
 # -------------------------------------------------------------------------------
 
