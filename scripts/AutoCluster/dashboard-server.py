@@ -258,6 +258,11 @@ volume = np.load('../../xray_volume.npy')
 
 # -------------------------------------------------------------------------------
 
+# Global variables
+# selected_clusters = []
+
+# -------------------------------------------------------------------------------
+
 # Function to create original slice
 def create_original_slice(axis, slice_num):
     # Extract slice from volume
@@ -575,16 +580,16 @@ def create_cluster_vector_plot(reduced_data, cluster_labels, cluster_color_dict,
     df['Cluster ID'] = df['Cluster ID'].astype(str)
 
     # Extract colors for each segment in the same order as `segment_ids`
-    color_array = [cluster_color_dict[cluster_id] for cluster_id in cluster_labels]
+    # color_array = [cluster_color_dict[cluster_id] for cluster_id in cluster_labels]
 
-    # Format as "rgb(R, G, B)"
-    color_array = [f'rgb{color}' for color in color_array]
+    # # Format as "rgb(R, G, B)"
+    # color_array = [f'rgb{color}' for color in color_array]
 
-    # Normalized levels
-    normalized_levels = np.linspace(0, 1, len(reduced_data))
+    # # Normalized levels
+    # normalized_levels = np.linspace(0, 1, len(reduced_data))
 
-    # Create color scale of format [[level, color], ...]
-    color_scale = [[level, color] for level, color in zip(normalized_levels, color_array)]
+    # # Create color scale of format [[level, color], ...]
+    # color_scale = [[level, color] for level, color in zip(normalized_levels, color_array)]
 
     if visualization == 'pca':
         fig = px.scatter(
@@ -632,6 +637,8 @@ def create_cluster_vector_plot(reduced_data, cluster_labels, cluster_color_dict,
             }
         }
     )
+
+    fig.update_layout(clickmode='event+select')
 
     return fig
 
@@ -895,7 +902,8 @@ app.layout = html.Div([
     dcc.Store(id='slice-data'),
     dcc.Store(id='superpixel-data'),
     dcc.Store(id='vector-data'),
-    dcc.Store(id='cluster-data')
+    dcc.Store(id='cluster-data'),
+    # dcc.Store(id='click-data')
 ])
 
 # -------------------------------------------------------------------------------
@@ -1064,10 +1072,13 @@ def perform_clustering(jsonified_vector_data, clustering):
 
 # Callback for updating vector plot with clustering
 @app.callback(
+    # [Output('cluster-vector-plot', 'figure'), Output('click-data', 'data')],
     Output('cluster-vector-plot', 'figure'),
     [Input('vector-data', 'data'), Input('cluster-data', 'data'), Input('visualization-radio', 'value')]
 )
 def update_cluster_vector_plot(jsonified_vector_data, jsonified_cluster_data, visualization):
+    # global selected_clusters
+
     vector_data = json.loads(jsonified_vector_data)
     cluster_data = json.loads(jsonified_cluster_data)
 
@@ -1085,11 +1096,34 @@ def update_cluster_vector_plot(jsonified_vector_data, jsonified_cluster_data, vi
     # convert the values of the dictionary to tuples
     cluster_color_dict = {k: tuple(v) for k, v in cluster_color_dict.items()}
 
+    # update_required = False
+
+    # if clickData:
+    #     print("--------------------------------")
+    #     print(f"Selected clusters Initial: {selected_clusters}")
+    #     clicked_cluster = int(clickData['points'][0]['customdata'][0])
+    #     print(f"Clicked cluster: {clicked_cluster}")
+
+    #     if clicked_cluster not in selected_clusters:
+    #         selected_clusters.append(clicked_cluster)
+        
+    #     print(f"Selected clusters Final: {selected_clusters}")
+    #     print(len(selected_clusters))
+
+    #     # If two clicks, swap data and reset tracking
+    #     # if len(selected_clusters) == 2:
+    #     #     cluster_map = {selected_clusters[0]: selected_clusters[1], selected_clusters[1]: selected_clusters[0]}
+    #     #     cluster_labels = np.array([cluster_map.get(label, label) for label in cluster_labels])
+    #     #     selected_clusters.clear()
+    #     #     update_required = True
+
     # -------------------------------------------------------------------------------
 
     cluster_vector_plot_fig = create_cluster_vector_plot(reduced_data, cluster_labels, cluster_color_dict, visualization)
 
     print('Cluster vector plot ready in:', time.time() - start_time)
+
+    # return cluster_vector_plot_fig, json.dumps({'update_required': update_required})
 
     return cluster_vector_plot_fig
 
