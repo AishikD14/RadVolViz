@@ -797,8 +797,12 @@ app.layout = html.Div([
                             html.Div(
                                 children=[
                                     html.H3(children='Original Slice'),
-                                    dcc.Graph(
-                                        id='slice-plot'
+                                    dcc.Loading(
+                                        id="loading-spinner",  # Wrapper to show loading spinner
+                                        type="circle",  # Choose the spinner type (circle, dot, default)
+                                        children=[
+                                            dcc.Graph(id="slice-plot")  # Graph component wrapped in the loading spinner
+                                        ]
                                     ),
                                 ],
                                 className="original-slice"
@@ -810,8 +814,12 @@ app.layout = html.Div([
                             html.Div(
                                 children=[
                                     html.H3(children='Superpixel Segmentation'),
-                                    dcc.Graph(
-                                        id='superpixel-plot'
+                                    dcc.Loading(
+                                        id="loading-spinner",  # Wrapper to show loading spinner
+                                        type="circle",  # Choose the spinner type (circle, dot, default)
+                                        children=[
+                                            dcc.Graph(id="superpixel-plot")  # Graph component wrapped in the loading spinner
+                                        ]
                                     ),
                                 ],
                                 className="superpixel-segmentation"
@@ -852,9 +860,13 @@ app.layout = html.Div([
                             html.Div(
                                 children=[
                                     html.H3(children='Vector Space Visualization'),
-                                    dcc.Graph(
-                                        id='vector-plot'
-                                    )
+                                    dcc.Loading(
+                                        id="loading-spinner",  # Wrapper to show loading spinner
+                                        type="circle",  # Choose the spinner type (circle, dot, default)
+                                        children=[
+                                            dcc.Graph(id="vector-plot")  # Graph component wrapped in the loading spinner
+                                        ]
+                                    ),
                                 ],
                                 id="vector-space-visualization"
                             ),
@@ -865,8 +877,12 @@ app.layout = html.Div([
                             html.Div(
                                 children=[
                                     html.H3(children='Clustered Vector Space Visualization'),
-                                    dcc.Graph(
-                                        id='cluster-vector-plot'
+                                    dcc.Loading(
+                                        id="loading-spinner",  # Wrapper to show loading spinner
+                                        type="circle",  # Choose the spinner type (circle, dot, default)
+                                        children=[
+                                            dcc.Graph(id="cluster-vector-plot")  # Graph component wrapped in the loading spinner
+                                        ]
                                     ),
                                 ],
                                 id="cluster-vector-space-visualization"
@@ -878,8 +894,12 @@ app.layout = html.Div([
                             html.Div(
                                 children=[
                                     html.H3(children='Elbow Plot for Clustering'),
-                                    dcc.Graph(
-                                        id='elbow-plot'
+                                    dcc.Loading(
+                                        id="loading-spinner",  # Wrapper to show loading spinner
+                                        type="circle",  # Choose the spinner type (circle, dot, default)
+                                        children=[
+                                            dcc.Graph(id="elbow-plot")  # Graph component wrapped in the loading spinner
+                                        ]
                                     ),
                                 ],
                                 className="elbow-plot"
