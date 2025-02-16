@@ -579,6 +579,9 @@ def create_cluster_vector_plot(reduced_data, cluster_labels, cluster_color_dict,
     # Convert Cluster ID to a string to ensure it's treated as categorical
     df['Cluster ID'] = df['Cluster ID'].astype(str)
 
+    segment_labels = np.arange(len(reduced_data))
+    df['Segment ID'] = segment_labels
+
     # Extract colors for each segment in the same order as `segment_ids`
     # color_array = [cluster_color_dict[cluster_id] for cluster_id in cluster_labels]
 
@@ -598,7 +601,7 @@ def create_cluster_vector_plot(reduced_data, cluster_labels, cluster_color_dict,
             y='PCA Dimension 2',
             color='Cluster ID',
             category_orders={"Cluster ID": ["0", "1", "2", "3", "4"]},
-            hover_data=['Cluster ID'],
+            hover_data=['Cluster ID', 'Segment ID'],
             labels={"Cluster ID": "Cluster ID"}
         )
 
@@ -609,7 +612,7 @@ def create_cluster_vector_plot(reduced_data, cluster_labels, cluster_color_dict,
             y='t-SNE Dimension 2',
             color='Cluster ID',
             category_orders={"Cluster ID": ["0", "1", "2", "3", "4"]},
-            hover_data=['Cluster ID'],
+            hover_data=['Cluster ID', 'Segment ID'],
             labels={"Cluster ID": "Cluster ID"}
         )
 
