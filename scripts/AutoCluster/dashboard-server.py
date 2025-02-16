@@ -1072,12 +1072,10 @@ def perform_clustering(jsonified_vector_data, clustering):
 
 # Callback for updating vector plot with clustering
 @app.callback(
-    # [Output('cluster-vector-plot', 'figure'), Output('click-data', 'data')],
     Output('cluster-vector-plot', 'figure'),
     [Input('vector-data', 'data'), Input('cluster-data', 'data'), Input('visualization-radio', 'value')]
 )
 def update_cluster_vector_plot(jsonified_vector_data, jsonified_cluster_data, visualization):
-    # global selected_clusters
 
     vector_data = json.loads(jsonified_vector_data)
     cluster_data = json.loads(jsonified_cluster_data)
@@ -1123,8 +1121,6 @@ def update_cluster_vector_plot(jsonified_vector_data, jsonified_cluster_data, vi
 
     print('Cluster vector plot ready in:', time.time() - start_time)
 
-    # return cluster_vector_plot_fig, json.dumps({'update_required': update_required})
-
     return cluster_vector_plot_fig
 
 # -------------------------------------------------------------------------------
@@ -1158,6 +1154,8 @@ def update_final_plot(jsonified_cluster_data, jsonified_slice_data, jsonified_su
     # -------------------------------------------------------------------------------
 
     final_fig = create_final_image(cluster_labels, cluster_color_dict, input_image, resized_image, segments)
+
+    print('Final segmented slice ready in:', time.time() - start_time)
 
     return final_fig
 
