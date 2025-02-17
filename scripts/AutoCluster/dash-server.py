@@ -349,12 +349,6 @@ for x in range(volume.shape[0]):
     # Apply SLIC segmentation on the RGB values fro RadViz
     segments = segmentation.slic(input_image, n_segments=450, compactness=30, start_label=0)
 
-    # Apply ALR transformation to the 4-channel ratio data
-    # alr_image = alr_transform(resized_image)
-
-    # Apply SLIC segmentation on the transformed image (now shape is (256, 256, 3))
-    # segments = segmentation.slic(alr_image, n_segments=400, compactness=10, sigma=1)
-
     # -------------------------------------------------------------------------------
 
     # Make segment ID as the key and metal values per pixel as the value
@@ -440,6 +434,28 @@ for x in range(volume.shape[0]):
     # Create a marked boundary image
     boundary_image = mark_boundaries(input_image, segments)
 
+    # Get the shape of the image
+    height, width = boundary_image.shape[:2]
+
+    # Create a scatter trace for displaying segment IDs on hover
+    segment_coords = []
+    segment_ids = []
+    
+    for i in range(height):
+        for j in range(width):
+            segment_coords.append((i, j))
+            segment_ids.append(segments[i, j])
+    
+    # Create a Plotly scatter plot for segment IDs at each pixel location
+    scatter_trace1 = {
+        'x': [coord[1] for coord in segment_coords],  # x-coordinates (columns)
+        'y': [coord[0] for coord in segment_coords],  # y-coordinates (rows)
+        'mode': 'markers',
+        'marker': {'color': 'rgba(0, 0, 0, 0)', 'size': 1},  # Invisible markers
+        'text': [seg_id for seg_id in segment_ids],  # Text for hover
+        'hovertemplate': '<b>%{text}</b><extra></extra>',  # Custom hover template to show the segment ID
+    }
+
     # -------------------------------------------------------------------------------
     cluster_color_dict = {}
     colormap = plt.cm.get_cmap("tab10")
@@ -452,7 +468,6 @@ for x in range(volume.shape[0]):
     cluster_color_dict = cluster_colors
 
     for cluster_id in np.unique(cluster_labels):
-        # cluster_color_dict[cluster_id] = tuple(map(lambda x: int(x * 255), colormap(cluster_id)[:3]))
         cluster_color_dict[cluster_id] = tuple(map(lambda x: int(x * 255), cluster_color_dict[cluster_id][:3]))
 
     # Create the final segmented image using the cluster colors
@@ -468,6 +483,29 @@ for x in range(volume.shape[0]):
 
     final_image = mark_boundaries(final_segmented_image, segments)
 
+    # Get the shape of the image
+    height, width = final_image.shape[:2]
+
+    # Create a scatter trace for displaying segment IDs on hover
+    segment_coords = []
+    segment_ids = []
+    
+    for i in range(height):
+        for j in range(width):
+            segment_coords.append((i, j))
+            segment_ids.append(segments[i, j])
+    
+    # Create a Plotly scatter plot for segment IDs at each pixel location
+    scatter_trace2 = {
+        'x': [coord[1] for coord in segment_coords],  # x-coordinates (columns)
+        'y': [coord[0] for coord in segment_coords],  # y-coordinates (rows)
+        'mode': 'markers',
+        'marker': {'color': 'rgba(0, 0, 0, 0)', 'size': 1},  # Invisible markers
+        'text': [seg_id for seg_id in segment_ids],  # Text for hover
+        'hovertemplate': '<b>%{text}</b><extra></extra>',  # Custom hover template to show the segment ID
+    }
+
+
 # Initialize Dash app
 app = dash.Dash(__name__)
 
@@ -476,26 +514,26 @@ app.layout = html.Div([
     html.Div([
         dcc.Graph(
             id='original-image',
-            config={'displayModeBar': False},
+            # config={'displayModeBar': False},
         )
     ], style={'width': '25%', 'display': 'inline-block'}),
     html.Div([
         dcc.Graph(
             id='segment-image',
-            config={'displayModeBar': False},
+            # config={'displayModeBar': False},
             clear_on_unhover=True
         )
     ], style={'width': '25%', 'display': 'inline-block'}),
     html.Div([
         dcc.Graph(
             id='final-image',
-            config={'displayModeBar': False},
+            # config={'displayModeBar': False},
         )
     ], style={'width': '25%', 'display': 'inline-block'}),
     html.Div([
         dcc.Graph(
             id='final-segment-image',
-            config={'displayModeBar': False},
+            # config={'displayModeBar': False},
         )
     ], style={'width': '25%', 'display': 'inline-block'}),
 
@@ -504,7 +542,7 @@ app.layout = html.Div([
     html.Div([
         dcc.Graph(
             id='tsne-plot',
-            config={'displayModeBar': False},
+            # config={'displayModeBar': False},
             clear_on_unhover=True
         )
     ], style={'width': '100%', 'display': 'block'}),
@@ -514,72 +552,96 @@ app.layout = html.Div([
 
 # -------------------------------------------------------------------------------
 
+# Callback to create original image
+@app.callback(
+    Output('original-image', 'figure'),
+    Input('original-image', 'id')  # Dummy input to trigger initialization
+)
+def create_original_image(_):
+    fig = px.imshow(input_image)
+    fig.update_layout(
+        margin=dict(l=27, r=27, b=27, t=27),
+        xaxis=dict(visible=False),
+        yaxis=dict(visible=False),
+        coloraxis_showscale=False
+    )
+    return fig
+
+# -------------------------------------------------------------------------------
+
 # Callback to update plots interactively
 @app.callback(
-    Output('segment-image', 'figure'),
+    [Output('segment-image', 'figure'), Output('final-segment-image', 'figure')],
     Input('tsne-plot', 'hoverData')
 )
 def highlight_segment(hover_data):
     if hover_data is None:
         # Default: Show the original boundary image without highlighting
-        fig = px.imshow(boundary_image)
-        fig.update_layout(coloraxis_showscale=False)
-
-        # Get the shape of the image
-        height, width = boundary_image.shape[:2]
-
-        # Create a scatter trace for displaying segment IDs on hover
-        segment_coords = []
-        segment_ids = []
-        
-        for i in range(height):
-            for j in range(width):
-                segment_coords.append((i, j))
-                segment_ids.append(segments[i, j])
-        
-        # Create a Plotly scatter plot for segment IDs at each pixel location
-        scatter_trace = {
-            'x': [coord[1] for coord in segment_coords],  # x-coordinates (columns)
-            'y': [coord[0] for coord in segment_coords],  # y-coordinates (rows)
-            'mode': 'markers',
-            'marker': {'color': 'rgba(0, 0, 0, 0)', 'size': 1},  # Invisible markers
-            'text': [seg_id for seg_id in segment_ids],  # Text for hover
-            'hovertemplate': '<b>%{text}</b><extra></extra>',  # Custom hover template to show the segment ID
-        }
+        fig1 = px.imshow(boundary_image)
+        fig1.update_layout(coloraxis_showscale=False)
 
         # Add the scatter trace to the figure
-        fig.add_traces([scatter_trace])
+        fig1.add_traces([scatter_trace1])
 
-        fig.update_layout(
+        fig1.update_layout(
+            margin=dict(l=2, r=2, b=2, t=2),
+            xaxis=dict(visible=False),
+            yaxis=dict(visible=False),
+        )
+
+        fig2 = px.imshow(final_image)
+        fig2.update_layout(coloraxis_showscale=False)
+
+        # Add the scatter trace to the figure
+        fig2.add_traces([scatter_trace2])
+
+        fig2.update_layout(
             margin=dict(l=2, r=2, b=2, t=2),
             xaxis=dict(visible=False),
             yaxis=dict(visible=False),
         )
     
-        return fig
-    
+        return fig1, fig2
+
     # Get the hovered segment ID from t-SNE plot
     hovered_segment_id = hover_data['points'][0]['customdata'][1]
 
     # Highlight the corresponding segment in the image
-    highlighted_image = np.copy(boundary_image)
-    highlighted_image[segments != hovered_segment_id] *= 0.3  # Dim non-selected segments
+    highlighted_image1 = np.copy(boundary_image)
+    highlighted_image1[segments != hovered_segment_id] *= 0.3  # Dim non-selected segments
 
     # Create a new figure with highlighted segment
-    fig = px.imshow(highlighted_image)
-    fig.update_layout(coloraxis_showscale=False)
+    fig1 = px.imshow(highlighted_image1)
+    fig1.update_layout(
+        margin=dict(l=27, r=27, b=27, t=27),
+        xaxis=dict(visible=False),
+        yaxis=dict(visible=False),
+        coloraxis_showscale=False
+    )
 
-    return fig
+    # Highlight the corresponding segment in the image
+    highlighted_image2 = np.copy(final_image)
+    highlighted_image2[segments != hovered_segment_id] *= 0.3  # Dim non-selected segments
+
+    fig2 = px.imshow(highlighted_image2)
+    fig2.update_layout(
+        margin=dict(l=27, r=27, b=27, t=27),
+        xaxis=dict(visible=False),
+        yaxis=dict(visible=False),
+        coloraxis_showscale=False
+    )
+
+    return fig1, fig2
 
 # -------------------------------------------------------------------------------
 
 # Callback to create t-SNE plot
 @app.callback(
     Output('tsne-plot', 'figure'),
-    Input('segment-image', 'hoverData')
+    [Input('segment-image', 'hoverData'), Input('final-segment-image', 'hoverData')]
 )
-def create_tsne_plot(hover_data):
-    if hover_data is None:
+def create_tsne_plot(hover_data1, hover_data2):
+    if hover_data1 is None and hover_data2 is None:
         # Default: Show the t-SNE plot without highlighting
         fig = px.scatter(
             df_tsne,
@@ -592,6 +654,11 @@ def create_tsne_plot(hover_data):
         )
         return fig
     
+    if hover_data1 is not None:
+        hover_data = hover_data1
+    else:
+        hover_data = hover_data2
+
     # Get the hovered segment ID from the segment image
     hovered_segment_id = int(hover_data['points'][0]['text'])
 
@@ -609,26 +676,20 @@ def create_tsne_plot(hover_data):
         labels={"Cluster ID": "Cluster ID"}
     )
 
+    # Dim non-selected segments
+    fig.update_traces(marker=dict(opacity=0.3), selector=dict(mode='markers'))
+
     # Add a trace for the highlighted segment
     fig.add_trace(
         go.Scatter(
             x=highlighted_segment['t-SNE Dim 1'],
             y=highlighted_segment['t-SNE Dim 2'],
             mode='markers',
-            marker=dict(size=10, color='black'),
-            hoverinfo='skip',  # Hide hover info for the highlighted segment
+            marker=dict(size=15, color='black', opacity=1),
+            hoverinfo='skip',  # Hide hover info for the highlighted segment,
+            showlegend=False  # Hide legend for the highlighted segment
         )
     )
-
-    # fig = px.scatter(
-    #     df_tsne,
-    #     x='t-SNE Dim 1',
-    #     y='t-SNE Dim 2',
-    #     color='Cluster ID',
-    #     category_orders={"Cluster ID": ["0", "1", "2", "3", "4"]},
-    #     hover_data=['Cluster ID', 'Segment ID'],
-    #     labels={"Cluster ID": "Cluster ID"}
-    # )
     return fig
 
 # -------------------------------------------------------------------------------
@@ -640,27 +701,12 @@ def create_tsne_plot(hover_data):
 )
 def create_final_image(_):
     fig = px.imshow(final_segmented_image)
-    fig.update_layout(coloraxis_showscale=False)
-    return fig
-
-# Callback to create final segmented image
-@app.callback(
-    Output('final-segment-image', 'figure'),
-    Input('final-segment-image', 'id')  # Dummy input to trigger initialization
-)
-def create_final_segment_image(_):
-    fig = px.imshow(final_image)
-    fig.update_layout(coloraxis_showscale=False)
-    return fig
-
-# Callback to create original image
-@app.callback(
-    Output('original-image', 'figure'),
-    Input('original-image', 'id')  # Dummy input to trigger initialization
-)
-def create_original_image(_):
-    fig = px.imshow(input_image)
-    fig.update_layout(coloraxis_showscale=False)
+    fig.update_layout(
+        margin=dict(l=25, r=25, b=25, t=25),
+        xaxis=dict(visible=False),
+        yaxis=dict(visible=False),
+        coloraxis_showscale=False
+    )
     return fig
 
 # -------------------------------------------------------------------------------
