@@ -7,8 +7,10 @@ import warnings
 import math
 import matplotlib.colors as mcolors
 import cv2
+from sklearn.cluster import KMeans
 from sklearn.manifold import TSNE
 import plotly.express as px
+import plotly.graph_objects as go
 import dash
 from dash import dcc, html, Input, Output
 import pandas as pd
@@ -153,6 +155,36 @@ def alr_transform(image):
     alr_image = np.log((image[..., :-1] + epsilon) / (reference_channel[..., np.newaxis] + epsilon))
     return alr_image
 
+# Zoom in on the center of the image
+def cropImage(image, zoom_factor):
+    # Calculate new dimensions for cropping
+    width, height = image.shape[:2]
+    center_x, center_y = width // 2, height // 2
+
+    # Calculate new dimensions for cropping
+    crop_width = int(width / zoom_factor)
+    crop_height = int(height / zoom_factor)
+
+    # Define crop box around the center
+    left = center_x - crop_width // 2
+    right = center_x + crop_width // 2
+    top = center_y - crop_height // 2
+    bottom = center_y + crop_height // 2
+
+    # Ensure that the crop box is within bounds of the original image
+    left = max(left, 0)
+    right = min(right, width)
+    top = max(top, 0)
+    bottom = min(bottom, height)
+
+    # Crop the image using numpy slicing
+    cropped_image = image[top:bottom, left:right]
+
+    # Resize the cropped image back to the original size
+    resized_image = cv2.resize(cropped_image, (width, height), interpolation=cv2.INTER_LINEAR)
+
+    return resized_image
+
 # -------------------------------------------------------------------------------
 
 # Define the custom weight function based on both mean color and variance differences
@@ -273,15 +305,9 @@ def iterative_merge(image, labels, rag, iterations):
 # -------------------------------------------------------------------------------
 
 # Load volume data
-volume = np.load('../volume.npy')
-
-# Normalize the value of each voxel so that the sum of all channels is 1
-volume = volume / 255
+volume = np.load('../../xray_volume.npy')
 
 # -------------------------------------------------------------------------------
-
-# Initialize variance and filter based on mean intensity
-intensity_threshold = 0.15  # Threshold to ignore black regions (adjust as needed)
 
 # Loop over each x-axis slice
 slice_allowed = [90, 100, 130, 150, 170]
@@ -290,40 +316,17 @@ for x in range(volume.shape[0]):
     if x not in slice_allowed:
         continue
 
-    image = volume[slice_allowed[0], :, :]
+    image = volume[x, :, :]
+    # print(image.shape)
 
     # -------------------------------------------------------------------------------
     # Zoom in on the center of the image
     # -------------------------------------------------------------------------------
 
-    # Determine the center of the image
-    height, width = image.shape[:2]
-    center_x, center_y = width // 2, height // 2
-
     # Define a zoom factor (increase this value to zoom in more)
-    zoom_factor = 1.85
+    zoom_factor = 1.4
 
-    # Calculate new dimensions for cropping
-    crop_width = int(width / zoom_factor)
-    crop_height = int(height / zoom_factor)
-
-    # Define crop box around the center
-    left = center_x - crop_width // 2
-    right = center_x + crop_width // 2
-    top = center_y - crop_height // 2
-    bottom = center_y + crop_height // 2
-
-    # Ensure that the crop box is within bounds of the original image
-    left = max(left, 0)
-    right = min(right, width)
-    top = max(top, 0)
-    bottom = min(bottom, height)
-
-    # Crop the image using numpy slicing
-    cropped_image = image[top:bottom, left:right]
-
-    # Resize the cropped image back to the original size
-    resized_image = cv2.resize(cropped_image, (width, height), interpolation=cv2.INTER_LINEAR)
+    resized_image = cropImage(image, zoom_factor)
 
     # -------------------------------------------------------------------------------
 
@@ -344,13 +347,56 @@ for x in range(volume.shape[0]):
     # -------------------------------------------------------------------------------
 
     # Apply SLIC segmentation on the RGB values fro RadViz
-    # segments = segmentation.slic(input_image, n_segments=200, compactness=30, start_label=1)
+    segments = segmentation.slic(input_image, n_segments=450, compactness=30, start_label=0)
 
     # Apply ALR transformation to the 4-channel ratio data
-    alr_image = alr_transform(resized_image)
+    # alr_image = alr_transform(resized_image)
 
     # Apply SLIC segmentation on the transformed image (now shape is (256, 256, 3))
-    segments = segmentation.slic(alr_image, n_segments=400, compactness=10, sigma=1)
+    # segments = segmentation.slic(alr_image, n_segments=400, compactness=10, sigma=1)
+
+    # -------------------------------------------------------------------------------
+
+    # Make segment ID as the key and metal values per pixel as the value
+    segmentDict = dict()
+
+    for i in range(resized_image.shape[0]):
+        for j in range(resized_image.shape[1]):
+            if segments[i][j] not in segmentDict:
+                segmentDict[segments[i][j]] = []
+            segmentDict[segments[i][j]].append(resized_image[i][j])
+
+    # print(segmentDict.keys())
+
+    # -------------------------------------------------------------------------------
+
+    # Make segment ID as the key and pixel coordinates as the value
+    segmentCordDict = dict()
+
+    for i in range(resized_image.shape[0]):
+        for j in range(resized_image.shape[1]):
+            if segments[i][j] not in segmentCordDict:
+                segmentCordDict[segments[i][j]] = []
+            segmentCordDict[segments[i][j]].append((i, j))
+
+    # print(segmentCordDict.keys())
+
+    # -------------------------------------------------------------------------------
+
+    # Make segment ID as the key and pixel colors as the value
+    segmentColorDict = dict()
+
+    for i in range(resized_image.shape[0]):
+        for j in range(resized_image.shape[1]):
+            if segments[i][j] not in segmentColorDict:
+                segmentColorDict[segments[i][j]] = []
+            segmentColorDict[segments[i][j]].append(input_image[i][j] / 255.0)
+
+    # Replace the segment ID with the mean color of the segment
+    for key in segmentColorDict.keys():
+        segmentColorDict[key] = np.mean(segmentColorDict[key], axis=0)
+
+    # print(segmentColorDict.keys())
 
     # -------------------------------------------------------------------------------
 
@@ -366,24 +412,61 @@ for x in range(volume.shape[0]):
     # Convert the list of vectors to a NumPy array
     segment_vectors = np.array(segment_vectors)
 
-    print(segment_vectors.shape)
+    # print("Segment vector shape ", segment_vectors.shape)
 
     # -------------------------------------------------------------------------------
 
+    # Number of clusters
+    num_clusters = 5
+
+    # Perform K-means clustering
+    kmeans = KMeans(n_clusters=num_clusters, random_state=42)
+    cluster_labels = kmeans.fit_predict(segment_vectors)
+
     # Perform t-SNE for dimensionality reduction
-    tsne_data = TSNE(n_components=2)
+    tsne_data = TSNE(n_components=2, random_state=42)
     reduced_data = tsne_data.fit_transform(segment_vectors)
 
     # Create dummy labels for visualization (use actual labels if available)
-    segment_ids = np.arange(len(reduced_data))
+    segment_labels = np.arange(len(reduced_data))
 
     # Step 3: Visualize the results
     # Create a DataFrame for easier plotting
     df_tsne = pd.DataFrame(reduced_data, columns=['t-SNE Dim 1', 't-SNE Dim 2'])
-    df_tsne['Cluster ID'] = segment_ids
+    df_tsne['Cluster ID'] = cluster_labels
+    df_tsne['Cluster ID'] = df_tsne['Cluster ID'].astype(str)
+    df_tsne['Segment ID'] = segment_labels
 
     # Create a marked boundary image
     boundary_image = mark_boundaries(input_image, segments)
+
+    # -------------------------------------------------------------------------------
+    cluster_color_dict = {}
+    colormap = plt.cm.get_cmap("tab10")
+
+    cluster_colors = {}
+    for i in range(num_clusters):  # 5 clusters
+        color = colormap(i)
+        cluster_colors[i] = color
+
+    cluster_color_dict = cluster_colors
+
+    for cluster_id in np.unique(cluster_labels):
+        # cluster_color_dict[cluster_id] = tuple(map(lambda x: int(x * 255), colormap(cluster_id)[:3]))
+        cluster_color_dict[cluster_id] = tuple(map(lambda x: int(x * 255), cluster_color_dict[cluster_id][:3]))
+
+    # Create the final segmented image using the cluster colors
+
+    # Create an image to store the colors for each pixel
+    final_segmented_image = np.zeros_like(resized_image, dtype=np.uint8)
+    # Drop the alpha channel
+    final_segmented_image = final_segmented_image[:, :, :3]
+
+    for i in range(resized_image.shape[0]):
+        for j in range(resized_image.shape[1]):
+            final_segmented_image[i][j] = cluster_color_dict[cluster_labels[segments[i][j]]]
+
+    final_image = mark_boundaries(final_segmented_image, segments)
 
 # Initialize Dash app
 app = dash.Dash(__name__)
@@ -392,17 +475,44 @@ app = dash.Dash(__name__)
 app.layout = html.Div([
     html.Div([
         dcc.Graph(
-            id='tsne-plot',
+            id='original-image',
             config={'displayModeBar': False},
         )
-    ], style={'width': '48%', 'display': 'inline-block'}),
+    ], style={'width': '25%', 'display': 'inline-block'}),
     html.Div([
         dcc.Graph(
             id='segment-image',
             config={'displayModeBar': False},
+            clear_on_unhover=True
         )
-    ], style={'width': '48%', 'display': 'inline-block'})
+    ], style={'width': '25%', 'display': 'inline-block'}),
+    html.Div([
+        dcc.Graph(
+            id='final-image',
+            config={'displayModeBar': False},
+        )
+    ], style={'width': '25%', 'display': 'inline-block'}),
+    html.Div([
+        dcc.Graph(
+            id='final-segment-image',
+            config={'displayModeBar': False},
+        )
+    ], style={'width': '25%', 'display': 'inline-block'}),
+
+    # ---------------------------------------------------------------------------
+
+    html.Div([
+        dcc.Graph(
+            id='tsne-plot',
+            config={'displayModeBar': False},
+            clear_on_unhover=True
+        )
+    ], style={'width': '100%', 'display': 'block'}),
+
+    dcc.Store(id='test')
 ])
+
+# -------------------------------------------------------------------------------
 
 # Callback to update plots interactively
 @app.callback(
@@ -414,10 +524,42 @@ def highlight_segment(hover_data):
         # Default: Show the original boundary image without highlighting
         fig = px.imshow(boundary_image)
         fig.update_layout(coloraxis_showscale=False)
-        return fig
 
+        # Get the shape of the image
+        height, width = boundary_image.shape[:2]
+
+        # Create a scatter trace for displaying segment IDs on hover
+        segment_coords = []
+        segment_ids = []
+        
+        for i in range(height):
+            for j in range(width):
+                segment_coords.append((i, j))
+                segment_ids.append(segments[i, j])
+        
+        # Create a Plotly scatter plot for segment IDs at each pixel location
+        scatter_trace = {
+            'x': [coord[1] for coord in segment_coords],  # x-coordinates (columns)
+            'y': [coord[0] for coord in segment_coords],  # y-coordinates (rows)
+            'mode': 'markers',
+            'marker': {'color': 'rgba(0, 0, 0, 0)', 'size': 1},  # Invisible markers
+            'text': [seg_id for seg_id in segment_ids],  # Text for hover
+            'hovertemplate': '<b>%{text}</b><extra></extra>',  # Custom hover template to show the segment ID
+        }
+
+        # Add the scatter trace to the figure
+        fig.add_traces([scatter_trace])
+
+        fig.update_layout(
+            margin=dict(l=2, r=2, b=2, t=2),
+            xaxis=dict(visible=False),
+            yaxis=dict(visible=False),
+        )
+    
+        return fig
+    
     # Get the hovered segment ID from t-SNE plot
-    hovered_segment_id = hover_data['points'][0]['pointIndex']
+    hovered_segment_id = hover_data['points'][0]['customdata'][1]
 
     # Highlight the corresponding segment in the image
     highlighted_image = np.copy(boundary_image)
@@ -426,28 +568,102 @@ def highlight_segment(hover_data):
     # Create a new figure with highlighted segment
     fig = px.imshow(highlighted_image)
     fig.update_layout(coloraxis_showscale=False)
+
     return fig
+
+# -------------------------------------------------------------------------------
 
 # Callback to create t-SNE plot
 @app.callback(
     Output('tsne-plot', 'figure'),
-    Input('tsne-plot', 'id')  # Dummy input to trigger initialization
+    Input('segment-image', 'hoverData')
 )
+def create_tsne_plot(hover_data):
+    if hover_data is None:
+        # Default: Show the t-SNE plot without highlighting
+        fig = px.scatter(
+            df_tsne,
+            x='t-SNE Dim 1',
+            y='t-SNE Dim 2',
+            color='Cluster ID',
+            category_orders={"Cluster ID": ["0", "1", "2", "3", "4"]},
+            hover_data=['Cluster ID', 'Segment ID'],
+            labels={"Cluster ID": "Cluster ID"}
+        )
+        return fig
+    
+    # Get the hovered segment ID from the segment image
+    hovered_segment_id = int(hover_data['points'][0]['text'])
 
-def create_tsne_plot(_):
-    # Create scatter plot for t-SNE with segment IDs as custom data
-    # fig = px.scatter(df_tsne, x='t-SNE Dim 1', y='t-SNE Dim 2', title='Interactive t-SNE Visualization')
+    # Highlight the corresponding segment in the t-SNE plot
+    highlighted_segment = df_tsne[df_tsne['Segment ID'] == hovered_segment_id]
+
+    # Create a new figure with highlighted segment
     fig = px.scatter(
         df_tsne,
         x='t-SNE Dim 1',
         y='t-SNE Dim 2',
-        color='Cluster ID',  # Use the 'Cluster ID' column for coloring
-        color_continuous_scale='Viridis',  # Choose a color scale (e.g., 'Viridis', 'Plasma', etc.)
-        title='Interactive t-SNE Visualization with Colorbar',
-        labels={'Cluster ID': 'Cluster ID'},  # Label for the colorbar
+        color='Cluster ID',
+        category_orders={"Cluster ID": ["0", "1", "2", "3", "4"]},
+        hover_data=['Cluster ID', 'Segment ID'],
+        labels={"Cluster ID": "Cluster ID"}
     )
-    fig.update_traces(marker=dict(size=10, color=segment_ids, colorscale='Viridis'))
+
+    # Add a trace for the highlighted segment
+    fig.add_trace(
+        go.Scatter(
+            x=highlighted_segment['t-SNE Dim 1'],
+            y=highlighted_segment['t-SNE Dim 2'],
+            mode='markers',
+            marker=dict(size=10, color='black'),
+            hoverinfo='skip',  # Hide hover info for the highlighted segment
+        )
+    )
+
+    # fig = px.scatter(
+    #     df_tsne,
+    #     x='t-SNE Dim 1',
+    #     y='t-SNE Dim 2',
+    #     color='Cluster ID',
+    #     category_orders={"Cluster ID": ["0", "1", "2", "3", "4"]},
+    #     hover_data=['Cluster ID', 'Segment ID'],
+    #     labels={"Cluster ID": "Cluster ID"}
+    # )
     return fig
+
+# -------------------------------------------------------------------------------
+
+# Callback to create final segmented image
+@app.callback(
+    Output('final-image', 'figure'),
+    Input('final-image', 'id')  # Dummy input to trigger initialization
+)
+def create_final_image(_):
+    fig = px.imshow(final_segmented_image)
+    fig.update_layout(coloraxis_showscale=False)
+    return fig
+
+# Callback to create final segmented image
+@app.callback(
+    Output('final-segment-image', 'figure'),
+    Input('final-segment-image', 'id')  # Dummy input to trigger initialization
+)
+def create_final_segment_image(_):
+    fig = px.imshow(final_image)
+    fig.update_layout(coloraxis_showscale=False)
+    return fig
+
+# Callback to create original image
+@app.callback(
+    Output('original-image', 'figure'),
+    Input('original-image', 'id')  # Dummy input to trigger initialization
+)
+def create_original_image(_):
+    fig = px.imshow(input_image)
+    fig.update_layout(coloraxis_showscale=False)
+    return fig
+
+# -------------------------------------------------------------------------------
 
 # Run the app
 if __name__ == '__main__':
