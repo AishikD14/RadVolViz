@@ -37,6 +37,9 @@ body{
 #superpixel-plot .svg-container .main-svg:first-child{
     background: none !important;
 }
+#superpixel-plot .svg-container .main-svg:first-child .bglayer .bg{
+    fill-opacity: 0 !important;
+}
 #final-plot .svg-container .main-svg:first-child{
     background: none !important;
 }
