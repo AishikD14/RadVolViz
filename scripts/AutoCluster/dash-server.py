@@ -415,10 +415,10 @@ for x in range(volume.shape[0]):
     # -------------------------------------------------------------------------------
 
     # Apply SLIC segmentation on the RGB values from RadViz
-    segments = segmentation.slic(input_image, n_segments=450, compactness=30, start_label=0)
-    # print("Performing SLIC segmentation...")
-    # segments, cluster_centers = custom_slic(resized_image, 450)
-    # print("SLIC segmentation completed.")
+    # segments = segmentation.slic(input_image, n_segments=450, compactness=30, start_label=0)
+    print("Performing SLIC segmentation...")
+    segments, cluster_centers = custom_slic(resized_image, 450)
+    print("SLIC segmentation completed.")
 
     # -------------------------------------------------------------------------------
 
