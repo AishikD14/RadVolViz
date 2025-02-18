@@ -594,6 +594,10 @@ def create_cluster_vector_plot(reduced_data, cluster_labels, cluster_color_dict,
     # # Create color scale of format [[level, color], ...]
     # color_scale = [[level, color] for level, color in zip(normalized_levels, color_array)]
 
+    # Extract Tab10 colors from Matplotlib
+    tab10_colors = [plt.get_cmap("tab10")(i) for i in range(10)]
+    tab10_colors = ["rgb({}, {}, {})".format(int(r*255), int(g*255), int(b*255)) for r, g, b, _ in tab10_colors]
+
     if visualization == 'pca':
         fig = px.scatter(
             df,
@@ -602,7 +606,8 @@ def create_cluster_vector_plot(reduced_data, cluster_labels, cluster_color_dict,
             color='Cluster ID',
             category_orders={"Cluster ID": ["0", "1", "2", "3", "4"]},
             hover_data=['Cluster ID', 'Segment ID'],
-            labels={"Cluster ID": "Cluster ID"}
+            labels={"Cluster ID": "Cluster ID"},
+            color_discrete_sequence=tab10_colors
         )
 
     elif visualization == 'tsne':
@@ -613,7 +618,8 @@ def create_cluster_vector_plot(reduced_data, cluster_labels, cluster_color_dict,
             color='Cluster ID',
             category_orders={"Cluster ID": ["0", "1", "2", "3", "4"]},
             hover_data=['Cluster ID', 'Segment ID'],
-            labels={"Cluster ID": "Cluster ID"}
+            labels={"Cluster ID": "Cluster ID"},
+            color_discrete_sequence=tab10_colors
         )
 
     # fig.update_traces(marker=dict(color=cluster_labels, colorscale=color_scale))
