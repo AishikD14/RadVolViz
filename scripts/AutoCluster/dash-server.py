@@ -383,6 +383,8 @@ for x in range(volume.shape[0]):
     if x not in slice_allowed:
         continue
 
+    print("-" * 80)
+
     image = volume[x, :, :]
 
     # -------------------------------------------------------------------------------
@@ -429,8 +431,6 @@ for x in range(volume.shape[0]):
                 segmentDict[segments[i][j]] = []
             segmentDict[segments[i][j]].append(resized_image[i][j])
 
-    # print(segmentDict.keys())
-
     # -------------------------------------------------------------------------------
 
     # Make segment ID as the key and pixel coordinates as the value
@@ -441,8 +441,6 @@ for x in range(volume.shape[0]):
             if segments[i][j] not in segmentCordDict:
                 segmentCordDict[segments[i][j]] = []
             segmentCordDict[segments[i][j]].append((i, j))
-
-    # print(segmentCordDict.keys())
 
     # -------------------------------------------------------------------------------
 
@@ -459,8 +457,6 @@ for x in range(volume.shape[0]):
     for key in segmentColorDict.keys():
         segmentColorDict[key] = np.mean(segmentColorDict[key], axis=0)
 
-    # print(segmentColorDict.keys())
-
     # -------------------------------------------------------------------------------
 
     unique_segments = np.unique(segments)  # Get unique segment IDs
@@ -475,8 +471,6 @@ for x in range(volume.shape[0]):
     # Convert the list of vectors to a NumPy array
     segment_vectors = np.array(segment_vectors)
 
-    # print("Segment vector shape ", segment_vectors.shape)
-
     # -------------------------------------------------------------------------------
 
     # Number of clusters
@@ -485,8 +479,6 @@ for x in range(volume.shape[0]):
     # Perform K-means clustering
     kmeans = KMeans(n_clusters=num_clusters, random_state=42)
     cluster_labels = kmeans.fit_predict(segment_vectors)
-
-    print(len(cluster_labels))
 
     # Perform t-SNE for dimensionality reduction
     tsne_data = TSNE(n_components=2, random_state=42)
@@ -501,6 +493,8 @@ for x in range(volume.shape[0]):
     df_tsne['Cluster ID'] = cluster_labels
     df_tsne['Cluster ID'] = df_tsne['Cluster ID'].astype(str)
     df_tsne['Segment ID'] = segment_labels
+
+    # -------------------------------------------------------------------------------
 
     # Create a marked boundary image
     boundary_image = mark_boundaries(input_image, segments)
@@ -541,7 +535,7 @@ for x in range(volume.shape[0]):
     for cluster_id in np.unique(cluster_labels):
         cluster_color_dict[cluster_id] = tuple(map(lambda x: int(x * 255), cluster_color_dict[cluster_id][:3]))
 
-    print(cluster_color_dict)
+    # -------------------------------------------------------------------------------
 
     # Create the final segmented image using the cluster colors
 
@@ -715,6 +709,10 @@ def highlight_segment(hover_data):
     [Input('segment-image', 'hoverData'), Input('final-segment-image', 'hoverData')]
 )
 def create_tsne_plot(hover_data1, hover_data2):
+    # Extract Tab10 colors from Matplotlib
+    tab10_colors = [plt.get_cmap("tab10")(i) for i in range(10)]
+    tab10_colors = ["rgb({}, {}, {})".format(int(r*255), int(g*255), int(b*255)) for r, g, b, _ in tab10_colors]
+
     # Create a new figure with highlighted segment
     fig = px.scatter(
         df_tsne,
@@ -723,7 +721,8 @@ def create_tsne_plot(hover_data1, hover_data2):
         color='Cluster ID',
         category_orders={"Cluster ID": ["0", "1", "2", "3", "4"]},
         hover_data=['Cluster ID', 'Segment ID'],
-        labels={"Cluster ID": "Cluster ID"}
+        labels={"Cluster ID": "Cluster ID"},
+        color_discrete_sequence=tab10_colors  
     )
 
     if hover_data1 is None and hover_data2 is None:
@@ -733,8 +732,6 @@ def create_tsne_plot(hover_data1, hover_data2):
         hover_data = hover_data1
     else:
         hover_data = hover_data2
-
-    print(hover_data)
 
     # Get the hovered segment ID from the segment image
     hovered_segment_id = int(hover_data['points'][0]['text'])
