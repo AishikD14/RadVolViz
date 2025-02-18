@@ -925,8 +925,7 @@ app.layout = html.Div([
     dcc.Store(id='slice-data'),
     dcc.Store(id='superpixel-data'),
     dcc.Store(id='vector-data'),
-    dcc.Store(id='cluster-data'),
-    # dcc.Store(id='click-data')
+    dcc.Store(id='cluster-data')
 ])
 
 # -------------------------------------------------------------------------------
