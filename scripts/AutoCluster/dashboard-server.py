@@ -13,7 +13,7 @@ import cv2
 from sklearn.manifold import TSNE
 import plotly.express as px
 import dash
-from dash import dcc, html, Input, Output
+from dash import dcc, html, Input, Output, State, ctx
 from scipy.spatial.distance import cdist
 from scipy.signal import find_peaks
 import pandas as pd
@@ -258,11 +258,6 @@ volume = np.load('../../xray_volume.npy')
 
 # -------------------------------------------------------------------------------
 
-# Global variables
-# selected_clusters = []
-
-# -------------------------------------------------------------------------------
-
 # Function to create original slice
 def create_original_slice(axis, slice_num):
     # Extract slice from volume
@@ -307,7 +302,7 @@ def create_original_slice(axis, slice_num):
 
     # Update the layout of the figure
     fig.update_layout(
-        margin=dict(l=0, r=0, b=0, t=0),
+        margin=dict(l=25, r=25, b=25, t=25),
         xaxis=dict(visible=False),
         yaxis=dict(visible=False)
     )
@@ -321,18 +316,48 @@ def create_superpixels(resized_image, input_image, num_superpixels):
     # segments, cluster_centers = custom_slic(resized_image, num_superpixels)
     segments = segmentation.slic(input_image, n_segments=num_superpixels, compactness=30, start_label=0)
 
+    boundary_image = mark_boundaries(input_image, segments)
+
+    # Get the shape of the image
+    height, width = boundary_image.shape[:2]
+
+    # Create a scatter trace for displaying segment IDs on hover
+    segment_coords = []
+    segment_ids = []
+
+    for i in range(height):
+        for j in range(width):
+            segment_coords.append((i, j))
+            segment_ids.append(segments[i, j])
+
+    # Create a Plotly scatter plot for segment IDs at each pixel location
+    scatter_trace = {
+        'x': [coord[1] for coord in segment_coords],  # x-coordinates (columns)
+        'y': [coord[0] for coord in segment_coords],  # y-coordinates (rows)
+        'mode': 'markers',
+        'marker': {'color': 'rgba(0, 0, 0, 0)', 'size': 1},  # Invisible markers
+        'text': [seg_id for seg_id in segment_ids],  # Text for hover
+        'hovertemplate': '<b>%{text}</b><extra></extra>',  # Custom hover template to show the segment ID
+    }
+
     # Create a plotly figure
-    fig = px.imshow(mark_boundaries(input_image, segments))
+    fig = px.imshow(boundary_image)
+
+    # Add the scatter trace to the figure
+    fig.add_traces([scatter_trace])
 
     # Update the layout of the figure
     fig.update_layout(
-        margin=dict(l=2, r=2, b=2, t=2),
+        margin=dict(l=0, r=0, b=0, t=0),
         xaxis=dict(visible=False),
-        yaxis=dict(visible=False)
+        yaxis=dict(visible=False),
+        coloraxis_showscale=False
     )
 
+    trace_info = {"segment_coords": segment_coords, "segment_ids": list(map(int, segment_ids))}
+
     # Return the figure
-    return fig, segments
+    return fig, segments, boundary_image, trace_info
 
 # Function to create PCA plot
 def create_pca_plot(segment_vectors, segmentColorDict):
@@ -667,7 +692,7 @@ def create_final_image(cluster_labels, cluster_color_dict, input_image, resized_
 
     # Update the layout of the figure
     fig.update_layout(
-        margin=dict(l=0, r=0, b=0, t=0),
+        margin=dict(l=25, r=25, b=25, t=25),
         xaxis=dict(visible=False),
         yaxis=dict(visible=False)
     )
@@ -873,7 +898,10 @@ app.layout = html.Div([
                                         id="loading-spinner",  # Wrapper to show loading spinner
                                         type="circle",  # Choose the spinner type (circle, dot, default)
                                         children=[
-                                            dcc.Graph(id="vector-plot")  # Graph component wrapped in the loading spinner
+                                            dcc.Graph(
+                                                id="vector-plot",
+                                                clear_on_unhover=True
+                                            ),  # Graph component wrapped in the loading spinner
                                         ]
                                     ),
                                 ],
@@ -956,22 +984,96 @@ def update_slice_plot(axis, slice_num):
 # Callback for Superpixel Plot
 @app.callback(
     [Output('superpixel-plot', 'figure'), Output('superpixel-data', 'data')],
-    [Input('slice-data', 'data')]
+    [Input('slice-data', 'data'), Input('vector-plot', 'hoverData')],
+    State('superpixel-data', 'data')
 )
-def update_superpixel_plot(jsonified_slice_data):
-    slice_data = json.loads(jsonified_slice_data)
-    
+def update_superpixel_plot(jsonified_slice_data, hover_data, jsonified_superpixel_data):
+    print("--------------------------------")
     print("Updating superpixel plot...")
     start_time = time.time()
+    
+    ctx_id = ctx.triggered_id.split('.')[0]
+    # print("Triggered by ", ctx_id)
 
-    # Convert stored lists back to numpy arrays
-    resized_image = np.array(slice_data['resized_image'])
-    input_image = np.array(slice_data['input_image'], dtype=np.uint8)
-    
-    superpixel_fig, segments = create_superpixels(resized_image, input_image, 450)
-    
-    print('Superpixel plot ready in:', time.time() - start_time)
-    return superpixel_fig, json.dumps({'segments': segments.tolist()})  # Store segments for future use
+    if ctx_id == 'vector-plot':
+
+        if hover_data is None:
+            if jsonified_superpixel_data is not None:
+                superpixel_data = json.loads(jsonified_superpixel_data)
+
+                segments = np.array(superpixel_data['segments'])
+                boundary_image = np.array(superpixel_data['image'])
+                segment_coords = superpixel_data['trace_info']['segment_coords']
+                segment_ids = superpixel_data['trace_info']['segment_ids']
+                segment_ids = [np.int32(num) for num in segment_ids]
+
+                # Create a Plotly scatter plot for segment IDs at each pixel location
+                scatter_trace = {
+                    'x': [coord[1] for coord in segment_coords],  # x-coordinates (columns)
+                    'y': [coord[0] for coord in segment_coords],  # y-coordinates (rows)
+                    'mode': 'markers',
+                    'marker': {'color': 'rgba(0, 0, 0, 0)', 'size': 1},  # Invisible markers
+                    'text': [seg_id for seg_id in segment_ids],  # Text for hover
+                    'hovertemplate': '<b>%{text}</b><extra></extra>',  # Custom hover template to show the segment ID
+                }
+
+                # Create a plotly figure
+                superpixel_fig = px.imshow(boundary_image)
+
+                # Add the scatter trace to the figure
+                superpixel_fig.add_traces([scatter_trace])
+
+                # Update the layout of the figure
+                superpixel_fig.update_layout(
+                    margin=dict(l=0, r=0, b=0, t=0),
+                    xaxis=dict(visible=False),
+                    yaxis=dict(visible=False),
+                    coloraxis_showscale=False
+                )
+
+                print('Superpixel plot ready in:', time.time() - start_time)
+
+                return superpixel_fig, dash.no_update
+        
+        else:
+
+            if jsonified_superpixel_data is not None:
+                superpixel_data = json.loads(jsonified_superpixel_data)
+
+                segments = np.array(superpixel_data['segments'])
+                highlighted_image = np.array(superpixel_data['image'])
+
+                # Get the hovered segment ID from t-SNE plot
+                hovered_segment_id = hover_data['points'][0]['customdata'][0]
+
+                highlighted_image[segments != hovered_segment_id] *= 0.3  # Dim non-selected segments
+
+                # Create a new figure with highlighted segment
+                superpixel_fig = px.imshow(highlighted_image)
+                superpixel_fig.update_layout(
+                    margin=dict(l=27, r=27, b=27, t=27),
+                    xaxis=dict(visible=False),
+                    yaxis=dict(visible=False),
+                    coloraxis_showscale=False
+                )
+
+                print('Superpixel plot ready in:', time.time() - start_time)
+
+                return superpixel_fig, dash.no_update
+                
+    else:
+
+        slice_data = json.loads(jsonified_slice_data)
+
+        # Convert stored lists back to numpy arrays
+        resized_image = np.array(slice_data['resized_image'])
+        input_image = np.array(slice_data['input_image'], dtype=np.uint8)
+        
+        superpixel_fig, segments, boundary_image, trace_info = create_superpixels(resized_image, input_image, 450)
+        
+        print('Superpixel plot ready in:', time.time() - start_time)
+
+        return superpixel_fig, json.dumps({'segments': segments.tolist(), 'image': boundary_image.tolist(), 'trace_info': trace_info})
 
 # -------------------------------------------------------------------------------
 
@@ -984,6 +1086,7 @@ def update_vector_plot(jsonified_slice_data, jsonified_superpixel_data, visualiz
     slice_data = json.loads(jsonified_slice_data)
     superpixel_data = json.loads(jsonified_superpixel_data)
     
+    print("--------------------------------")
     print("Updating vector plot...")
     start_time = time.time()
 
@@ -1034,6 +1137,7 @@ def update_vector_plot(jsonified_slice_data, jsonified_superpixel_data, visualiz
         vector_space_fig, reduced_data = create_tsne_plot(segment_vectors, segmentColorDict)
     
     print('Vector plot ready in:', time.time() - start_time)
+
     return vector_space_fig, json.dumps({'segment_vectors': segment_vectors.tolist(), 'reduced_data': reduced_data.tolist()})
 
 # -------------------------------------------------------------------------------
@@ -1046,6 +1150,7 @@ def update_vector_plot(jsonified_slice_data, jsonified_superpixel_data, visualiz
 def update_elbow_plot(jsonified_vector_data, clustering):
     vector_data = json.loads(jsonified_vector_data)
 
+    print("--------------------------------")
     print("Updating elbow plot...")
     start_time = time.time()
 
@@ -1057,6 +1162,7 @@ def update_elbow_plot(jsonified_vector_data, clustering):
     elbow_fig = create_elbow_plot(segment_vectors, clustering)
 
     print('Elbow plot ready in:', time.time() - start_time)
+
     return elbow_fig
 
 # -------------------------------------------------------------------------------
@@ -1082,6 +1188,7 @@ def enable_clustering(checkbox_value):
 def perform_clustering(jsonified_vector_data, clustering):
     vector_data = json.loads(jsonified_vector_data)
 
+    print("--------------------------------")
     print("Performing clustering...")
     start_time = time.time()
 
@@ -1108,6 +1215,7 @@ def update_cluster_vector_plot(jsonified_vector_data, jsonified_cluster_data, vi
     vector_data = json.loads(jsonified_vector_data)
     cluster_data = json.loads(jsonified_cluster_data)
 
+    print("--------------------------------")
     print("Updating cluster vector plot...")
     start_time = time.time()
 
@@ -1163,6 +1271,7 @@ def update_final_plot(jsonified_cluster_data, jsonified_slice_data, jsonified_su
     slice_data = json.loads(jsonified_slice_data)
     superpixel_data = json.loads(jsonified_superpixel_data)
 
+    print("--------------------------------")
     print("Updating final segmented slice...")
     start_time = time.time()
 
