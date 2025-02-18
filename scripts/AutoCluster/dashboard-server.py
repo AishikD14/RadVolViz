@@ -12,6 +12,7 @@ import matplotlib.colors as mcolors
 import cv2
 from sklearn.manifold import TSNE
 import plotly.express as px
+import plotly.graph_objects as go
 import dash
 from dash import dcc, html, Input, Output, State, ctx
 from scipy.spatial.distance import cdist
@@ -360,7 +361,7 @@ def create_superpixels(resized_image, input_image, num_superpixels):
     return fig, segments, boundary_image, trace_info
 
 # Function to create PCA plot
-def create_pca_plot(segment_vectors, segmentColorDict):
+def create_pca_plot(segment_vectors, segmentColorDict, hovered_segment_id):
     # Perform PCA for dimensionality reduction
     pca = PCA(n_components=2, random_state=42)
     reduced_data = pca.fit_transform(segment_vectors)
@@ -419,10 +420,28 @@ def create_pca_plot(segment_vectors, segmentColorDict):
         }
     )
 
+    if hovered_segment_id is not None:
+        # Highlight the corresponding segment in the PCA plot
+        highlighted_segment = df_pca[df_pca['Segment ID'] == hovered_segment_id]
+
+        # Dim non-selected segments
+        fig.update_traces(marker=dict(opacity=0.3), selector=dict(mode='markers'))
+
+        fig.add_trace(
+            go.Scatter(
+                x=highlighted_segment['PCA Dimension 1'],
+                y=highlighted_segment['PCA Dimension 2'],
+                mode='markers',
+                marker=dict(size=15, color='black', opacity=1),
+                hoverinfo='skip',  # Hide hover info for the highlighted segment,
+                showlegend=False  # Hide legend for the highlighted segment
+            )
+        )
+
     return fig, reduced_data
 
 # Function to create t-SNE plot
-def create_tsne_plot(segment_vectors, segmentColorDict):
+def create_tsne_plot(segment_vectors, segmentColorDict, hovered_segment_id):
     # Perform t-SNE for dimensionality reduction
     tsne = TSNE(n_components=2, random_state=42)
     reduced_data = tsne.fit_transform(segment_vectors)
@@ -486,6 +505,24 @@ def create_tsne_plot(segment_vectors, segmentColorDict):
             }
         }
     )
+
+    if hovered_segment_id is not None:
+        # Highlight the corresponding segment in the t-SNE plot
+        highlighted_segment = df_tsne[df_tsne['Segment ID'] == hovered_segment_id]
+
+        # Dim non-selected segments
+        fig.update_traces(marker=dict(opacity=0.3), selector=dict(mode='markers'))
+
+        fig.add_trace(
+            go.Scatter(
+                x=highlighted_segment['t-SNE Dimension 1'],
+                y=highlighted_segment['t-SNE Dimension 2'],
+                mode='markers',
+                marker=dict(size=15, color='black', opacity=1),
+                hoverinfo='skip',  # Hide hover info for the highlighted segment,
+                showlegend=False  # Hide legend for the highlighted segment
+            )
+        )
 
     return fig, reduced_data
 
@@ -852,7 +889,10 @@ app.layout = html.Div([
                                         id="loading-spinner",  # Wrapper to show loading spinner
                                         type="circle",  # Choose the spinner type (circle, dot, default)
                                         children=[
-                                            dcc.Graph(id="superpixel-plot")  # Graph component wrapped in the loading spinner
+                                            dcc.Graph(
+                                                id="superpixel-plot",
+                                                clear_on_unhover=True
+                                            )
                                         ]
                                     ),
                                 ],
@@ -993,7 +1033,6 @@ def update_superpixel_plot(jsonified_slice_data, hover_data, jsonified_superpixe
     start_time = time.time()
     
     ctx_id = ctx.triggered_id.split('.')[0]
-    # print("Triggered by ", ctx_id)
 
     if ctx_id == 'vector-plot':
 
@@ -1080,15 +1119,44 @@ def update_superpixel_plot(jsonified_slice_data, hover_data, jsonified_superpixe
 # Callback for Vector Space Visualization Plot
 @app.callback(
     [Output('vector-plot', 'figure'), Output('vector-data', 'data')],
-    [Input('slice-data', 'data'), Input('superpixel-data', 'data'), Input('visualization-radio', 'value')]
+    [Input('slice-data', 'data'), Input('superpixel-data', 'data'), Input('visualization-radio', 'value'), Input('superpixel-plot', 'hoverData')],
+    State('vector-data', 'data')
 )
-def update_vector_plot(jsonified_slice_data, jsonified_superpixel_data, visualization):
-    slice_data = json.loads(jsonified_slice_data)
-    superpixel_data = json.loads(jsonified_superpixel_data)
-    
+def update_vector_plot(jsonified_slice_data, jsonified_superpixel_data, visualization, hover_data, jsonified_vector_data):
     print("--------------------------------")
     print("Updating vector plot...")
     start_time = time.time()
+
+    ctx_id = ctx.triggered_id.split('.')[0]
+
+    if ctx_id == 'superpixel-plot':
+        vector_data = json.loads(jsonified_vector_data)
+        segment_vectors = np.array(vector_data['segment_vectors'])
+        stored_data = vector_data['segmentColorDict']
+        segmentColorDict = {np.int32(key): np.array(value) for key, value in stored_data.items()}
+
+        if hover_data is None:
+            if visualization == 'pca':
+                vector_space_fig, reduced_data = create_pca_plot(segment_vectors, segmentColorDict, None)
+
+            elif visualization == 'tsne':
+                vector_space_fig, reduced_data = create_tsne_plot(segment_vectors, segmentColorDict, None)
+
+            return vector_space_fig, dash.no_update
+
+        else:
+            hovered_segment_id = int(hover_data['points'][0]['text'])
+
+            if visualization == 'pca':
+                vector_space_fig, reduced_data = create_pca_plot(segment_vectors, segmentColorDict, hovered_segment_id)
+
+            elif visualization == 'tsne':
+                vector_space_fig, reduced_data = create_tsne_plot(segment_vectors, segmentColorDict, hovered_segment_id)
+
+            return vector_space_fig, dash.no_update
+
+    slice_data = json.loads(jsonified_slice_data)
+    superpixel_data = json.loads(jsonified_superpixel_data)
 
     # Convert stored lists back to numpy arrays
     resized_image = np.array(slice_data['resized_image'])
@@ -1124,21 +1192,18 @@ def update_vector_plot(jsonified_slice_data, jsonified_superpixel_data, visualiz
     # Convert the list of vectors to a NumPy array
     segment_vectors = np.array(segment_vectors)
 
-    # print("Segment vector shape ", segment_vectors.shape)
-
     # -------------------------------------------------------------------------------
 
-    vector_space_fig = {}
-
     if visualization == 'pca':
-        vector_space_fig, reduced_data = create_pca_plot(segment_vectors, segmentColorDict)
+        vector_space_fig, reduced_data = create_pca_plot(segment_vectors, segmentColorDict, None)
 
     elif visualization == 'tsne':
-        vector_space_fig, reduced_data = create_tsne_plot(segment_vectors, segmentColorDict)
+        vector_space_fig, reduced_data = create_tsne_plot(segment_vectors, segmentColorDict, None)
     
     print('Vector plot ready in:', time.time() - start_time)
 
-    return vector_space_fig, json.dumps({'segment_vectors': segment_vectors.tolist(), 'reduced_data': reduced_data.tolist()})
+    stored_data = {int(key): value.tolist() for key, value in segmentColorDict.items()}
+    return vector_space_fig, json.dumps({'segment_vectors': segment_vectors.tolist(), 'reduced_data': reduced_data.tolist(), 'segmentColorDict': stored_data})
 
 # -------------------------------------------------------------------------------
 
