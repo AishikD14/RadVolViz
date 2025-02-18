@@ -185,6 +185,73 @@ def cropImage(image, zoom_factor):
 
     return resized_image
 
+def initialize_cluster_centers(data, num_superpixels, grid_spacing):
+    """
+    Initialize cluster centers based on a uniform grid.
+    """
+    rows, cols, _ = data.shape
+    centers = []
+    for r in range(grid_spacing // 2, rows, grid_spacing):
+        for c in range(grid_spacing // 2, cols, grid_spacing):
+            centers.append([r, c] + list(data[r, c]))
+            # if len(centers) >= num_superpixels:  # Stop when enough centers are created
+            #     return np.array(centers)
+    return np.array(centers)
+
+def calculate_distance(pixel, center, spatial_weight, feature_weight):
+    """
+    Compute the combined distance between a pixel and a cluster center.
+    """
+    spatial_dist = np.linalg.norm(pixel[:2] - center[:2])
+    feature_dist = np.linalg.norm(pixel[2:] - center[2:])
+    return np.sqrt((spatial_dist / spatial_weight)**2 + (feature_dist / feature_weight)**2)
+
+# Custom SLIC function with cosine distance metric
+def custom_slic(data, num_superpixels, spatial_weight=5):
+    """
+    Perform SLIC segmentation on 4D input data (metal concentrations per pixel).
+    """
+    rows, cols, num_features = data.shape
+    grid_spacing = int(np.sqrt((rows * cols) / num_superpixels))
+    feature_weight = np.std(data.reshape(-1, num_features), axis=0).mean()
+
+    # Initialize cluster centers
+    cluster_centers = initialize_cluster_centers(data, num_superpixels, grid_spacing)
+    labels = -1 * np.ones((rows, cols), dtype=int)
+    distances = np.full((rows, cols), np.inf)
+
+    # Iterate until convergence
+    for _ in range(20):  # Number of iterations
+        for idx, center in enumerate(cluster_centers):
+            r, c = int(center[0]), int(center[1])
+            for dr in range(-grid_spacing, grid_spacing + 1):
+                for dc in range(-grid_spacing, grid_spacing + 1):
+                    rr, cc = r + dr, c + dc
+                    if 0 <= rr < rows and 0 <= cc < cols:
+                        pixel = [rr, cc] + list(data[rr, cc])
+                        distance = calculate_distance(pixel, center, spatial_weight, feature_weight)
+                        if distance < distances[rr, cc]:
+                            distances[rr, cc] = distance
+                            labels[rr, cc] = idx
+
+        # Update cluster centers
+        new_centers = np.zeros_like(cluster_centers)
+        counts = np.zeros(cluster_centers.shape[0], dtype=int)
+        for r in range(rows):
+            for c in range(cols):
+                label = labels[r, c]
+                new_centers[label][:2] += [r, c]
+                new_centers[label][2:] += data[r, c]
+                counts[label] += 1
+
+        for i in range(len(cluster_centers)):
+            if counts[i] > 0:
+                new_centers[i] /= counts[i]
+
+        cluster_centers = new_centers
+
+    return labels, cluster_centers
+
 # -------------------------------------------------------------------------------
 
 # Define the custom weight function based on both mean color and variance differences
@@ -317,7 +384,6 @@ for x in range(volume.shape[0]):
         continue
 
     image = volume[x, :, :]
-    # print(image.shape)
 
     # -------------------------------------------------------------------------------
     # Zoom in on the center of the image
@@ -346,8 +412,11 @@ for x in range(volume.shape[0]):
 
     # -------------------------------------------------------------------------------
 
-    # Apply SLIC segmentation on the RGB values fro RadViz
+    # Apply SLIC segmentation on the RGB values from RadViz
     segments = segmentation.slic(input_image, n_segments=450, compactness=30, start_label=0)
+    # print("Performing SLIC segmentation...")
+    # segments, cluster_centers = custom_slic(resized_image, 450)
+    # print("SLIC segmentation completed.")
 
     # -------------------------------------------------------------------------------
 
@@ -417,6 +486,8 @@ for x in range(volume.shape[0]):
     kmeans = KMeans(n_clusters=num_clusters, random_state=42)
     cluster_labels = kmeans.fit_predict(segment_vectors)
 
+    print(len(cluster_labels))
+
     # Perform t-SNE for dimensionality reduction
     tsne_data = TSNE(n_components=2, random_state=42)
     reduced_data = tsne_data.fit_transform(segment_vectors)
@@ -469,6 +540,8 @@ for x in range(volume.shape[0]):
 
     for cluster_id in np.unique(cluster_labels):
         cluster_color_dict[cluster_id] = tuple(map(lambda x: int(x * 255), cluster_color_dict[cluster_id][:3]))
+
+    print(cluster_color_dict)
 
     # Create the final segmented image using the cluster colors
 
@@ -534,6 +607,7 @@ app.layout = html.Div([
         dcc.Graph(
             id='final-segment-image',
             # config={'displayModeBar': False},
+            clear_on_unhover=True
         )
     ], style={'width': '25%', 'display': 'inline-block'}),
 
@@ -641,30 +715,6 @@ def highlight_segment(hover_data):
     [Input('segment-image', 'hoverData'), Input('final-segment-image', 'hoverData')]
 )
 def create_tsne_plot(hover_data1, hover_data2):
-    if hover_data1 is None and hover_data2 is None:
-        # Default: Show the t-SNE plot without highlighting
-        fig = px.scatter(
-            df_tsne,
-            x='t-SNE Dim 1',
-            y='t-SNE Dim 2',
-            color='Cluster ID',
-            category_orders={"Cluster ID": ["0", "1", "2", "3", "4"]},
-            hover_data=['Cluster ID', 'Segment ID'],
-            labels={"Cluster ID": "Cluster ID"}
-        )
-        return fig
-    
-    if hover_data1 is not None:
-        hover_data = hover_data1
-    else:
-        hover_data = hover_data2
-
-    # Get the hovered segment ID from the segment image
-    hovered_segment_id = int(hover_data['points'][0]['text'])
-
-    # Highlight the corresponding segment in the t-SNE plot
-    highlighted_segment = df_tsne[df_tsne['Segment ID'] == hovered_segment_id]
-
     # Create a new figure with highlighted segment
     fig = px.scatter(
         df_tsne,
@@ -675,6 +725,22 @@ def create_tsne_plot(hover_data1, hover_data2):
         hover_data=['Cluster ID', 'Segment ID'],
         labels={"Cluster ID": "Cluster ID"}
     )
+
+    if hover_data1 is None and hover_data2 is None:
+        return fig
+    
+    if hover_data1 is not None:
+        hover_data = hover_data1
+    else:
+        hover_data = hover_data2
+
+    print(hover_data)
+
+    # Get the hovered segment ID from the segment image
+    hovered_segment_id = int(hover_data['points'][0]['text'])
+
+    # Highlight the corresponding segment in the t-SNE plot
+    highlighted_segment = df_tsne[df_tsne['Segment ID'] == hovered_segment_id]
 
     # Dim non-selected segments
     fig.update_traces(marker=dict(opacity=0.3), selector=dict(mode='markers'))
@@ -690,6 +756,7 @@ def create_tsne_plot(hover_data1, hover_data2):
             showlegend=False  # Hide legend for the highlighted segment
         )
     )
+
     return fig
 
 # -------------------------------------------------------------------------------
