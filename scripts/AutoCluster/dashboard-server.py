@@ -1033,19 +1033,19 @@ def update_slice_plot(axis, slice_num):
 # Callback for Superpixel Plot
 @app.callback(
     [Output('superpixel-plot', 'figure'), Output('superpixel-data', 'data')],
-    [Input('slice-data', 'data'), Input('vector-plot', 'hoverData')],
+    [Input('slice-data', 'data'), Input('vector-plot', 'hoverData'), Input('cluster-vector-plot', 'hoverData')],
     State('superpixel-data', 'data')
 )
-def update_superpixel_plot(jsonified_slice_data, hover_data, jsonified_superpixel_data):
+def update_superpixel_plot(jsonified_slice_data, hover_data1, hover_data2, jsonified_superpixel_data):
     print("--------------------------------")
     print("Updating superpixel plot...")
     start_time = time.time()
     
     ctx_id = ctx.triggered_id.split('.')[0]
 
-    if ctx_id == 'vector-plot':
+    if ctx_id == 'vector-plot' or ctx_id == 'cluster-vector-plot':
 
-        if hover_data is None:
+        if hover_data1 is None and hover_data2 is None:
             if jsonified_superpixel_data is not None:
                 superpixel_data = json.loads(jsonified_superpixel_data)
 
@@ -1084,15 +1084,16 @@ def update_superpixel_plot(jsonified_slice_data, hover_data, jsonified_superpixe
                 return superpixel_fig, dash.no_update
         
         else:
+            if ctx_id == 'vector-plot':
+                hovered_segment_id = hover_data1['points'][0]['customdata'][0]
+            elif ctx_id == 'cluster-vector-plot':
+                hovered_segment_id = hover_data2['points'][0]['customdata'][1]
 
             if jsonified_superpixel_data is not None:
                 superpixel_data = json.loads(jsonified_superpixel_data)
 
                 segments = np.array(superpixel_data['segments'])
                 highlighted_image = np.array(superpixel_data['image'])
-
-                # Get the hovered segment ID from t-SNE plot
-                hovered_segment_id = hover_data['points'][0]['customdata'][0]
 
                 highlighted_image[segments != hovered_segment_id] *= 0.3  # Dim non-selected segments
 
