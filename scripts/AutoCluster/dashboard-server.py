@@ -630,7 +630,7 @@ def create_clusters(segment_vectors, clustering):
     return cluster_labels, cluster_color_dict
 
 # Function to create cluster vector plot
-def create_cluster_vector_plot(reduced_data, cluster_labels, cluster_color_dict, visualization):
+def create_cluster_vector_plot(reduced_data, cluster_labels, visualization, hovered_segment_id):
     # Create a DataFrame for easier plotting
     if visualization == 'pca':
         df = pd.DataFrame(reduced_data, columns=['PCA Dimension 1', 'PCA Dimension 2'])
@@ -643,18 +643,6 @@ def create_cluster_vector_plot(reduced_data, cluster_labels, cluster_color_dict,
 
     segment_labels = np.arange(len(reduced_data))
     df['Segment ID'] = segment_labels
-
-    # Extract colors for each segment in the same order as `segment_ids`
-    # color_array = [cluster_color_dict[cluster_id] for cluster_id in cluster_labels]
-
-    # # Format as "rgb(R, G, B)"
-    # color_array = [f'rgb{color}' for color in color_array]
-
-    # # Normalized levels
-    # normalized_levels = np.linspace(0, 1, len(reduced_data))
-
-    # # Create color scale of format [[level, color], ...]
-    # color_scale = [[level, color] for level, color in zip(normalized_levels, color_array)]
 
     # Extract Tab10 colors from Matplotlib
     tab10_colors = [plt.get_cmap("tab10")(i) for i in range(10)]
@@ -684,8 +672,6 @@ def create_cluster_vector_plot(reduced_data, cluster_labels, cluster_color_dict,
             color_discrete_sequence=tab10_colors
         )
 
-    # fig.update_traces(marker=dict(color=cluster_labels, colorscale=color_scale))
-
     fig.update_layout(
         xaxis_title={
             'font': {
@@ -710,6 +696,26 @@ def create_cluster_vector_plot(reduced_data, cluster_labels, cluster_color_dict,
     )
 
     fig.update_layout(clickmode='event+select')
+
+    if hovered_segment_id is not None:
+
+        # Highlight the corresponding segment in the t-SNE plot
+        highlighted_segment = df[df['Segment ID'] == hovered_segment_id]
+
+        # Dim non-selected segments
+        fig.update_traces(marker=dict(opacity=0.3), selector=dict(mode='markers'))
+
+        # Add a trace for the highlighted segment
+        fig.add_trace(
+            go.Scatter(
+                x=highlighted_segment['t-SNE Dimension 1' if visualization == 'tsne' else 'PCA Dimension 1'],
+                y=highlighted_segment['t-SNE Dimension 2' if visualization == 'tsne' else 'PCA Dimension 2'],
+                mode='markers',
+                marker=dict(size=15, color='black', opacity=1),
+                hoverinfo='skip',  # Hide hover info for the highlighted segment,
+                showlegend=False  # Hide legend for the highlighted segment
+            )
+        )
 
     return fig
 
@@ -958,7 +964,10 @@ app.layout = html.Div([
                                         id="loading-spinner",  # Wrapper to show loading spinner
                                         type="circle",  # Choose the spinner type (circle, dot, default)
                                         children=[
-                                            dcc.Graph(id="cluster-vector-plot")  # Graph component wrapped in the loading spinner
+                                            dcc.Graph(
+                                                id="cluster-vector-plot",
+                                                clear_on_unhover=True
+                                            )  # Graph component wrapped in the loading spinner
                                         ]
                                     ),
                                 ],
@@ -1120,14 +1129,17 @@ def update_superpixel_plot(jsonified_slice_data, hover_data, jsonified_superpixe
 @app.callback(
     [Output('vector-plot', 'figure'), Output('vector-data', 'data')],
     [Input('slice-data', 'data'), Input('superpixel-data', 'data'), Input('visualization-radio', 'value'), Input('superpixel-plot', 'hoverData')],
-    State('vector-data', 'data')
+    [State('vector-data', 'data'), State('vector-space-visualization', 'style')]
 )
-def update_vector_plot(jsonified_slice_data, jsonified_superpixel_data, visualization, hover_data, jsonified_vector_data):
+def update_vector_plot(jsonified_slice_data, jsonified_superpixel_data, visualization, hover_data, jsonified_vector_data, style):
+    ctx_id = ctx.triggered_id.split('.')[0]
+
+    if ctx_id == 'superpixel-plot' and style['display'] == 'none':
+        return dash.no_update, dash.no_update
+    
     print("--------------------------------")
     print("Updating vector plot...")
     start_time = time.time()
-
-    ctx_id = ctx.triggered_id.split('.')[0]
 
     if ctx_id == 'superpixel-plot':
         vector_data = json.loads(jsonified_vector_data)
@@ -1142,6 +1154,8 @@ def update_vector_plot(jsonified_slice_data, jsonified_superpixel_data, visualiz
             elif visualization == 'tsne':
                 vector_space_fig, reduced_data = create_tsne_plot(segment_vectors, segmentColorDict, None)
 
+            print('Vector plot ready in:', time.time() - start_time)
+
             return vector_space_fig, dash.no_update
 
         else:
@@ -1152,6 +1166,8 @@ def update_vector_plot(jsonified_slice_data, jsonified_superpixel_data, visualiz
 
             elif visualization == 'tsne':
                 vector_space_fig, reduced_data = create_tsne_plot(segment_vectors, segmentColorDict, hovered_segment_id)
+
+            print('Vector plot ready in:', time.time() - start_time)
 
             return vector_space_fig, dash.no_update
 
@@ -1273,56 +1289,49 @@ def perform_clustering(jsonified_vector_data, clustering):
 # Callback for updating vector plot with clustering
 @app.callback(
     Output('cluster-vector-plot', 'figure'),
-    [Input('vector-data', 'data'), Input('cluster-data', 'data'), Input('visualization-radio', 'value')]
+    [Input('vector-data', 'data'), Input('cluster-data', 'data'), Input('visualization-radio', 'value'), Input('superpixel-plot', 'hoverData')],
+    State('cluster-vector-space-visualization', 'style')
 )
-def update_cluster_vector_plot(jsonified_vector_data, jsonified_cluster_data, visualization):
+def update_cluster_vector_plot(jsonified_vector_data, jsonified_cluster_data, visualization, hover_data, style):
+    ctx_id = ctx.triggered_id.split('.')[0]
 
-    vector_data = json.loads(jsonified_vector_data)
-    cluster_data = json.loads(jsonified_cluster_data)
-
+    if ctx_id == 'superpixel-plot' and style['display'] == 'none':
+        return dash.no_update
+    
     print("--------------------------------")
     print("Updating cluster vector plot...")
     start_time = time.time()
 
+    vector_data = json.loads(jsonified_vector_data)
+    cluster_data = json.loads(jsonified_cluster_data)
+
     # Convert stored lists back to numpy arrays
     reduced_data = np.array(vector_data['reduced_data'])
     cluster_labels = np.array(cluster_data['cluster_labels'])
-    cluster_color_dict = cluster_data['cluster_color_dict']
 
-    # Convert the keys of the dictionary to integers
-    cluster_color_dict = {int(k): v for k, v in cluster_color_dict.items()}
+    if ctx_id == 'superpixel-plot':
+        if hover_data is None:
+            cluster_vector_plot_fig = create_cluster_vector_plot(reduced_data, cluster_labels, visualization, None)
 
-    # convert the values of the dictionary to tuples
-    cluster_color_dict = {k: tuple(v) for k, v in cluster_color_dict.items()}
+            print('Cluster vector plot ready in:', time.time() - start_time)
 
-    # update_required = False
+            return cluster_vector_plot_fig
+        else:
+            hovered_segment_id = int(hover_data['points'][0]['text'])
 
-    # if clickData:
-    #     print("--------------------------------")
-    #     print(f"Selected clusters Initial: {selected_clusters}")
-    #     clicked_cluster = int(clickData['points'][0]['customdata'][0])
-    #     print(f"Clicked cluster: {clicked_cluster}")
+            cluster_vector_plot_fig = create_cluster_vector_plot(reduced_data, cluster_labels, visualization, hovered_segment_id)
 
-    #     if clicked_cluster not in selected_clusters:
-    #         selected_clusters.append(clicked_cluster)
-        
-    #     print(f"Selected clusters Final: {selected_clusters}")
-    #     print(len(selected_clusters))
+            print('Cluster vector plot ready in:', time.time() - start_time)
 
-    #     # If two clicks, swap data and reset tracking
-    #     # if len(selected_clusters) == 2:
-    #     #     cluster_map = {selected_clusters[0]: selected_clusters[1], selected_clusters[1]: selected_clusters[0]}
-    #     #     cluster_labels = np.array([cluster_map.get(label, label) for label in cluster_labels])
-    #     #     selected_clusters.clear()
-    #     #     update_required = True
+            return cluster_vector_plot_fig
 
-    # -------------------------------------------------------------------------------
+    else:
 
-    cluster_vector_plot_fig = create_cluster_vector_plot(reduced_data, cluster_labels, cluster_color_dict, visualization)
+        cluster_vector_plot_fig = create_cluster_vector_plot(reduced_data, cluster_labels, visualization, None)
 
-    print('Cluster vector plot ready in:', time.time() - start_time)
+        print('Cluster vector plot ready in:', time.time() - start_time)
 
-    return cluster_vector_plot_fig
+        return cluster_vector_plot_fig
 
 # -------------------------------------------------------------------------------
 
