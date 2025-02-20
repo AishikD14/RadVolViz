@@ -821,6 +821,8 @@ app.layout = html.Div([
                         value=130,
                         marks={1: str(1), volume.shape[0]: str(volume.shape[0])}
                     ),
+                    # Display selected slice number
+                    html.Div(id='selected-slice-output', style={'font-size': '15px', 'margin-top': '10px'}),
 
                     # -------------------------------------------------------------------------------
 
@@ -1048,6 +1050,14 @@ app.layout = html.Div([
 
 # -------------------------------------------------------------------------------
 
+# Callback to update the displayed slice number
+@app.callback(
+    Output('selected-slice-output', 'children'),
+    Input('slice-slider', 'value')
+)
+def update_slice_display(slice_value):
+    return f"Selected Slice: {slice_value}"
+
 # Callback for Slice Plot
 @app.callback(
     [Output('slice-plot', 'figure'), Output('slice-data', 'data'), Output('clustering-checkbox', 'value')],
@@ -1058,7 +1068,7 @@ def update_slice_plot(axis, slice_num):
     print("Updating slice plot...")
     start_time = time.time()
     
-    original_slice_fig, resized_image, input_image = create_original_slice(axis, slice_num)
+    original_slice_fig, resized_image, input_image = create_original_slice(axis, slice_num-1)
     
     print('Slice plot ready in:', time.time() - start_time)
     return original_slice_fig, json.dumps({'resized_image': resized_image.tolist(), 'input_image': input_image.tolist()}), []
