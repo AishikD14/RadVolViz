@@ -1294,13 +1294,19 @@ def update_elbow_plot(jsonified_vector_data, clustering, click_data, cluster_num
             return dash.no_update, dash.no_update
         
         else:
-            cluster_number_data = cluster_number
+            final_cluster_number_data = cluster_number
 
-    elbow_fig = create_elbow_plot(segment_vectors, clustering, cluster_number_data)
+    else:
+        final_cluster_number_data = cluster_number_data
+
+    elbow_fig = create_elbow_plot(segment_vectors, clustering, final_cluster_number_data)
 
     print('Elbow plot ready in:', time.time() - start_time)
 
-    return elbow_fig, cluster_number_data
+    if cluster_number_data == final_cluster_number_data:
+        return elbow_fig, dash.no_update
+    else:
+        return elbow_fig, final_cluster_number_data
 
 # -------------------------------------------------------------------------------
 
