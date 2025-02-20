@@ -644,13 +644,12 @@ def create_clusters(segment_vectors, clustering, cluster_number):
         cluster_labels = kmeans.fit_predict(segment_vectors)
 
     # Initialize selected clusters for swapping
-    selected_clusters = []
     cluster_color_dict = {}
 
     colormap = plt.cm.get_cmap("tab10")
 
     cluster_colors = {}
-    for i in range(num_clusters):  # 5 clusters
+    for i in range(num_clusters): 
         color = colormap(i)
         cluster_colors[i] = color
 
@@ -658,8 +657,6 @@ def create_clusters(segment_vectors, clustering, cluster_number):
 
     for cluster_id in np.unique(cluster_labels):
         cluster_color_dict[cluster_id] = tuple(map(lambda x: int(x * 255), cluster_color_dict[cluster_id][:3]))
-
-    print("Cluster Color Dictionary for clusters: ", cluster_color_dict)
 
     return cluster_labels, cluster_color_dict
 
@@ -1174,13 +1171,13 @@ def update_superpixel_plot(jsonified_slice_data, hover_data1, hover_data2, jsoni
 # Callback for Vector Space Visualization Plot
 @app.callback(
     [Output('vector-plot', 'figure'), Output('vector-data', 'data')],
-    [Input('slice-data', 'data'), Input('superpixel-data', 'data'), Input('visualization-radio', 'value'), Input('superpixel-plot', 'hoverData')],
-    [State('vector-data', 'data'), State('vector-space-visualization', 'style')]
+    [Input('slice-data', 'data'), Input('superpixel-data', 'data'), Input('visualization-radio', 'value'), Input('superpixel-plot', 'hoverData'), Input('vector-space-visualization', 'style')],
+    [State('vector-data', 'data')]
 )
-def update_vector_plot(jsonified_slice_data, jsonified_superpixel_data, visualization, hover_data, jsonified_vector_data, style):
+def update_vector_plot(jsonified_slice_data, jsonified_superpixel_data, visualization, hover_data, style, jsonified_vector_data):
     ctx_id = ctx.triggered_id.split('.')[0]
 
-    if ctx_id == 'superpixel-plot' and style['display'] == 'none':
+    if style['display'] == 'none':
         return dash.no_update, dash.no_update
     
     print("--------------------------------")
@@ -1276,6 +1273,8 @@ def update_vector_plot(jsonified_slice_data, jsonified_superpixel_data, visualiz
     State('cluster-number', 'data')
 )
 def update_elbow_plot(jsonified_vector_data, clustering, click_data, cluster_number_data):
+    ctx_id = ctx.triggered_id.split('.')[0]
+
     print("--------------------------------")
     print("Updating elbow plot...")
     start_time = time.time()
@@ -1287,10 +1286,11 @@ def update_elbow_plot(jsonified_vector_data, clustering, click_data, cluster_num
 
     # -------------------------------------------------------------------------------
 
-    if click_data is not None:
+    if ctx_id == "elbow-plot" and click_data is not None:
         cluster_number = click_data['points'][0]['x']
 
         if cluster_number == cluster_number_data:
+            print('Elbow plot ready in:', time.time() - start_time)
             return dash.no_update, dash.no_update
         
         else:
@@ -1351,13 +1351,13 @@ def perform_clustering(jsonified_vector_data, clustering, cluster_number):
 # Callback for updating vector plot with clustering
 @app.callback(
     Output('cluster-vector-plot', 'figure'),
-    [Input('vector-data', 'data'), Input('cluster-data', 'data'), Input('visualization-radio', 'value'), Input('superpixel-plot', 'hoverData')],
-    State('cluster-vector-space-visualization', 'style')
+    [Input('vector-data', 'data'), Input('cluster-data', 'data'), Input('visualization-radio', 'value'), Input('superpixel-plot', 'hoverData'), Input('cluster-vector-space-visualization', 'style')],
+    # State('cluster-vector-space-visualization', 'style')
 )
 def update_cluster_vector_plot(jsonified_vector_data, jsonified_cluster_data, visualization, hover_data, style):
     ctx_id = ctx.triggered_id.split('.')[0]
 
-    if ctx_id == 'superpixel-plot' and style['display'] == 'none':
+    if style['display'] == 'none':
         return dash.no_update
     
     print("--------------------------------")
