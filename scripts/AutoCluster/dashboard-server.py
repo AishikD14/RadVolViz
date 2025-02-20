@@ -828,13 +828,15 @@ app.layout = html.Div([
 
                     # -------------------------------------------------------------------------------
 
-                    # Checkbox to enable/disable segmentation
-                    dcc.Checklist(
-                        id='segmentation-checkbox',
-                        options=[
-                            {'label': 'Superpixel segmentation', 'value': 'enable'}
-                        ],
-                        value=['enable']
+                    # Input text box for number of superpixels
+                    html.Label('Number of Superpixels:'),
+                    dcc.Input(
+                        id='superpixel-input',
+                        type='number',
+                        value=450,
+                        style={'width': '10%', 'margin-left': '7px', 'margin-bottom': '10px'},
+                        min=100,
+                        max=600
                     ),
 
                     # -------------------------------------------------------------------------------
@@ -1059,7 +1061,7 @@ def update_slice_display(slice_value):
 
 # Callback for Slice Plot
 @app.callback(
-    [Output('slice-plot', 'figure'), Output('slice-data', 'data'), Output('clustering-checkbox', 'value')],
+    [Output('slice-plot', 'figure'), Output('slice-data', 'data')],
     [Input('axis-radio', 'value'), Input('slice-slider', 'value')]
 )
 def update_slice_plot(axis, slice_num):
@@ -1070,17 +1072,17 @@ def update_slice_plot(axis, slice_num):
     original_slice_fig, resized_image, input_image = create_original_slice(axis, slice_num-1)
     
     print('Slice plot ready in:', time.time() - start_time)
-    return original_slice_fig, json.dumps({'resized_image': resized_image.tolist(), 'input_image': input_image.tolist()}), []
+    return original_slice_fig, json.dumps({'resized_image': resized_image.tolist(), 'input_image': input_image.tolist()})
 
 # -------------------------------------------------------------------------------
 
 # Callback for Superpixel Plot
 @app.callback(
-    [Output('superpixel-plot', 'figure'), Output('superpixel-data', 'data')],
-    [Input('slice-data', 'data'), Input('vector-plot', 'hoverData'), Input('cluster-vector-plot', 'hoverData')],
+    [Output('superpixel-plot', 'figure'), Output('superpixel-data', 'data'), Output('clustering-checkbox', 'value')],
+    [Input('slice-data', 'data'), Input('vector-plot', 'hoverData'), Input('cluster-vector-plot', 'hoverData'), Input('superpixel-input', 'value')],
     State('superpixel-data', 'data')
 )
-def update_superpixel_plot(jsonified_slice_data, hover_data1, hover_data2, jsonified_superpixel_data):
+def update_superpixel_plot(jsonified_slice_data, hover_data1, hover_data2, num_superpixels, jsonified_superpixel_data):
     print("--------------------------------")
     print("Updating superpixel plot...")
     start_time = time.time()
@@ -1125,7 +1127,7 @@ def update_superpixel_plot(jsonified_slice_data, hover_data1, hover_data2, jsoni
 
                 print('Superpixel plot ready in:', time.time() - start_time)
 
-                return superpixel_fig, dash.no_update
+                return superpixel_fig, dash.no_update, dash.no_update
         
         else:
             if ctx_id == 'vector-plot':
@@ -1152,7 +1154,7 @@ def update_superpixel_plot(jsonified_slice_data, hover_data1, hover_data2, jsoni
 
                 print('Superpixel plot ready in:', time.time() - start_time)
 
-                return superpixel_fig, dash.no_update
+                return superpixel_fig, dash.no_update, dash.no_update
                 
     else:
 
@@ -1162,11 +1164,11 @@ def update_superpixel_plot(jsonified_slice_data, hover_data1, hover_data2, jsoni
         resized_image = np.array(slice_data['resized_image'])
         input_image = np.array(slice_data['input_image'], dtype=np.uint8)
         
-        superpixel_fig, segments, boundary_image, trace_info = create_superpixels(resized_image, input_image, 450)
+        superpixel_fig, segments, boundary_image, trace_info = create_superpixels(resized_image, input_image, num_superpixels)
         
         print('Superpixel plot ready in:', time.time() - start_time)
 
-        return superpixel_fig, json.dumps({'segments': segments.tolist(), 'image': boundary_image.tolist(), 'trace_info': trace_info})
+        return superpixel_fig, json.dumps({'segments': segments.tolist(), 'image': boundary_image.tolist(), 'trace_info': trace_info}), []
 
 # -------------------------------------------------------------------------------
 
