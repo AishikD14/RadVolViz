@@ -1055,6 +1055,8 @@ app.layout = html.Div([
 def update_slice_display(slice_value):
     return f"Selected Slice: {slice_value}"
 
+# -------------------------------------------------------------------------------
+
 # Callback for Slice Plot
 @app.callback(
     [Output('slice-plot', 'figure'), Output('slice-data', 'data'), Output('clustering-checkbox', 'value')],
