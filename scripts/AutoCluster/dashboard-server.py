@@ -537,7 +537,7 @@ def create_elbow_plot(segment_vectors, clustering, cluster_number):
             gmm.fit(segment_vectors)
             distortions.append(gmm.bic(segment_vectors))
 
-        fig = px.line(x=K, y=distortions, labels={'x': 'Number of Clusters', 'y': 'BIC'})
+        fig = px.line(x=K, y=distortions, labels={'x': 'Number of Clusters', 'y': 'BIC'}, markers=True)
 
         # Highlight the point where K = cluster_number
         highlight_x = cluster_number
@@ -909,7 +909,7 @@ app.layout = html.Div([
                                 children=[
                                     html.H3(children='Original Slice'),
                                     dcc.Loading(
-                                        id="loading-spinner",  # Wrapper to show loading spinner
+                                        id="loading-spinner1",  # Wrapper to show loading spinner
                                         type="circle",  # Choose the spinner type (circle, dot, default)
                                         children=[
                                             dcc.Graph(id="slice-plot")  # Graph component wrapped in the loading spinner
@@ -926,7 +926,7 @@ app.layout = html.Div([
                                 children=[
                                     html.H3(children='Superpixel Segmentation'),
                                     dcc.Loading(
-                                        id="loading-spinner",  # Wrapper to show loading spinner
+                                        id="loading-spinner2",  # Wrapper to show loading spinner
                                         type="circle",  # Choose the spinner type (circle, dot, default)
                                         children=[
                                             dcc.Graph(
@@ -975,7 +975,7 @@ app.layout = html.Div([
                                 children=[
                                     html.H3(children='Vector Space Visualization'),
                                     dcc.Loading(
-                                        id="loading-spinner",  # Wrapper to show loading spinner
+                                        id="loading-spinner3",  # Wrapper to show loading spinner
                                         type="circle",  # Choose the spinner type (circle, dot, default)
                                         children=[
                                             dcc.Graph(
@@ -995,7 +995,7 @@ app.layout = html.Div([
                                 children=[
                                     html.H3(children='Clustered Vector Space Visualization'),
                                     dcc.Loading(
-                                        id="loading-spinner",  # Wrapper to show loading spinner
+                                        id="loading-spinner4",  # Wrapper to show loading spinner
                                         type="circle",  # Choose the spinner type (circle, dot, default)
                                         children=[
                                             dcc.Graph(
@@ -1015,7 +1015,7 @@ app.layout = html.Div([
                                 children=[
                                     html.H3(children='Elbow Plot for Clustering'),
                                     dcc.Loading(
-                                        id="loading-spinner",  # Wrapper to show loading spinner
+                                        id="loading-spinner5",  # Wrapper to show loading spinner
                                         type="circle",  # Choose the spinner type (circle, dot, default)
                                         children=[
                                             dcc.Graph(id="elbow-plot")  # Graph component wrapped in the loading spinner
