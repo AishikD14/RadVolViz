@@ -527,7 +527,7 @@ def create_tsne_plot(segment_vectors, segmentColorDict, hovered_segment_id):
     return fig, reduced_data
 
 # Function to create elbow plot for KMeans clustering
-def create_elbow_plot(segment_vectors, clustering):
+def create_elbow_plot(segment_vectors, clustering, cluster_number):
     distortions = []
     K = range(1, 11)
 
@@ -539,6 +539,21 @@ def create_elbow_plot(segment_vectors, clustering):
 
         fig = px.line(x=K, y=distortions, labels={'x': 'Number of Clusters', 'y': 'BIC'})
 
+        # Highlight the point where K = cluster_number
+        highlight_x = cluster_number
+        highlight_y = distortions[K.index(cluster_number)]
+
+        # Add a scatter point for K=cluster_number
+        fig.add_trace(go.Scatter(
+            x=[highlight_x],
+            y=[highlight_y],
+            mode='markers',
+            marker=dict(size=10, color='red', symbol='circle'),
+            name=' (Selected)',
+            showlegend=False,
+            hovertemplate=f'No of Cluster={cluster_number}'
+        ))
+
         fig.update_layout(
             xaxis_title={
                 'font': {
@@ -561,6 +576,8 @@ def create_elbow_plot(segment_vectors, clustering):
                 }
             }
         )
+
+        fig.update_layout(clickmode='event')
 
         return fig
     
@@ -570,7 +587,22 @@ def create_elbow_plot(segment_vectors, clustering):
             kmeans.fit(segment_vectors)
             distortions.append(kmeans.inertia_)
 
-        fig = px.line(x=K, y=distortions, labels={'x': 'Number of Clusters', 'y': 'Distortion'})
+        fig = px.line(x=K, y=distortions, labels={'x': 'Number of Clusters', 'y': 'Distortion'}, markers=True)
+
+        # Highlight the point where K = cluster_number
+        highlight_x = cluster_number
+        highlight_y = distortions[K.index(cluster_number)]
+
+        # Add a scatter point for K=cluster_number
+        fig.add_trace(go.Scatter(
+            x=[highlight_x],
+            y=[highlight_y],
+            mode='markers',
+            marker=dict(size=10, color='red', symbol='circle'),
+            name=' (Selected)',
+            showlegend=False,
+            hovertemplate=f'No of Cluster={cluster_number}'
+        ))
 
         fig.update_layout(
             xaxis_title={
@@ -594,6 +626,8 @@ def create_elbow_plot(segment_vectors, clustering):
                 }
             }
         )
+
+        fig.update_layout(clickmode='event')
 
     return fig
 
@@ -1008,7 +1042,8 @@ app.layout = html.Div([
     dcc.Store(id='slice-data'),
     dcc.Store(id='superpixel-data'),
     dcc.Store(id='vector-data'),
-    dcc.Store(id='cluster-data')
+    dcc.Store(id='cluster-data'),
+    dcc.Store(id='cluster-number', data=5),
 ])
 
 # -------------------------------------------------------------------------------
@@ -1226,26 +1261,36 @@ def update_vector_plot(jsonified_slice_data, jsonified_superpixel_data, visualiz
 
 # Callback for Elbow Plot
 @app.callback(
-    Output('elbow-plot', 'figure'),
-    [Input('vector-data', 'data'), Input('clustering-radio', 'value')]
+    [Output('elbow-plot', 'figure'), Output('cluster-number', 'data')],
+    [Input('vector-data', 'data'), Input('clustering-radio', 'value'), Input('elbow-plot', 'clickData')],
+    State('cluster-number', 'data')
 )
-def update_elbow_plot(jsonified_vector_data, clustering):
-    vector_data = json.loads(jsonified_vector_data)
-
+def update_elbow_plot(jsonified_vector_data, clustering, click_data, cluster_number_data):
     print("--------------------------------")
     print("Updating elbow plot...")
     start_time = time.time()
+
+    vector_data = json.loads(jsonified_vector_data)
 
     # Convert stored lists back to numpy arrays
     segment_vectors = np.array(vector_data['segment_vectors'])
 
     # -------------------------------------------------------------------------------
 
-    elbow_fig = create_elbow_plot(segment_vectors, clustering)
+    if click_data is not None:
+        cluster_number = click_data['points'][0]['x']
+
+        if cluster_number == cluster_number_data:
+            return dash.no_update, dash.no_update
+        
+        else:
+            cluster_number_data = cluster_number
+
+    elbow_fig = create_elbow_plot(segment_vectors, clustering, cluster_number_data)
 
     print('Elbow plot ready in:', time.time() - start_time)
 
-    return elbow_fig
+    return elbow_fig, cluster_number_data
 
 # -------------------------------------------------------------------------------
 
