@@ -632,8 +632,8 @@ def create_elbow_plot(segment_vectors, clustering, cluster_number):
     return fig
 
 # Function to create clusters
-def create_clusters(segment_vectors, clustering):
-    num_clusters = 5
+def create_clusters(segment_vectors, clustering, cluster_number):
+    num_clusters = cluster_number
 
     if clustering == 'gmm':
         gmm = GaussianMixture(n_components=num_clusters, random_state=42)
@@ -1310,9 +1310,9 @@ def enable_clustering(checkbox_value):
 # Callback for performing clustering
 @app.callback(
     Output('cluster-data', 'data'),
-    [Input('vector-data', 'data'), Input('clustering-radio', 'value')]
+    [Input('vector-data', 'data'), Input('clustering-radio', 'value'), Input('cluster-number', 'data')]
 )
-def perform_clustering(jsonified_vector_data, clustering):
+def perform_clustering(jsonified_vector_data, clustering, cluster_number):
     vector_data = json.loads(jsonified_vector_data)
 
     print("--------------------------------")
@@ -1324,7 +1324,7 @@ def perform_clustering(jsonified_vector_data, clustering):
 
     # -------------------------------------------------------------------------------
 
-    cluster_labels, cluster_color_dict = create_clusters(segment_vectors, clustering)
+    cluster_labels, cluster_color_dict = create_clusters(segment_vectors, clustering, cluster_number)
 
     print('Clustering done in:', time.time() - start_time)
 
