@@ -661,11 +661,22 @@ def create_clusters(segment_vectors, clustering, cluster_number):
     return cluster_labels, cluster_color_dict
 
 # Function to create cluster vector plot
-def create_cluster_vector_plot(reduced_data, cluster_labels, visualization, hovered_segment_id):
+def create_cluster_vector_plot(segment_vectors, cluster_labels, visualization, hovered_segment_id):
     # Create a DataFrame for easier plotting
     if visualization == 'pca':
+        # Perform PCA for dimensionality reduction
+        pca = PCA(n_components=2, random_state=42)
+        reduced_data = pca.fit_transform(segment_vectors)
+
+        # Create a DataFrame for easier plotting
         df = pd.DataFrame(reduced_data, columns=['PCA Dimension 1', 'PCA Dimension 2'])
+
     elif visualization == 'tsne':
+        # Perform t-SNE for dimensionality reduction
+        tsne = TSNE(n_components=2, random_state=42)
+        reduced_data = tsne.fit_transform(segment_vectors)
+
+        # Create a DataFrame for easier plotting
         df = pd.DataFrame(reduced_data, columns=['t-SNE Dimension 1', 't-SNE Dimension 2'])
 
     df['Cluster ID'] = cluster_labels
@@ -1371,12 +1382,12 @@ def update_cluster_vector_plot(jsonified_vector_data, jsonified_cluster_data, vi
     cluster_data = json.loads(jsonified_cluster_data)
 
     # Convert stored lists back to numpy arrays
-    reduced_data = np.array(vector_data['reduced_data'])
+    segment_vectors = np.array(vector_data['segment_vectors'])
     cluster_labels = np.array(cluster_data['cluster_labels'])
 
     if ctx_id == 'superpixel-plot':
         if hover_data is None:
-            cluster_vector_plot_fig = create_cluster_vector_plot(reduced_data, cluster_labels, visualization, None)
+            cluster_vector_plot_fig = create_cluster_vector_plot(segment_vectors, cluster_labels, visualization, None)
 
             print('Cluster vector plot ready in:', time.time() - start_time)
 
@@ -1384,7 +1395,7 @@ def update_cluster_vector_plot(jsonified_vector_data, jsonified_cluster_data, vi
         else:
             hovered_segment_id = int(hover_data['points'][0]['text'])
 
-            cluster_vector_plot_fig = create_cluster_vector_plot(reduced_data, cluster_labels, visualization, hovered_segment_id)
+            cluster_vector_plot_fig = create_cluster_vector_plot(segment_vectors, cluster_labels, visualization, hovered_segment_id)
 
             print('Cluster vector plot ready in:', time.time() - start_time)
 
@@ -1392,7 +1403,7 @@ def update_cluster_vector_plot(jsonified_vector_data, jsonified_cluster_data, vi
 
     else:
 
-        cluster_vector_plot_fig = create_cluster_vector_plot(reduced_data, cluster_labels, visualization, None)
+        cluster_vector_plot_fig = create_cluster_vector_plot(segment_vectors, cluster_labels, visualization, None)
 
         print('Cluster vector plot ready in:', time.time() - start_time)
 
