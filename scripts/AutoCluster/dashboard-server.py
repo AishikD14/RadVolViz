@@ -4,6 +4,7 @@ from skimage import segmentation, color
 from skimage.io import imread
 from skimage import graph
 from skimage.segmentation import mark_boundaries
+from sklearn import metrics
 from sklearn.decomposition import PCA
 from skimage.util import img_as_float, img_as_ubyte
 import warnings
@@ -526,18 +527,33 @@ def create_tsne_plot(segment_vectors, segmentColorDict, hovered_segment_id):
 
     return fig, reduced_data
 
-# Function to create elbow plot for KMeans clustering
-def create_elbow_plot(segment_vectors, clustering, cluster_number):
+# Function to create cluster stats plot for KMeans clustering
+def create_cluster_stats_plot(segment_vectors, clustering, cluster_number, cluster_stats):
     distortions = []
-    K = range(1, 11)
+    K = range(2, 11)
 
     if clustering == 'gmm':
         for k in K:
             gmm = GaussianMixture(n_components=k, random_state=42)
-            gmm.fit(segment_vectors)
-            distortions.append(gmm.bic(segment_vectors))
 
-        fig = px.line(x=K, y=distortions, labels={'x': 'Number of Clusters', 'y': 'BIC'}, markers=True)
+            if cluster_stats == 'Elbow':
+                gmm.fit(segment_vectors)
+                distortions.append(gmm.bic(segment_vectors))
+            elif cluster_stats == 'Silhouette':
+                cluster_labels = gmm.fit_predict(segment_vectors)
+                silhouette_score = metrics.silhouette_score(segment_vectors, cluster_labels)
+                distortions.append(silhouette_score)
+            elif cluster_stats == 'DBI':
+                cluster_labels = gmm.fit_predict(segment_vectors)
+                davies_bouldin_score = metrics.davies_bouldin_score(segment_vectors, cluster_labels)            
+                distortions.append(davies_bouldin_score)
+
+        if cluster_stats == 'Elbow':
+            fig = px.line(x=K, y=distortions, labels={'x': 'Number of Clusters', 'y': 'BIC'}, markers=True)
+        elif cluster_stats == 'Silhouette':
+            fig = px.line(x=K, y=distortions, labels={'x': 'Number of Clusters', 'y': 'Silhouette Score'}, markers=True)
+        elif cluster_stats == 'DBI':
+            fig = px.line(x=K, y=distortions, labels={'x': 'Number of Clusters', 'y': 'Davies-Bouldin Score'}, markers=True)
 
         # Highlight the point where K = cluster_number
         highlight_x = cluster_number
@@ -584,10 +600,25 @@ def create_elbow_plot(segment_vectors, clustering, cluster_number):
     elif clustering == 'kmeans':
         for k in K:
             kmeans = KMeans(n_clusters=k, random_state=42)
-            kmeans.fit(segment_vectors)
-            distortions.append(kmeans.inertia_)
 
-        fig = px.line(x=K, y=distortions, labels={'x': 'Number of Clusters', 'y': 'Distortion'}, markers=True)
+            if cluster_stats == 'Elbow':
+                kmeans.fit(segment_vectors)
+                distortions.append(kmeans.inertia_)
+            elif cluster_stats == 'Silhouette':
+                cluster_labels = kmeans.fit_predict(segment_vectors)
+                silhouette_score = metrics.silhouette_score(segment_vectors, cluster_labels)
+                distortions.append(silhouette_score)
+            elif cluster_stats == 'DBI':
+                cluster_labels = kmeans.fit_predict(segment_vectors)
+                davies_bouldin_score = metrics.davies_bouldin_score(segment_vectors, cluster_labels)
+                distortions.append(davies_bouldin_score)
+
+        if cluster_stats == 'Elbow':
+            fig = px.line(x=K, y=distortions, labels={'x': 'Number of Clusters', 'y': 'Distortion'}, markers=True)
+        elif cluster_stats == 'Silhouette':
+            fig = px.line(x=K, y=distortions, labels={'x': 'Number of Clusters', 'y': 'Silhouette Score'}, markers=True)
+        elif cluster_stats == 'DBI':
+            fig = px.line(x=K, y=distortions, labels={'x': 'Number of Clusters', 'y': 'Davies-Bouldin Score'}, markers=True)
 
         # Highlight the point where K = cluster_number
         highlight_x = cluster_number
@@ -762,7 +793,7 @@ def create_cluster_vector_plot(segment_vectors, cluster_labels, visualization, h
     return fig
 
 # Function to create final segmented slice
-def create_final_image(cluster_labels, cluster_color_dict, input_image, resized_image, segments):
+def create_final_image(cluster_labels, cluster_color_dict, resized_image, segments):
     # Create an image to store the colors for each pixel
     final_segmented_image = np.zeros_like(resized_image, dtype=np.uint8)
     # Drop the alpha channel
@@ -901,6 +932,25 @@ app.layout = html.Div([
                         ],
                         value=[]
                     ),
+
+                    # -------------------------------------------------------------------------------
+
+                    # Add break
+                    html.Br(),
+
+                    # -------------------------------------------------------------------------------
+
+                    # Radio Button for viewing Cluster Statistics
+                    html.Label('View Cluster Statistics:'),
+                    dcc.RadioItems(
+                        id='cluster-stats-radio',
+                        options=[
+                            {'label': 'Elbow Plot', 'value': 'Elbow'},
+                            {'label': 'Silhouette Score', 'value': 'Silhouette'},
+                            {'label': 'Davies-Bouldin Index', 'value': 'DBI'}
+                        ],
+                        value='Elbow'
+                    ),
                 
                 ],
                 className="control-panel"
@@ -1022,10 +1072,10 @@ app.layout = html.Div([
 
                             # -------------------------------------------------------------------------------
 
-                            # Elbow Plot for Clustering
+                            # Cluster Stats Plot for Clustering
                             html.Div(
                                 children=[
-                                    html.H3(children='Elbow Plot for Clustering'),
+                                    html.H3(id="cluster-stats-label", children='Elbow Plot for Clustering'),
                                     dcc.Loading(
                                         id="loading-spinner5",  # Wrapper to show loading spinner
                                         type="circle",  # Choose the spinner type (circle, dot, default)
@@ -1281,17 +1331,17 @@ def update_vector_plot(jsonified_slice_data, jsonified_superpixel_data, visualiz
 
 # -------------------------------------------------------------------------------
 
-# Callback for Elbow Plot
+# Callback for Cluster Stats Plot
 @app.callback(
-    [Output('elbow-plot', 'figure'), Output('cluster-number', 'data')],
-    [Input('vector-data', 'data'), Input('clustering-radio', 'value'), Input('elbow-plot', 'clickData')],
+    [Output('elbow-plot', 'figure'), Output('cluster-number', 'data'), Output('cluster-stats-label', 'children')],
+    [Input('vector-data', 'data'), Input('clustering-radio', 'value'), Input('elbow-plot', 'clickData'), Input('cluster-stats-radio', 'value')],
     State('cluster-number', 'data')
 )
-def update_elbow_plot(jsonified_vector_data, clustering, click_data, cluster_number_data):
+def update_cluster_stats_plot(jsonified_vector_data, clustering, click_data, cluster_stats, cluster_number_data):
     ctx_id = ctx.triggered_id.split('.')[0]
 
     print("--------------------------------")
-    print("Updating elbow plot...")
+    print("Updating cluster stats plot...")
     start_time = time.time()
 
     vector_data = json.loads(jsonified_vector_data)
@@ -1305,8 +1355,8 @@ def update_elbow_plot(jsonified_vector_data, clustering, click_data, cluster_num
         cluster_number = click_data['points'][0]['x']
 
         if cluster_number == cluster_number_data:
-            print('Elbow plot ready in:', time.time() - start_time)
-            return dash.no_update, dash.no_update
+            print('Cluster stats plot ready in:', time.time() - start_time)
+            return dash.no_update, dash.no_update, dash.no_update
         
         else:
             final_cluster_number_data = cluster_number
@@ -1314,14 +1364,16 @@ def update_elbow_plot(jsonified_vector_data, clustering, click_data, cluster_num
     else:
         final_cluster_number_data = cluster_number_data
 
-    elbow_fig = create_elbow_plot(segment_vectors, clustering, final_cluster_number_data)
+    elbow_fig = create_cluster_stats_plot(segment_vectors, clustering, final_cluster_number_data, cluster_stats)
 
-    print('Elbow plot ready in:', time.time() - start_time)
+    plot_label = cluster_stats + ' Plot for Clustering'
+
+    print('Cluster stats plot ready in:', time.time() - start_time)
 
     if cluster_number_data == final_cluster_number_data:
-        return elbow_fig, dash.no_update
+        return elbow_fig, dash.no_update, plot_label
     else:
-        return elbow_fig, final_cluster_number_data
+        return elbow_fig, final_cluster_number_data, plot_label
 
 # -------------------------------------------------------------------------------
 
@@ -1429,7 +1481,6 @@ def update_final_plot(jsonified_cluster_data, jsonified_slice_data, jsonified_su
     cluster_labels = np.array(cluster_data['cluster_labels'])
     cluster_color_dict = cluster_data['cluster_color_dict']
     resized_image = np.array(slice_data['resized_image'])
-    input_image = np.array(slice_data['input_image'], dtype=np.uint8)
     segments = np.array(superpixel_data['segments'])
 
     # Convert the keys of the dictionary to integers
@@ -1440,7 +1491,7 @@ def update_final_plot(jsonified_cluster_data, jsonified_slice_data, jsonified_su
 
     # -------------------------------------------------------------------------------
 
-    final_fig = create_final_image(cluster_labels, cluster_color_dict, input_image, resized_image, segments)
+    final_fig = create_final_image(cluster_labels, cluster_color_dict, resized_image, segments)
 
     print('Final segmented slice ready in:', time.time() - start_time)
 
