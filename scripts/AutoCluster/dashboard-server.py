@@ -1175,13 +1175,13 @@ def update_superpixel_plot(jsonified_slice_data, hover_data1, hover_data2, num_s
 # Callback for Vector Space Visualization Plot
 @app.callback(
     [Output('vector-plot', 'figure'), Output('vector-data', 'data')],
-    [Input('slice-data', 'data'), Input('superpixel-data', 'data'), Input('visualization-radio', 'value'), Input('superpixel-plot', 'hoverData'), Input('vector-space-visualization', 'style')],
+    [Input('slice-data', 'data'), Input('superpixel-data', 'data'), Input('visualization-radio', 'value'), Input('superpixel-plot', 'hoverData'), [Input('clustering-checkbox', 'value')]],
     [State('vector-data', 'data')]
 )
-def update_vector_plot(jsonified_slice_data, jsonified_superpixel_data, visualization, hover_data, style, jsonified_vector_data):
+def update_vector_plot(jsonified_slice_data, jsonified_superpixel_data, visualization, hover_data, checkbox_value, jsonified_vector_data):
     ctx_id = ctx.triggered_id.split('.')[0]
 
-    if style['display'] == 'none':
+    if checkbox_value == [['enable']]:
         return dash.no_update, dash.no_update
     
     print("--------------------------------")
@@ -1355,13 +1355,12 @@ def perform_clustering(jsonified_vector_data, clustering, cluster_number):
 # Callback for updating vector plot with clustering
 @app.callback(
     Output('cluster-vector-plot', 'figure'),
-    [Input('vector-data', 'data'), Input('cluster-data', 'data'), Input('visualization-radio', 'value'), Input('superpixel-plot', 'hoverData'), Input('cluster-vector-space-visualization', 'style')],
-    # State('cluster-vector-space-visualization', 'style')
+    [Input('vector-data', 'data'), Input('cluster-data', 'data'), Input('visualization-radio', 'value'), Input('superpixel-plot', 'hoverData'), [Input('clustering-checkbox', 'value')]]
 )
-def update_cluster_vector_plot(jsonified_vector_data, jsonified_cluster_data, visualization, hover_data, style):
+def update_cluster_vector_plot(jsonified_vector_data, jsonified_cluster_data, visualization, hover_data, checkbox_value):
     ctx_id = ctx.triggered_id.split('.')[0]
 
-    if style['display'] == 'none':
+    if checkbox_value == [[]]:
         return dash.no_update
     
     print("--------------------------------")
