@@ -818,7 +818,7 @@ for x in range(volume.shape[0]):
         redraw_plot()
         fig.canvas.mpl_connect('button_press_event', on_click)
 
-        plt.show()
+        # plt.show()
         # quit()
 
         # -------------------------------------------------------------------------------
@@ -1157,8 +1157,8 @@ for x in range(volume.shape[0]):
     plt.suptitle(f'Volume Slice {x}')
 
     plt.tight_layout()
-    # plt.show()
-    # quit()
+    plt.show()
+    quit()
 
     # -------------------------------------------------------------------------------
 
