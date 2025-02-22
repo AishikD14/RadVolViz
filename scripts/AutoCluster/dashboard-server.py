@@ -854,11 +854,14 @@ app.layout = html.Div([
                     html.Label('Select slice:'),
                     dcc.Slider(
                         id='slice-slider',
-                        min=1,
-                        max=volume.shape[0],
+                        # min=1,
+                        # max=volume.shape[0],
+                        min=45,
+                        max=160,
                         step=1,
-                        value=130,
-                        marks={1: str(1), volume.shape[0]: str(volume.shape[0])}
+                        value=45,
+                        # marks={1: str(1), volume.shape[0]: str(volume.shape[0])}
+                        marks={45: str(45), 160: str(160)}
                     ),
                     # Display selected slice number
                     html.Div(id='selected-slice-output', style={'font-size': '15px', 'margin-top': '10px'}),
