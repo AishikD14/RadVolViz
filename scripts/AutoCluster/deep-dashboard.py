@@ -11,6 +11,7 @@ import warnings
 import math
 import matplotlib.colors as mcolors
 import cv2
+from sklearn.discriminant_analysis import StandardScaler
 from sklearn.manifold import TSNE
 import plotly.express as px
 import dash
@@ -299,10 +300,9 @@ def compute_superpixel_features(image_4ch, superpixels):
 
     return features  # Shape: (num_superpixels, 8)
 
-def cluster_autoencoded_features(model, features, n_clusters=5):
-    features = torch.tensor(features, dtype=torch.float32)
+def cluster_autoencoded_features(model, data_tensor, n_clusters=5):
     with torch.no_grad():
-        encoded_features, _ = model(features)
+        encoded_features, _ = model(data_tensor)
 
     encoded_features = encoded_features.numpy()
     kmeans = KMeans(n_clusters=n_clusters, random_state=42).fit(encoded_features)
@@ -324,7 +324,17 @@ superpixel_features = pd.read_csv(csv_file_path)
 print(superpixel_features.shape)
 
 # Convert the DataFrame to a numpy array
-superpixel_features = superpixel_features.to_numpy()
+data = superpixel_features.to_numpy()
+
+# Take only the 130th slice, each slice has 484 superpixels
+# data = data[85*484:86*484]
+
+# Normalize the data
+scaler = StandardScaler()
+data_normalized = scaler.fit_transform(data)
+
+# Convert to PyTorch tensor
+data_tensor = torch.tensor(data_normalized, dtype=torch.float32)
 
 # -------------------------------------------------------------------------------
 
@@ -338,11 +348,15 @@ class Autoencoder(nn.Module):
         self.encoder = nn.Sequential(
             nn.Linear(input_dim, 16),
             nn.ReLU(),
-            nn.Linear(16, latent_dim)  # Compress to latent space
+            nn.Linear(16, 8),
+            nn.ReLU(),
+            nn.Linear(8, latent_dim)  # Compress to latent space
         )
         # Decoder
         self.decoder = nn.Sequential(
-            nn.Linear(latent_dim, 16),
+            nn.Linear(latent_dim, 8),
+            nn.ReLU(),
+            nn.Linear(8, 16),
             nn.ReLU(),
             nn.Linear(16, input_dim)
         )
@@ -353,28 +367,37 @@ class Autoencoder(nn.Module):
         return encoded, decoded
 
 # Model Setup
-def train_autoencoder(features, latent_dim=3, epochs=100, lr=0.001):
-    features = torch.tensor(features, dtype=torch.float32)
-    model = Autoencoder(features.shape[1], latent_dim)
-    optimizer = optim.Adam(model.parameters(), lr=lr)
-    criterion = nn.MSELoss()
+input_dim = superpixel_features.shape[1]
+latent_dim=2
+epochs=200
+batch_size = 64
+learning_rate = 0.001
 
-    for epoch in range(epochs):
+# Initialize model
+autoencoder = Autoencoder(input_dim, latent_dim)
+criterion = nn.MSELoss()
+optimizer = optim.Adam(autoencoder.parameters(), lr=learning_rate)
+
+# Convert dataset into batches
+dataset = torch.utils.data.TensorDataset(data_tensor)
+dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=True)
+
+# Training loop
+for epoch in range(epochs):
+    total_loss = 0
+    for batch in dataloader:
+        inputs = batch[0]
         optimizer.zero_grad()
-        encoded, decoded = model(features)
-        loss = criterion(decoded, features)
+        encoded, decoded = autoencoder(inputs)
+        loss = criterion(decoded, inputs)
         loss.backward()
         optimizer.step()
+        total_loss += loss.item()
 
-        if epoch % 10 == 0:
-            print(f"Epoch {epoch}, Loss: {loss.item()}")
+    if epoch % 20 == 0:
+        print(f"Epoch {epoch}, Loss: {total_loss/len(dataloader)}")
 
-    return model
-
-# -------------------------------------------------------------------------------
-
-# Step 3: Train Autoencoder
-autoencoder_model = train_autoencoder(superpixel_features)
+print("Final Loss:", total_loss/len(dataloader))
 
 print("Model Trained Successfully!")
 
@@ -419,10 +442,16 @@ print("Superpixels Generated Successfully for test data!")
 # Compute superpixel features for testing data
 superpixel_features = compute_superpixel_features(resized_image, segments)
 
+# Normalize the data
+test_data_normalized = scaler.transform(superpixel_features)
+
+# Convert to PyTorch tensor
+test_data_tensor = torch.tensor(test_data_normalized, dtype=torch.float32)
+
 # -------------------------------------------------------------------------------
 
 # Cluster & Visualize
-cluster_labels1, encoded_feats = cluster_autoencoded_features(autoencoder_model, superpixel_features)
+cluster_labels1, encoded_feats = cluster_autoencoded_features(autoencoder, test_data_tensor)
 
 # Visualize t-SNE
 tsne = TSNE(n_components=2, random_state=42)
@@ -455,47 +484,47 @@ for cluster_id in np.unique(cluster_labels1):
 # -------------------------------------------------------------------------------
 
 # Evaluate the clustering
-distortions = []
-distortions1 = []
-distortions2 = []
-K = range(2, 11)
+# distortions = []
+# distortions1 = []
+# distortions2 = []
+# K = range(2, 11)
 
-for k in K:
-    kmeans = KMeans(n_clusters=k, random_state=42)
-    kmeans.fit(encoded_feats)
-    distortions.append(kmeans.inertia_)
+# for k in K:
+#     kmeans = KMeans(n_clusters=k, random_state=42)
+#     kmeans.fit(encoded_feats)
+#     distortions.append(kmeans.inertia_)
 
-for k in K:
-    kmeans = KMeans(n_clusters=k, random_state=42)     
-    cluster_labels = kmeans.fit_predict(encoded_feats)   
-    silhouette_score = metrics.silhouette_score(encoded_feats, cluster_labels)
-    distortions1.append(silhouette_score)
-    davies_bouldin_score = metrics.davies_bouldin_score(encoded_feats, cluster_labels)
-    distortions2.append(davies_bouldin_score)
+# for k in K:
+#     kmeans = KMeans(n_clusters=k, random_state=42)     
+#     cluster_labels = kmeans.fit_predict(encoded_feats)   
+#     silhouette_score = metrics.silhouette_score(encoded_feats, cluster_labels)
+#     distortions1.append(silhouette_score)
+#     davies_bouldin_score = metrics.davies_bouldin_score(encoded_feats, cluster_labels)
+#     distortions2.append(davies_bouldin_score)
 
-# Plot the elbow plot
-plt.figure(figsize=(8, 6))
+# # Plot the elbow plot
+# plt.figure(figsize=(8, 6))
 
-plt.plot(K, distortions, 'bx-')
-plt.xlabel('k')
-plt.ylabel('Distortion')
-plt.title('Cluster Stats Plot')
+# plt.plot(K, distortions, 'bx-')
+# plt.xlabel('k')
+# plt.ylabel('Distortion')
+# plt.title('Cluster Stats Plot')
 
-# Plot the elbow plot
-plt.figure(figsize=(8, 6))
+# # Plot the elbow plot
+# plt.figure(figsize=(8, 6))
 
-plt.plot(K, distortions1, 'ro-')
-plt.xlabel('k')
-plt.ylabel('silhouette_score')
-plt.title('Cluster Stats Plot')
+# plt.plot(K, distortions1, 'ro-')
+# plt.xlabel('k')
+# plt.ylabel('silhouette_score')
+# plt.title('Cluster Stats Plot')
 
-# Plot the elbow plot
-plt.figure(figsize=(8, 6))
+# # Plot the elbow plot
+# plt.figure(figsize=(8, 6))
 
-plt.plot(K, distortions2, 'go-')
-plt.xlabel('k')
-plt.ylabel('davies_bouldin_score')
-plt.title('Cluster Stats Plot')
+# plt.plot(K, distortions2, 'go-')
+# plt.xlabel('k')
+# plt.ylabel('davies_bouldin_score')
+# plt.title('Cluster Stats Plot')
 
 # -------------------------------------------------------------------------------
 
