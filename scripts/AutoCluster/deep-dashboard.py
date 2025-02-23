@@ -24,6 +24,7 @@ import time
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from numba import njit
 
 # Ignore warnings
 warnings.filterwarnings("ignore")
@@ -196,22 +197,75 @@ def initialize_cluster_centers(data, num_superpixels, grid_spacing):
     for r in range(grid_spacing // 2, rows, grid_spacing):
         for c in range(grid_spacing // 2, cols, grid_spacing):
             centers.append([r, c] + list(data[r, c]))
-            # if len(centers) >= num_superpixels:  # Stop when enough centers are created
-            #     return np.array(centers)
-    return np.array(centers)
+    return np.array(centers, dtype=np.float32)
 
+
+@njit
 def calculate_distance(pixel, center, spatial_weight, feature_weight):
     """
     Compute the combined distance between a pixel and a cluster center.
+    Uses Numba to accelerate this function.
     """
-    spatial_dist = np.linalg.norm(pixel[:2] - center[:2])
-    feature_dist = np.linalg.norm(pixel[2:] - center[2:])
+    spatial_dist = np.sqrt((pixel[0] - center[0])**2 + (pixel[1] - center[1])**2)
+    feature_dist = np.sqrt(np.sum((pixel[2:] - center[2:])**2))
     return np.sqrt((spatial_dist / spatial_weight)**2 + (feature_dist / feature_weight)**2)
 
-# Custom SLIC function with cosine distance metric
-def custom_slic(data, num_superpixels, spatial_weight=5):
+
+@njit
+def assign_pixels_to_clusters(data, cluster_centers, labels, distances, spatial_weight, feature_weight, grid_spacing):
     """
-    Perform SLIC segmentation on 4D input data (metal concentrations per pixel).
+    Assign each pixel to the nearest cluster center within its search window.
+    Uses Numba for faster execution.
+    """
+    rows, cols, _ = data.shape
+    for idx, center in enumerate(cluster_centers):
+        r, c = int(center[0]), int(center[1])
+        
+        # Search window around the cluster center
+        r_min = max(r - grid_spacing, 0)
+        r_max = min(r + grid_spacing + 1, rows)
+        c_min = max(c - grid_spacing, 0)
+        c_max = min(c + grid_spacing + 1, cols)
+
+        for rr in range(r_min, r_max):
+            for cc in range(c_min, c_max):
+                pixel = np.array([rr, cc] + list(data[rr, cc]))
+                distance = calculate_distance(pixel, center, spatial_weight, feature_weight)
+                if distance < distances[rr, cc]:
+                    distances[rr, cc] = distance
+                    labels[rr, cc] = idx
+
+
+@njit
+def update_cluster_centers(data, labels, cluster_centers):
+    """
+    Compute new cluster centers based on the average of assigned pixels.
+    Uses Numba for efficiency.
+    """
+    num_clusters = len(cluster_centers)
+    num_features = data.shape[2]
+    
+    new_centers = np.zeros_like(cluster_centers)
+    counts = np.zeros(num_clusters, dtype=np.int32)
+
+    rows, cols = labels.shape
+    for r in range(rows):
+        for c in range(cols):
+            label = labels[r, c]
+            new_centers[label][:2] += np.array([r, c], dtype=np.float32)
+            new_centers[label][2:] += data[r, c]
+            counts[label] += 1
+
+    for i in range(num_clusters):
+        if counts[i] > 0:
+            new_centers[i] /= counts[i]
+
+    return new_centers
+
+
+def custom_slic(data, num_superpixels, spatial_weight=5, max_iter=20):
+    """
+    Perform optimized SLIC segmentation on 4D input data (metal concentrations per pixel).
     """
     rows, cols, num_features = data.shape
     grid_spacing = int(np.sqrt((rows * cols) / num_superpixels))
@@ -219,38 +273,13 @@ def custom_slic(data, num_superpixels, spatial_weight=5):
 
     # Initialize cluster centers
     cluster_centers = initialize_cluster_centers(data, num_superpixels, grid_spacing)
-    labels = -1 * np.ones((rows, cols), dtype=int)
-    distances = np.full((rows, cols), np.inf)
+    labels = -1 * np.ones((rows, cols), dtype=np.int32)
+    distances = np.full((rows, cols), np.inf, dtype=np.float32)
 
     # Iterate until convergence
-    for _ in range(20):  # Number of iterations
-        for idx, center in enumerate(cluster_centers):
-            r, c = int(center[0]), int(center[1])
-            for dr in range(-grid_spacing, grid_spacing + 1):
-                for dc in range(-grid_spacing, grid_spacing + 1):
-                    rr, cc = r + dr, c + dc
-                    if 0 <= rr < rows and 0 <= cc < cols:
-                        pixel = [rr, cc] + list(data[rr, cc])
-                        distance = calculate_distance(pixel, center, spatial_weight, feature_weight)
-                        if distance < distances[rr, cc]:
-                            distances[rr, cc] = distance
-                            labels[rr, cc] = idx
-
-        # Update cluster centers
-        new_centers = np.zeros_like(cluster_centers)
-        counts = np.zeros(cluster_centers.shape[0], dtype=int)
-        for r in range(rows):
-            for c in range(cols):
-                label = labels[r, c]
-                new_centers[label][:2] += [r, c]
-                new_centers[label][2:] += data[r, c]
-                counts[label] += 1
-
-        for i in range(len(cluster_centers)):
-            if counts[i] > 0:
-                new_centers[i] /= counts[i]
-
-        cluster_centers = new_centers
+    for _ in range(max_iter):
+        assign_pixels_to_clusters(data, cluster_centers, labels, distances, spatial_weight, feature_weight, grid_spacing)
+        cluster_centers = update_cluster_centers(data, labels, cluster_centers)
 
     return labels, cluster_centers
 
@@ -286,217 +315,218 @@ volume = np.load('../../xray_volume.npy')
 
 # -------------------------------------------------------------------------------
 
-# Loop over each x-axis slice
-slice_allowed = [80, 90, 100, 130, 150]
-slice_allowed = [130]
-for x in range(volume.shape[0]):
-    if x not in slice_allowed:
-        continue
+# CSV file path containing the superpixel features
+csv_file_path = 'superpixel_features_mean.csv'
 
-    image = volume[x, :, :]
-    print(image.shape)
+# Load the superpixel features from the CSV file
+superpixel_features = pd.read_csv(csv_file_path)
 
-    # -------------------------------------------------------------------------------
-    # Zoom in on the center of the image
-    # -------------------------------------------------------------------------------
+print(superpixel_features.shape)
 
-    # Define a zoom factor (increase this value to zoom in more)
-    zoom_factor = 1.4
+# Convert the DataFrame to a numpy array
+superpixel_features = superpixel_features.to_numpy()
 
-    resized_image = cropImage(image, zoom_factor)
+# -------------------------------------------------------------------------------
 
-    # -------------------------------------------------------------------------------
+# Set seed for reproducibility
+torch.manual_seed(0)
 
-    # Create an input image to store the colors for each pixel
-    input_image = np.zeros_like(resized_image, dtype=np.uint8)
-    # Drop the alpha channel
-    input_image = input_image[:, :, :3]
+class Autoencoder(nn.Module):
+    def __init__(self, input_dim, latent_dim=3):
+        super(Autoencoder, self).__init__()
+        # Encoder
+        self.encoder = nn.Sequential(
+            nn.Linear(input_dim, 16),
+            nn.ReLU(),
+            nn.Linear(16, latent_dim)  # Compress to latent space
+        )
+        # Decoder
+        self.decoder = nn.Sequential(
+            nn.Linear(latent_dim, 16),
+            nn.ReLU(),
+            nn.Linear(16, input_dim)
+        )
 
-    # Loop though each pixel in the image and assign custom colors
-    for i in range(resized_image.shape[0]):
-        for j in range(resized_image.shape[1]):
-            # If all channels are 0, assign black color
-            if np.all(resized_image[i][j] == 0):
-                input_image[i][j] = [0, 0, 0]
-            else:
-                input_image[i][j] = getColorfromRatio(resized_image[i][j])
+    def forward(self, x):
+        encoded = self.encoder(x)
+        decoded = self.decoder(encoded)
+        return encoded, decoded
 
-    # -------------------------------------------------------------------------------
+# Model Setup
+def train_autoencoder(features, latent_dim=3, epochs=100, lr=0.001):
+    features = torch.tensor(features, dtype=torch.float32)
+    model = Autoencoder(features.shape[1], latent_dim)
+    optimizer = optim.Adam(model.parameters(), lr=lr)
+    criterion = nn.MSELoss()
 
-    segments, cluster_centers = custom_slic(resized_image, 450)
-    # segments = segmentation.slic(input_image, n_segments=450, compactness=30, start_label=0)
+    for epoch in range(epochs):
+        optimizer.zero_grad()
+        encoded, decoded = model(features)
+        loss = criterion(decoded, features)
+        loss.backward()
+        optimizer.step()
 
-    print(segments.shape)
-    # print(cluster_centers.shape)
-    # print(len(cluster_centers))
-    print(segments)
-    print("Segment range:", segments.min(), "to", segments.max())
+        if epoch % 10 == 0:
+            print(f"Epoch {epoch}, Loss: {loss.item()}")
 
-    # -------------------------------------------------------------------------------
+    return model
 
-    # Compute Features
-    superpixel_features = compute_superpixel_features(resized_image, segments)
+# -------------------------------------------------------------------------------
 
-    print(superpixel_features.shape)
+# Step 3: Train Autoencoder
+autoencoder_model = train_autoencoder(superpixel_features)
 
-    # -------------------------------------------------------------------------------
+print("Model Trained Successfully!")
 
-    # Set seed for reproducibility
-    torch.manual_seed(0)
+# -------------------------------------------------------------------------------
 
-    class Autoencoder(nn.Module):
-        def __init__(self, input_dim, latent_dim=3):
-            super(Autoencoder, self).__init__()
-            # Encoder
-            self.encoder = nn.Sequential(
-                nn.Linear(input_dim, 16),
-                nn.ReLU(),
-                nn.Linear(16, latent_dim)  # Compress to latent space
-            )
-            # Decoder
-            self.decoder = nn.Sequential(
-                nn.Linear(latent_dim, 16),
-                nn.ReLU(),
-                nn.Linear(16, input_dim)
-            )
+# Choose a slice from the volume
+x = 130
 
-        def forward(self, x):
-            encoded = self.encoder(x)
-            decoded = self.decoder(encoded)
-            return encoded, decoded
+image = volume[x, :, :]
 
-    # Model Setup
-    def train_autoencoder(features, latent_dim=3, epochs=100, lr=0.001):
-        features = torch.tensor(features, dtype=torch.float32)
-        model = Autoencoder(features.shape[1], latent_dim)
-        optimizer = optim.Adam(model.parameters(), lr=lr)
-        criterion = nn.MSELoss()
+# -------------------------------------------------------------------------------
+# Zoom in on the center of the image
+# -------------------------------------------------------------------------------
 
-        for epoch in range(epochs):
-            optimizer.zero_grad()
-            encoded, decoded = model(features)
-            loss = criterion(decoded, features)
-            loss.backward()
-            optimizer.step()
+# Define a zoom factor (increase this value to zoom in more)
+zoom_factor = 1.4
 
-            if epoch % 10 == 0:
-                print(f"Epoch {epoch}, Loss: {loss.item()}")
+resized_image = cropImage(image, zoom_factor)
 
-        return model
-    
-    # -------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 
-    # Step 3: Train Autoencoder
-    autoencoder_model = train_autoencoder(superpixel_features)
+# Create an input image to store the colors for each pixel
+input_image = np.zeros_like(resized_image, dtype=np.uint8)
+# Drop the alpha channel
+input_image = input_image[:, :, :3]
 
-    # -------------------------------------------------------------------------------
+# Loop though each pixel in the image and assign custom colors
+for i in range(resized_image.shape[0]):
+    for j in range(resized_image.shape[1]):
+        # If all channels are 0, assign black color
+        if np.all(resized_image[i][j] == 0):
+            input_image[i][j] = [0, 0, 0]
+        else:
+            input_image[i][j] = getColorfromRatio(resized_image[i][j])
 
-    # Cluster & Visualize
-    cluster_labels1, encoded_feats = cluster_autoencoded_features(autoencoder_model, superpixel_features)
+segments, cluster_centers = custom_slic(resized_image, 450)
 
-    # Visualize t-SNE
-    tsne = TSNE(n_components=2, random_state=42)
-    reduced_data = tsne.fit_transform(encoded_feats)
+print("Superpixels Generated Successfully for test data!")
 
-    cluster_color_dict = {}
+# -------------------------------------------------------------------------------
 
-    colormap = plt.cm.get_cmap("tab10")
+# Compute superpixel features for testing data
+superpixel_features = compute_superpixel_features(resized_image, segments)
 
-    plt.figure(figsize=(12, 5))
-    
-    cluster_colors = {}
-    for i in range(5):  # 5 clusters
-        color = colormap(i)
-        cluster_colors[i] = color
-        plt.scatter(reduced_data[cluster_labels1 == i, 0], reduced_data[cluster_labels1 == i, 1], label=f'Cluster {i+1}')
+# -------------------------------------------------------------------------------
 
-    plt.legend()
-    plt.title('t-sne Visualization of Segments after K-means Clustering')
-    plt.xlabel('t-sne Component 1')
-    plt.ylabel('t-sne Component 2')
-    plt.grid(True)
-    # plt.show()
+# Cluster & Visualize
+cluster_labels1, encoded_feats = cluster_autoencoded_features(autoencoder_model, superpixel_features)
 
-    cluster_color_dict = cluster_colors
+# Visualize t-SNE
+tsne = TSNE(n_components=2, random_state=42)
+reduced_data = tsne.fit_transform(encoded_feats)
 
-    for cluster_id in np.unique(cluster_labels1):
-        cluster_color_dict[cluster_id] = tuple(map(lambda x: int(x * 255), cluster_color_dict[cluster_id][:3]))
+cluster_color_dict = {}
 
-    # -------------------------------------------------------------------------------
+colormap = plt.cm.get_cmap("tab10")
 
-    # Evaluate the clustering
-    distortions = []
-    distortions1 = []
-    distortions2 = []
-    K = range(2, 11)
+plt.figure(figsize=(12, 5))
 
-    for k in K:
-        kmeans = KMeans(n_clusters=k, random_state=42)
-        kmeans.fit(encoded_feats)
-        distortions.append(kmeans.inertia_)
+cluster_colors = {}
+for i in range(5):  # 5 clusters
+    color = colormap(i)
+    cluster_colors[i] = color
+    plt.scatter(reduced_data[cluster_labels1 == i, 0], reduced_data[cluster_labels1 == i, 1], label=f'Cluster {i+1}')
 
-    for k in K:
-        kmeans = KMeans(n_clusters=k, random_state=42)     
-        cluster_labels = kmeans.fit_predict(encoded_feats)   
-        silhouette_score = metrics.silhouette_score(encoded_feats, cluster_labels)
-        distortions1.append(silhouette_score)
-        davies_bouldin_score = metrics.davies_bouldin_score(encoded_feats, cluster_labels)
-        distortions2.append(davies_bouldin_score)
+plt.legend()
+plt.title('t-sne Visualization of Segments after K-means Clustering')
+plt.xlabel('t-sne Component 1')
+plt.ylabel('t-sne Component 2')
+plt.grid(True)
+# plt.show()
 
-    # Plot the elbow plot
-    plt.figure(figsize=(8, 6))
+cluster_color_dict = cluster_colors
 
-    plt.plot(K, distortions, 'bx-')
-    plt.xlabel('k')
-    plt.ylabel('Distortion')
-    plt.title('Cluster Stats Plot')
+for cluster_id in np.unique(cluster_labels1):
+    cluster_color_dict[cluster_id] = tuple(map(lambda x: int(x * 255), cluster_color_dict[cluster_id][:3]))
 
-    # Plot the elbow plot
-    plt.figure(figsize=(8, 6))
+# -------------------------------------------------------------------------------
 
-    plt.plot(K, distortions1, 'ro-')
-    plt.xlabel('k')
-    plt.ylabel('silhouette_score')
-    plt.title('Cluster Stats Plot')
+# Evaluate the clustering
+distortions = []
+distortions1 = []
+distortions2 = []
+K = range(2, 11)
 
-    # Plot the elbow plot
-    plt.figure(figsize=(8, 6))
+for k in K:
+    kmeans = KMeans(n_clusters=k, random_state=42)
+    kmeans.fit(encoded_feats)
+    distortions.append(kmeans.inertia_)
 
-    plt.plot(K, distortions2, 'go-')
-    plt.xlabel('k')
-    plt.ylabel('davies_bouldin_score')
-    plt.title('Cluster Stats Plot')
+for k in K:
+    kmeans = KMeans(n_clusters=k, random_state=42)     
+    cluster_labels = kmeans.fit_predict(encoded_feats)   
+    silhouette_score = metrics.silhouette_score(encoded_feats, cluster_labels)
+    distortions1.append(silhouette_score)
+    davies_bouldin_score = metrics.davies_bouldin_score(encoded_feats, cluster_labels)
+    distortions2.append(davies_bouldin_score)
 
-    # -------------------------------------------------------------------------------
+# Plot the elbow plot
+plt.figure(figsize=(8, 6))
 
-    # Create the final segmented image using the cluster colors
+plt.plot(K, distortions, 'bx-')
+plt.xlabel('k')
+plt.ylabel('Distortion')
+plt.title('Cluster Stats Plot')
 
-    # Create an image to store the colors for each pixel
-    final_segmented_image = np.zeros_like(resized_image, dtype=np.uint8)
-    # Drop the alpha channel
-    final_segmented_image = final_segmented_image[:, :, :3]
+# Plot the elbow plot
+plt.figure(figsize=(8, 6))
 
-    for i in range(resized_image.shape[0]):
-        for j in range(resized_image.shape[1]):
-            final_segmented_image[i][j] = cluster_color_dict[cluster_labels1[segments[i][j]]]
+plt.plot(K, distortions1, 'ro-')
+plt.xlabel('k')
+plt.ylabel('silhouette_score')
+plt.title('Cluster Stats Plot')
 
-    # Display the original image and the final segmented image
-    plt.figure(figsize=(12, 5))
+# Plot the elbow plot
+plt.figure(figsize=(8, 6))
 
-    # Visualize the Original image
-    plt.subplot(1, 2, 1)
-    plt.imshow(input_image)
-    plt.title('Original Image')
-    plt.axis('off')
+plt.plot(K, distortions2, 'go-')
+plt.xlabel('k')
+plt.ylabel('davies_bouldin_score')
+plt.title('Cluster Stats Plot')
 
-    # Visualize the Final Segmented image
-    plt.subplot(1, 2, 2)
-    plt.imshow(final_segmented_image)
-    plt.title('Final Segmented Image')
-    plt.axis('off')
+# -------------------------------------------------------------------------------
 
-    # Set an overall title for the figure
-    plt.suptitle(f'Volume Slice {x}')
+# Create the final segmented image using the cluster colors
 
-    plt.tight_layout()
-    plt.show()
+# Create an image to store the colors for each pixel
+final_segmented_image = np.zeros_like(resized_image, dtype=np.uint8)
+# Drop the alpha channel
+final_segmented_image = final_segmented_image[:, :, :3]
+
+for i in range(resized_image.shape[0]):
+    for j in range(resized_image.shape[1]):
+        final_segmented_image[i][j] = cluster_color_dict[cluster_labels1[segments[i][j]]]
+
+# Display the original image and the final segmented image
+plt.figure(figsize=(12, 5))
+
+# Visualize the Original image
+plt.subplot(1, 2, 1)
+plt.imshow(input_image)
+plt.title('Original Image')
+plt.axis('off')
+
+# Visualize the Final Segmented image
+plt.subplot(1, 2, 2)
+plt.imshow(final_segmented_image)
+plt.title('Final Segmented Image')
+plt.axis('off')
+
+# Set an overall title for the figure
+plt.suptitle(f'Volume Slice {x}')
+
+plt.tight_layout()
+plt.show()
