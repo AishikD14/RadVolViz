@@ -14,6 +14,7 @@ import plotly.graph_objects as go
 import dash
 from dash import dcc, html, Input, Output
 import pandas as pd
+from numba import njit
 
 # Ignore warnings
 warnings.filterwarnings("ignore")
@@ -185,6 +186,8 @@ def cropImage(image, zoom_factor):
 
     return resized_image
 
+# -------------------------------------------------------------------------------
+
 def initialize_cluster_centers(data, num_superpixels, grid_spacing):
     """
     Initialize cluster centers based on a uniform grid.
@@ -194,22 +197,74 @@ def initialize_cluster_centers(data, num_superpixels, grid_spacing):
     for r in range(grid_spacing // 2, rows, grid_spacing):
         for c in range(grid_spacing // 2, cols, grid_spacing):
             centers.append([r, c] + list(data[r, c]))
-            # if len(centers) >= num_superpixels:  # Stop when enough centers are created
-            #     return np.array(centers)
-    return np.array(centers)
+    return np.array(centers, dtype=np.float32)
 
+@njit
 def calculate_distance(pixel, center, spatial_weight, feature_weight):
     """
     Compute the combined distance between a pixel and a cluster center.
+    Uses Numba to accelerate this function.
     """
-    spatial_dist = np.linalg.norm(pixel[:2] - center[:2])
-    feature_dist = np.linalg.norm(pixel[2:] - center[2:])
+    spatial_dist = np.sqrt((pixel[0] - center[0])**2 + (pixel[1] - center[1])**2)
+    feature_dist = np.sqrt(np.sum((pixel[2:] - center[2:])**2))
     return np.sqrt((spatial_dist / spatial_weight)**2 + (feature_dist / feature_weight)**2)
 
-# Custom SLIC function with cosine distance metric
-def custom_slic(data, num_superpixels, spatial_weight=5):
+
+@njit
+def assign_pixels_to_clusters(data, cluster_centers, labels, distances, spatial_weight, feature_weight, grid_spacing):
     """
-    Perform SLIC segmentation on 4D input data (metal concentrations per pixel).
+    Assign each pixel to the nearest cluster center within its search window.
+    Uses Numba for faster execution.
+    """
+    rows, cols, _ = data.shape
+    for idx, center in enumerate(cluster_centers):
+        r, c = int(center[0]), int(center[1])
+        
+        # Search window around the cluster center
+        r_min = max(r - grid_spacing, 0)
+        r_max = min(r + grid_spacing + 1, rows)
+        c_min = max(c - grid_spacing, 0)
+        c_max = min(c + grid_spacing + 1, cols)
+
+        for rr in range(r_min, r_max):
+            for cc in range(c_min, c_max):
+                pixel = np.array([rr, cc] + list(data[rr, cc]))
+                distance = calculate_distance(pixel, center, spatial_weight, feature_weight)
+                if distance < distances[rr, cc]:
+                    distances[rr, cc] = distance
+                    labels[rr, cc] = idx
+
+
+@njit
+def update_cluster_centers(data, labels, cluster_centers):
+    """
+    Compute new cluster centers based on the average of assigned pixels.
+    Uses Numba for efficiency.
+    """
+    num_clusters = len(cluster_centers)
+    num_features = data.shape[2]
+    
+    new_centers = np.zeros_like(cluster_centers)
+    counts = np.zeros(num_clusters, dtype=np.int32)
+
+    rows, cols = labels.shape
+    for r in range(rows):
+        for c in range(cols):
+            label = labels[r, c]
+            new_centers[label][:2] += np.array([r, c], dtype=np.float32)
+            new_centers[label][2:] += data[r, c]
+            counts[label] += 1
+
+    for i in range(num_clusters):
+        if counts[i] > 0:
+            new_centers[i] /= counts[i]
+
+    return new_centers
+
+
+def custom_slic(data, num_superpixels, spatial_weight=5, max_iter=20):
+    """
+    Perform optimized SLIC segmentation on 4D input data (metal concentrations per pixel).
     """
     rows, cols, num_features = data.shape
     grid_spacing = int(np.sqrt((rows * cols) / num_superpixels))
@@ -217,38 +272,13 @@ def custom_slic(data, num_superpixels, spatial_weight=5):
 
     # Initialize cluster centers
     cluster_centers = initialize_cluster_centers(data, num_superpixels, grid_spacing)
-    labels = -1 * np.ones((rows, cols), dtype=int)
-    distances = np.full((rows, cols), np.inf)
+    labels = -1 * np.ones((rows, cols), dtype=np.int32)
+    distances = np.full((rows, cols), np.inf, dtype=np.float32)
 
     # Iterate until convergence
-    for _ in range(20):  # Number of iterations
-        for idx, center in enumerate(cluster_centers):
-            r, c = int(center[0]), int(center[1])
-            for dr in range(-grid_spacing, grid_spacing + 1):
-                for dc in range(-grid_spacing, grid_spacing + 1):
-                    rr, cc = r + dr, c + dc
-                    if 0 <= rr < rows and 0 <= cc < cols:
-                        pixel = [rr, cc] + list(data[rr, cc])
-                        distance = calculate_distance(pixel, center, spatial_weight, feature_weight)
-                        if distance < distances[rr, cc]:
-                            distances[rr, cc] = distance
-                            labels[rr, cc] = idx
-
-        # Update cluster centers
-        new_centers = np.zeros_like(cluster_centers)
-        counts = np.zeros(cluster_centers.shape[0], dtype=int)
-        for r in range(rows):
-            for c in range(cols):
-                label = labels[r, c]
-                new_centers[label][:2] += [r, c]
-                new_centers[label][2:] += data[r, c]
-                counts[label] += 1
-
-        for i in range(len(cluster_centers)):
-            if counts[i] > 0:
-                new_centers[i] /= counts[i]
-
-        cluster_centers = new_centers
+    for _ in range(max_iter):
+        assign_pixels_to_clusters(data, cluster_centers, labels, distances, spatial_weight, feature_weight, grid_spacing)
+        cluster_centers = update_cluster_centers(data, labels, cluster_centers)
 
     return labels, cluster_centers
 
