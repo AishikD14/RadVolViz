@@ -26,6 +26,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from numba import njit
+import pickle
 
 # Ignore warnings
 warnings.filterwarnings("ignore")
@@ -333,6 +334,10 @@ data = superpixel_features.to_numpy()
 scaler = StandardScaler()
 data_normalized = scaler.fit_transform(data)
 
+# Save the scaler
+with open("scaler_autoencoder_mean.pkl", "wb") as f:
+    pickle.dump(scaler, f)
+
 # Convert to PyTorch tensor
 data_tensor = torch.tensor(data_normalized, dtype=torch.float32)
 
@@ -400,6 +405,9 @@ for epoch in range(epochs):
 print("Final Loss:", total_loss/len(dataloader))
 
 print("Model Trained Successfully!")
+
+# Save the model
+torch.save(autoencoder.state_dict(), 'autoencoder_mean.pth')
 
 # -------------------------------------------------------------------------------
 

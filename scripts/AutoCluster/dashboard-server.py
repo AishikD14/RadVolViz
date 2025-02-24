@@ -24,6 +24,10 @@ from sklearn.mixture import GaussianMixture
 import time
 import json
 from numba import njit
+import torch
+import torch.nn as nn
+import torch.optim as optim
+import pickle
 
 # Ignore warnings
 warnings.filterwarnings("ignore")
@@ -283,6 +287,9 @@ def custom_slic(data, num_superpixels, spatial_weight=5, max_iter=20):
     return labels, cluster_centers
 
 # -------------------------------------------------------------------------------
+
+# Set seed for reproducibility
+torch.manual_seed(0)
 
 # Load volume data
 volume = np.load('../../xray_volume.npy')
@@ -557,9 +564,21 @@ def create_tsne_plot(segment_vectors, segmentColorDict, hovered_segment_id):
     return fig, reduced_data
 
 # Function to create cluster stats plot for KMeans clustering
-def create_cluster_stats_plot(segment_vectors, clustering, cluster_number, cluster_stats):
+def create_cluster_stats_plot(segment_vectors, clustering, cluster_number, cluster_stats, test_tensor, autoencoder_checkbox):
     distortions = []
     K = range(2, 11)
+
+    if 'enable' in autoencoder_checkbox:
+
+        # Setup the model
+        model = setup_model(test_tensor.shape[1])
+
+        with torch.no_grad():
+            encoded_features, _ = model(test_tensor)
+
+        encoded_features = encoded_features.numpy()
+
+        segment_vectors = encoded_features
 
     if clustering == 'gmm':
         for k in K:
@@ -846,6 +865,67 @@ def create_final_image(cluster_labels, cluster_color_dict, resized_image, segmen
 
 # -------------------------------------------------------------------------------
 
+class Autoencoder(nn.Module):
+    def __init__(self, input_dim, latent_dim=3):
+        super(Autoencoder, self).__init__()
+        # Encoder
+        self.encoder = nn.Sequential(
+            nn.Linear(input_dim, 16),
+            nn.ReLU(),
+            nn.Linear(16, 8),
+            nn.ReLU(),
+            nn.Linear(8, latent_dim)  # Compress to latent space
+        )
+        # Decoder
+        self.decoder = nn.Sequential(
+            nn.Linear(latent_dim, 8),
+            nn.ReLU(),
+            nn.Linear(8, 16),
+            nn.ReLU(),
+            nn.Linear(16, input_dim)
+        )
+
+    def forward(self, x):
+        encoded = self.encoder(x)
+        decoded = self.decoder(encoded)
+        return encoded, decoded
+
+def compute_superpixel_features(image_4ch, superpixels):
+    num_superpixels = np.max(superpixels) + 1  # Number of unique superpixels
+    num_channels = image_4ch.shape[-1]
+    features = np.zeros((num_superpixels, num_channels * 2))  # Mean + Std
+
+    for sp_id in range(num_superpixels):
+        mask = (superpixels == sp_id)
+        pixels = image_4ch[mask]
+        if pixels.size > 0:
+            features[sp_id, :num_channels] = np.mean(pixels, axis=0)
+            features[sp_id, num_channels:] = np.std(pixels, axis=0)
+
+    return features  # Shape: (num_superpixels, 8)
+
+def cluster_autoencoded_features(model, data_tensor, n_clusters=5):
+    with torch.no_grad():
+        encoded_features, _ = model(data_tensor)
+
+    encoded_features = encoded_features.numpy()
+    kmeans = KMeans(n_clusters=n_clusters, random_state=42).fit(encoded_features)
+    return kmeans.labels_, encoded_features
+
+def setup_model(input_dimension):
+    # Model Setup
+    input_dim = input_dimension
+    latent_dim=2
+
+    # Load the trained autoencoder model
+    model = Autoencoder(input_dim, latent_dim)
+    model.load_state_dict(torch.load('autoencoder_mean.pth', map_location=torch.device('cuda')))
+    model.eval()
+
+    return model
+
+# -------------------------------------------------------------------------------
+
 # Initialize Dash app
 app = dash.Dash(__name__)
 
@@ -961,6 +1041,22 @@ app.layout = html.Div([
                         id='clustering-checkbox',
                         options=[
                             {'label': 'Enable Clustering', 'value': 'enable'}
+                        ],
+                        value=[]
+                    ),
+
+                    # -------------------------------------------------------------------------------
+
+                    # Add break
+                    html.Br(),
+
+                    # -------------------------------------------------------------------------------
+
+                    # Checkbox to enable/disable Autoencoder feature extraction
+                    dcc.Checklist(
+                        id='autoencoder-checkbox',
+                        options=[
+                            {'label': 'Enable Autoencoder', 'value': 'enable'}
                         ],
                         value=[]
                     ),
@@ -1258,10 +1354,26 @@ def update_superpixel_plot(jsonified_slice_data, hover_data1, hover_data2, num_s
         input_image = np.array(slice_data['input_image'], dtype=np.uint8)
         
         superpixel_fig, segments, boundary_image, trace_info = create_superpixels(resized_image, input_image, num_superpixels)
+
+        # Compute superpixel features for testing data
+        superpixel_features = compute_superpixel_features(resized_image, segments)
+
+        # Load the scaler
+        with open("scaler_autoencoder_mean.pkl", "rb") as f:
+            loaded_scaler = pickle.load(f)
+
+        # Normalize the data
+        test_data_normalized = loaded_scaler.transform(superpixel_features)
+
+        # Convert to PyTorch tensor
+        test_data_tensor = torch.tensor(test_data_normalized, dtype=torch.float32)
+
+        # Convert tensor to a JSON-serializable format (list)
+        tensor_serialized = test_data_tensor.numpy().tolist()
         
         print('Superpixel plot ready in:', time.time() - start_time)
 
-        return superpixel_fig, json.dumps({'segments': segments.tolist(), 'image': boundary_image.tolist(), 'trace_info': trace_info}), []
+        return superpixel_fig, json.dumps({'segments': segments.tolist(), 'image': boundary_image.tolist(), 'trace_info': trace_info, 'test_tensor': tensor_serialized}), []
 
 # -------------------------------------------------------------------------------
 
@@ -1366,10 +1478,10 @@ def update_vector_plot(jsonified_slice_data, jsonified_superpixel_data, visualiz
 # Callback for Cluster Stats Plot
 @app.callback(
     [Output('elbow-plot', 'figure'), Output('cluster-number', 'data'), Output('cluster-stats-label', 'children')],
-    [Input('vector-data', 'data'), Input('clustering-radio', 'value'), Input('elbow-plot', 'clickData'), Input('cluster-stats-radio', 'value')],
-    State('cluster-number', 'data')
+    [Input('vector-data', 'data'), Input('clustering-radio', 'value'), Input('elbow-plot', 'clickData'), Input('cluster-stats-radio', 'value'), Input('autoencoder-checkbox', 'value')],
+    [State('cluster-number', 'data'), State('superpixel-data', 'data')]
 )
-def update_cluster_stats_plot(jsonified_vector_data, clustering, click_data, cluster_stats, cluster_number_data):
+def update_cluster_stats_plot(jsonified_vector_data, clustering, click_data, cluster_stats, autoencoder_checkbox, cluster_number_data, jsonified_superpixel_data):
     ctx_id = ctx.triggered_id.split('.')[0]
 
     print("--------------------------------")
@@ -1377,9 +1489,14 @@ def update_cluster_stats_plot(jsonified_vector_data, clustering, click_data, clu
     start_time = time.time()
 
     vector_data = json.loads(jsonified_vector_data)
+    superpixel_data = json.loads(jsonified_superpixel_data)
 
     # Convert stored lists back to numpy arrays
     segment_vectors = np.array(vector_data['segment_vectors'])
+    test_tensor = np.array(superpixel_data['test_tensor'])
+
+    # Convert back to PyTorch tensor
+    test_tensor = torch.tensor(test_tensor, dtype=torch.float32)
 
     # -------------------------------------------------------------------------------
 
@@ -1396,7 +1513,7 @@ def update_cluster_stats_plot(jsonified_vector_data, clustering, click_data, clu
     else:
         final_cluster_number_data = cluster_number_data
 
-    elbow_fig = create_cluster_stats_plot(segment_vectors, clustering, final_cluster_number_data, cluster_stats)
+    elbow_fig = create_cluster_stats_plot(segment_vectors, clustering, final_cluster_number_data, cluster_stats, test_tensor, autoencoder_checkbox)
 
     plot_label = cluster_stats + ' Plot for Clustering'
 
