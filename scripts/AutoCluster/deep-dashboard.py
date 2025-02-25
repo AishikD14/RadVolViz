@@ -287,6 +287,31 @@ def custom_slic(data, num_superpixels, spatial_weight=5, max_iter=20):
 
 # -------------------------------------------------------------------------------
 
+class Autoencoder(nn.Module):
+    def __init__(self, input_dim, latent_dim=3):
+        super(Autoencoder, self).__init__()
+        # Encoder
+        self.encoder = nn.Sequential(
+            nn.Linear(input_dim, 16),
+            nn.ReLU(),
+            nn.Linear(16, 8),
+            nn.ReLU(),
+            nn.Linear(8, latent_dim)  # Compress to latent space
+        )
+        # Decoder
+        self.decoder = nn.Sequential(
+            nn.Linear(latent_dim, 8),
+            nn.ReLU(),
+            nn.Linear(8, 16),
+            nn.ReLU(),
+            nn.Linear(16, input_dim)
+        )
+
+    def forward(self, x):
+        encoded = self.encoder(x)
+        decoded = self.decoder(encoded)
+        return encoded, decoded
+
 def compute_superpixel_features(image_4ch, superpixels):
     num_superpixels = np.max(superpixels) + 1  # Number of unique superpixels
     num_channels = image_4ch.shape[-1]
@@ -314,100 +339,97 @@ def cluster_autoencoded_features(model, data_tensor, n_clusters=5):
 # Load volume data
 volume = np.load('../../xray_volume.npy')
 
-# -------------------------------------------------------------------------------
-
-# CSV file path containing the superpixel features
-csv_file_path = 'superpixel_features_mean.csv'
-
-# Load the superpixel features from the CSV file
-superpixel_features = pd.read_csv(csv_file_path)
-
-print(superpixel_features.shape)
-
-# Convert the DataFrame to a numpy array
-data = superpixel_features.to_numpy()
-
-# Take only the 130th slice, each slice has 484 superpixels
-# data = data[85*484:86*484]
-
-# Normalize the data
-scaler = StandardScaler()
-data_normalized = scaler.fit_transform(data)
-
-# Save the scaler
-with open("scaler_autoencoder_mean.pkl", "wb") as f:
-    pickle.dump(scaler, f)
-
-# Convert to PyTorch tensor
-data_tensor = torch.tensor(data_normalized, dtype=torch.float32)
+skip_training = True
 
 # -------------------------------------------------------------------------------
 
-# Set seed for reproducibility
-torch.manual_seed(0)
+if not skip_training:
 
-class Autoencoder(nn.Module):
-    def __init__(self, input_dim, latent_dim=3):
-        super(Autoencoder, self).__init__()
-        # Encoder
-        self.encoder = nn.Sequential(
-            nn.Linear(input_dim, 16),
-            nn.ReLU(),
-            nn.Linear(16, 8),
-            nn.ReLU(),
-            nn.Linear(8, latent_dim)  # Compress to latent space
-        )
-        # Decoder
-        self.decoder = nn.Sequential(
-            nn.Linear(latent_dim, 8),
-            nn.ReLU(),
-            nn.Linear(8, 16),
-            nn.ReLU(),
-            nn.Linear(16, input_dim)
-        )
+    # CSV file path containing the superpixel features
+    csv_file_path = 'superpixel_features_mean.csv'
 
-    def forward(self, x):
-        encoded = self.encoder(x)
-        decoded = self.decoder(encoded)
-        return encoded, decoded
+    # Load the superpixel features from the CSV file
+    superpixel_features = pd.read_csv(csv_file_path)
 
-# Model Setup
-input_dim = superpixel_features.shape[1]
-latent_dim=2
-epochs=200
-batch_size = 64
-learning_rate = 0.001
+    print(superpixel_features.shape)
 
-# Initialize model
-autoencoder = Autoencoder(input_dim, latent_dim)
-criterion = nn.MSELoss()
-optimizer = optim.Adam(autoencoder.parameters(), lr=learning_rate)
+    # Convert the DataFrame to a numpy array
+    data = superpixel_features.to_numpy()
 
-# Convert dataset into batches
-dataset = torch.utils.data.TensorDataset(data_tensor)
-dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=True)
+    # Take only the 130th slice, each slice has 484 superpixels
+    # data = data[85*484:86*484]
 
-# Training loop
-for epoch in range(epochs):
-    total_loss = 0
-    for batch in dataloader:
-        inputs = batch[0]
-        optimizer.zero_grad()
-        encoded, decoded = autoencoder(inputs)
-        loss = criterion(decoded, inputs)
-        loss.backward()
-        optimizer.step()
-        total_loss += loss.item()
+    # Normalize the data
+    scaler = StandardScaler()
+    data_normalized = scaler.fit_transform(data)
 
-    if epoch % 20 == 0:
-        print(f"Epoch {epoch}, Loss: {total_loss/len(dataloader)}")
+    # Save the scaler
+    with open("scaler_autoencoder_mean.pkl", "wb") as f:
+        pickle.dump(scaler, f)
 
-print("Final Loss:", total_loss/len(dataloader))
+    # Convert to PyTorch tensor
+    data_tensor = torch.tensor(data_normalized, dtype=torch.float32)
 
-print("Model Trained Successfully!")
+    # -------------------------------------------------------------------------------
 
-# Save the model
-torch.save(autoencoder.state_dict(), 'autoencoder_mean.pth')
+    # Set seed for reproducibility
+    torch.manual_seed(0)
+
+    # Set device
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+    # Model Setup
+    input_dim = superpixel_features.shape[1]
+    latent_dim=2
+    epochs=200
+    batch_size = 64
+    learning_rate = 0.001
+
+    # Initialize model
+    autoencoder = Autoencoder(input_dim, latent_dim)
+    criterion = nn.MSELoss()
+    optimizer = optim.Adam(autoencoder.parameters(), lr=learning_rate)
+
+    # Convert dataset into batches
+    dataset = torch.utils.data.TensorDataset(data_tensor)
+    dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=True)
+
+    # Training loop
+    for epoch in range(epochs):
+        total_loss = 0
+        for batch in dataloader:
+            inputs = batch[0]
+            optimizer.zero_grad()
+            encoded, decoded = autoencoder(inputs)
+            loss = criterion(decoded, inputs)
+            loss.backward()
+            optimizer.step()
+            total_loss += loss.item()
+
+        if epoch % 20 == 0:
+            print(f"Epoch {epoch}, Loss: {total_loss/len(dataloader)}")
+
+    print("Final Loss:", total_loss/len(dataloader))
+
+    print("Model Trained Successfully!")
+
+    # Save the model
+    torch.save(autoencoder.state_dict(), 'autoencoder_mean.pth')
+
+else:
+    input_dim = 8
+    latent_dim=2
+
+    # Load the scaler
+    with open("scaler_autoencoder_mean.pkl", "rb") as f:
+        scaler = pickle.load(f)
+
+    # Load the model
+    autoencoder = Autoencoder(input_dim, latent_dim)
+    autoencoder.load_state_dict(torch.load('autoencoder_mean.pth', map_location=torch.device('cuda')))
+    autoencoder.eval()
+
+    print("Model Loaded Successfully!")
 
 # -------------------------------------------------------------------------------
 
