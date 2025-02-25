@@ -351,8 +351,8 @@ def create_original_slice(axis, slice_num):
 # Function to create superpixels
 def create_superpixels(resized_image, input_image, num_superpixels):
     
-    # segments, cluster_centers = custom_slic(resized_image, num_superpixels)
-    segments = segmentation.slic(input_image, n_segments=num_superpixels, compactness=30, start_label=0)
+    segments, cluster_centers = custom_slic(resized_image, num_superpixels)
+    # segments = segmentation.slic(input_image, n_segments=num_superpixels, compactness=30, start_label=0)
 
     boundary_image = mark_boundaries(input_image, segments)
 
@@ -711,8 +711,21 @@ def create_cluster_stats_plot(segment_vectors, clustering, cluster_number, clust
     return fig
 
 # Function to create clusters
-def create_clusters(segment_vectors, clustering, cluster_number):
+def create_clusters(segment_vectors, clustering, cluster_number, test_tensor, autoencoder_checkbox):
     num_clusters = cluster_number
+
+    if 'enable' in autoencoder_checkbox:
+        print('Autoencoder enabled')
+
+        # Setup the model
+        model = setup_model(test_tensor.shape[1])
+
+        with torch.no_grad():
+            encoded_features, _ = model(test_tensor)
+
+        encoded_features = encoded_features.numpy()
+
+        segment_vectors = encoded_features
 
     if clustering == 'gmm':
         gmm = GaussianMixture(n_components=num_clusters, random_state=42)
@@ -919,7 +932,7 @@ def setup_model(input_dimension):
 
     # Load the trained autoencoder model
     model = Autoencoder(input_dim, latent_dim)
-    model.load_state_dict(torch.load('autoencoder_mean.pth', map_location=torch.device('cuda')))
+    model.load_state_dict(torch.load('autoencoder_mean.pth', map_location=torch.device('cuda' if torch.cuda.is_available() else 'cpu')))
     model.eval()
 
     return model
@@ -1542,10 +1555,12 @@ def enable_clustering(checkbox_value):
 # Callback for performing clustering
 @app.callback(
     Output('cluster-data', 'data'),
-    [Input('vector-data', 'data'), Input('clustering-radio', 'value'), Input('cluster-number', 'data')]
+    [Input('vector-data', 'data'), Input('clustering-radio', 'value'), Input('cluster-number', 'data'), Input('autoencoder-checkbox', 'value')],
+    State('superpixel-data', 'data')
 )
-def perform_clustering(jsonified_vector_data, clustering, cluster_number):
+def perform_clustering(jsonified_vector_data, clustering, cluster_number, autoencoder_checkbox, jsonified_superpixel_data):
     vector_data = json.loads(jsonified_vector_data)
+    superpixel_data = json.loads(jsonified_superpixel_data)
 
     print("--------------------------------")
     print("Performing clustering...")
@@ -1553,10 +1568,14 @@ def perform_clustering(jsonified_vector_data, clustering, cluster_number):
 
     # Convert stored lists back to numpy arrays
     segment_vectors = np.array(vector_data['segment_vectors'])
+    test_tensor = np.array(superpixel_data['test_tensor'])
+
+    # Convert back to PyTorch tensor
+    test_tensor = torch.tensor(test_tensor, dtype=torch.float32)
 
     # -------------------------------------------------------------------------------
 
-    cluster_labels, cluster_color_dict = create_clusters(segment_vectors, clustering, cluster_number)
+    cluster_labels, cluster_color_dict = create_clusters(segment_vectors, clustering, cluster_number, test_tensor, autoencoder_checkbox)
 
     print('Clustering done in:', time.time() - start_time)
 
