@@ -27,6 +27,8 @@ import torch.nn as nn
 import torch.optim as optim
 from numba import njit
 import pickle
+from torch.utils.data import DataLoader, Dataset
+from skimage.transform import resize
 
 # Ignore warnings
 warnings.filterwarnings("ignore")
@@ -286,3 +288,269 @@ def custom_slic(data, num_superpixels, spatial_weight=5, max_iter=20):
     return labels, cluster_centers
 
 # -------------------------------------------------------------------------------
+
+class CNNEncoder(nn.Module):
+    def __init__(self, latent_dim=16):
+        super(CNNEncoder, self).__init__()
+        self.encoder = nn.Sequential(
+            nn.Conv2d(4, 16, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(2, 2),  # 16x16 → 8x8
+            
+            nn.Conv2d(16, 32, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(2, 2),  # 8x8 → 4x4
+            
+            nn.Flatten(),
+            nn.Linear(32 * 4 * 4, latent_dim)  # Latent feature vector
+        )
+
+    def forward(self, x):
+        return self.encoder(x)
+    
+class Autoencoder(nn.Module):
+    def __init__(self, latent_dim=16):
+        super(Autoencoder, self).__init__()
+        self.encoder = CNNEncoder(latent_dim)
+        
+        self.decoder = nn.Sequential(
+            nn.Linear(latent_dim, 32 * 4 * 4),
+            nn.ReLU(),
+            nn.Unflatten(1, (32, 4, 4)),
+            
+            nn.ConvTranspose2d(32, 16, kernel_size=4, stride=2, padding=1),
+            nn.ReLU(),
+
+            nn.ConvTranspose2d(16, 4, kernel_size=4, stride=2, padding=1),
+            nn.Sigmoid() # Output should be in range (0,1)
+        )
+
+    def forward(self, x):
+        encoded = self.encoder(x)
+        decoded = self.decoder(encoded)
+        return encoded, decoded
+
+# -------------------------------------------------------------------------------
+
+# Load volume data
+volume = np.load('../../xray_volume.npy')
+
+skip_training = True
+
+# -------------------------------------------------------------------------------
+
+if not skip_training:
+    # Set seed for reproducibility
+    torch.manual_seed(0)
+
+    # Set device
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    
+    # File path for superpixel CNN training data
+    training_data_path = 'superpixels_features_cnn.npy'
+
+    # Load training data
+    data = np.load(training_data_path) #(num_superpixels, img_size, img_size, num_channels)
+
+    print('Training data shape:', data.shape)
+
+    # Normalize the data (per-channel normalization)
+    data = (data - np.mean(data, axis=(1, 2), keepdims=True)) / (np.std(data, axis=(1, 2), keepdims=True) + 1e-8)
+
+    # Convert to PyTorch tensors
+    data_tensor = torch.tensor(data, dtype=torch.float32).permute(0, 3, 1, 2)  # (N, C, H, W)
+    data_tensor = data_tensor.to(device)
+
+    print('Data tensor shape:', data_tensor.shape)
+
+    # Initialize model
+    latent_dim = 16
+    autoencoder = Autoencoder(latent_dim)
+    autoencoder.to(device)
+
+    # Loss and optimizer
+    criterion = nn.MSELoss()
+    criterion.to(device)
+    optimizer = optim.Adam(autoencoder.parameters(), lr=0.001)
+
+    # Convert dataset into batches
+    dataset = torch.utils.data.TensorDataset(data_tensor)
+    dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
+
+    # Training loop
+    epochs = 100
+    for epoch in range(epochs):
+        total_loss = 0
+        for batch in dataloader:
+            inputs = batch[0]
+            optimizer.zero_grad()
+            encoded, decoded = autoencoder(inputs)
+            loss = criterion(decoded, inputs)
+            loss.backward()
+            optimizer.step()
+            total_loss += loss.item()
+
+        if epoch % 10 == 0:
+            print(f"Epoch {epoch}, Loss: {total_loss/len(dataloader)}")
+
+    print("Final loss:", total_loss/len(dataloader))
+
+    print("Training complete!")
+
+    # Save the trained model
+    torch.save(autoencoder.state_dict(), 'autoencoder_cnn.pth')
+    
+else:
+    # Set seed for reproducibility
+    torch.manual_seed(0)
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+    latent_dim = 16
+
+    # Load the trained model
+    autoencoder = Autoencoder(latent_dim)
+    autoencoder.load_state_dict(torch.load('autoencoder_cnn.pth'))
+    autoencoder.to(device)
+    autoencoder.eval()
+
+    print("Model loaded successfully!")
+
+# -------------------------------------------------------------------------------
+
+# Choose a slice from the volume
+x = 130
+
+image = volume[x, :, :]
+
+# -------------------------------------------------------------------------------
+# Zoom in on the center of the image
+# -------------------------------------------------------------------------------
+
+# Define a zoom factor (increase this value to zoom in more)
+zoom_factor = 1.4
+
+resized_image = cropImage(image, zoom_factor)
+
+# -------------------------------------------------------------------------------
+
+# Create an input image to store the colors for each pixel
+input_image = np.zeros_like(resized_image, dtype=np.uint8)
+# Drop the alpha channel
+input_image = input_image[:, :, :3]
+
+# Loop though each pixel in the image and assign custom colors
+for i in range(resized_image.shape[0]):
+    for j in range(resized_image.shape[1]):
+        # If all channels are 0, assign black color
+        if np.all(resized_image[i][j] == 0):
+            input_image[i][j] = [0, 0, 0]
+        else:
+            input_image[i][j] = getColorfromRatio(resized_image[i][j])
+
+segments, cluster_centers = custom_slic(resized_image, 450)
+
+print("Superpixels Generated Successfully for test data!")
+
+# -------------------------------------------------------------------------------
+
+superpixel_size = 16   # Resize each superpixel to 16x16 pixels
+
+superpixel_features = []
+
+# Extract and resize each superpixel
+for label in np.unique(segments):
+    mask = (segments == label)
+    superpixel = resized_image * mask[..., None]  # Apply mask to extract region
+    resized_sp = resize(superpixel, (superpixel_size, superpixel_size, 4), anti_aliasing=True)
+    superpixel_features.append(resized_sp)
+
+print("Superpixels extracted for slice", x)
+
+# -------------------------------------------------------------------------------
+
+# Convert superpixel features to a numpy array
+superpixel_features = np.array(superpixel_features)
+
+# Normalize the data (per-channel normalization)
+superpixel_features = (superpixel_features - np.mean(superpixel_features, axis=(1, 2), keepdims=True)) / (np.std(superpixel_features, axis=(1, 2), keepdims=True) + 1e-8)
+
+# Convert to PyTorch tensor
+superpixel_tensor = torch.tensor(superpixel_features, dtype=torch.float32).permute(0, 3, 1, 2)  # (N, C, H, W)
+superpixel_tensor = superpixel_tensor.to(device)
+
+# Get latent features for superpixels
+with torch.no_grad():
+    encoded, decoded = autoencoder(superpixel_tensor)
+    encoded_features = encoded.cpu().numpy()
+
+print("Latent features extracted for superpixels!")
+
+# -------------------------------------------------------------------------------
+
+# Fit KMeans clustering on the latent features
+kmeans = KMeans(n_clusters=5, random_state=42).fit(encoded_features)
+
+# Get cluster labels
+cluster_labels = kmeans.labels_
+
+# Visualize t-SNE
+tsne = TSNE(n_components=2, random_state=42)
+reduced_data = tsne.fit_transform(encoded_features)
+
+cluster_color_dict = {}
+
+colormap = plt.cm.get_cmap("tab10")
+
+plt.figure(figsize=(12, 5))
+
+cluster_colors = {}
+for i in range(5):  # 5 clusters
+    color = colormap(i)
+    cluster_colors[i] = color
+    plt.scatter(reduced_data[cluster_labels == i, 0], reduced_data[cluster_labels == i, 1], label=f'Cluster {i+1}')
+
+plt.legend()
+plt.title('t-sne Visualization of Segments after K-means Clustering')
+plt.xlabel('t-sne Component 1')
+plt.ylabel('t-sne Component 2')
+plt.grid(True)
+# plt.show()
+
+cluster_color_dict = cluster_colors
+
+for cluster_id in np.unique(cluster_labels):
+    cluster_color_dict[cluster_id] = tuple(map(lambda x: int(x * 255), cluster_color_dict[cluster_id][:3]))
+
+# -------------------------------------------------------------------------------
+
+# Create the final segmented image using the cluster colors
+
+# Create an image to store the colors for each pixel
+final_segmented_image = np.zeros_like(resized_image, dtype=np.uint8)
+# Drop the alpha channel
+final_segmented_image = final_segmented_image[:, :, :3]
+
+for i in range(resized_image.shape[0]):
+    for j in range(resized_image.shape[1]):
+        final_segmented_image[i][j] = cluster_color_dict[cluster_labels[segments[i][j]]]
+
+# Display the original image and the final segmented image
+plt.figure(figsize=(12, 5))
+
+# Visualize the Original image
+plt.subplot(1, 2, 1)
+plt.imshow(input_image)
+plt.title('Original Image')
+plt.axis('off')
+
+# Visualize the Final Segmented image
+plt.subplot(1, 2, 2)
+plt.imshow(final_segmented_image)
+plt.title('Final Segmented Image')
+plt.axis('off')
+
+# Set an overall title for the figure
+plt.suptitle(f'Volume Slice {x}')
+
+plt.tight_layout()
+plt.show()
