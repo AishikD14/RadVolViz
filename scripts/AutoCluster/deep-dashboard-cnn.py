@@ -24,6 +24,7 @@ from sklearn.mixture import GaussianMixture
 import time
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import torch.optim as optim
 from numba import njit
 import pickle
@@ -330,6 +331,46 @@ class Autoencoder(nn.Module):
         decoded = self.decoder(encoded)
         return encoded, decoded
 
+class SSIMLoss(nn.Module):
+    def __init__(self, window_size=11, size_average=True, channel=4):
+        super(SSIMLoss, self).__init__()
+        self.window_size = window_size
+        self.size_average = size_average
+        self.channel = channel
+        self.window = self.create_window(window_size).cuda()  # Move to GPU
+
+    def create_window(self, size, sigma=1.5):
+        gauss = torch.Tensor([np.exp(-(x - size // 2) ** 2 / float(2 * sigma ** 2)) for x in range(size)])
+        gauss = gauss / gauss.sum()
+        _2d_window = gauss.unsqueeze(1) @ gauss.unsqueeze(0)  # Outer product to make 2D
+        window = _2d_window.expand(1, 1, size, size).contiguous()
+
+        # Expand for multiple channels
+        return window.expand(self.channel, 1, size, size).contiguous()
+
+    def ssim(self, img1, img2):
+        # Ensure the window is on the same device
+        window = self.window.to(img1.device)
+
+        mu1 = F.conv2d(img1, window, padding=self.window_size // 2, groups=self.channel)
+        mu2 = F.conv2d(img2, window, padding=self.window_size // 2, groups=self.channel)
+
+        mu1_sq, mu2_sq = mu1.pow(2), mu2.pow(2)
+        mu1_mu2 = mu1 * mu2
+
+        sigma1_sq = F.conv2d(img1 * img1, window, padding=self.window_size // 2, groups=self.channel) - mu1_sq
+        sigma2_sq = F.conv2d(img2 * img2, window, padding=self.window_size // 2, groups=self.channel) - mu2_sq
+        sigma12 = F.conv2d(img1 * img2, window, padding=self.window_size // 2, groups=self.channel) - mu1_mu2
+
+        C1, C2 = 0.01 ** 2, 0.03 ** 2  # Constants for numerical stability
+
+        ssim_map = ((2 * mu1_mu2 + C1) * (2 * sigma12 + C2)) / ((mu1_sq + mu2_sq + C1) * (sigma1_sq + sigma2_sq + C2))
+
+        return ssim_map.mean() if self.size_average else ssim_map
+
+    def forward(self, img1, img2):
+        return 1 - self.ssim(img1, img2)  # Since SSIM ranges from 0 to 1, we use (1 - SSIM) as loss
+
 # -------------------------------------------------------------------------------
 
 # Load volume data
@@ -341,6 +382,9 @@ skip_training = False
 
 # Define the latent dimension
 latent_dim = 32
+batch_size = 32
+# loss = "MSE"
+loss = "ssim"
 
 # Set seed for reproducibility
 torch.manual_seed(0)
@@ -374,11 +418,12 @@ if not skip_training:
     # Loss and optimizer
     criterion = nn.MSELoss()
     criterion.to(device)
+    ssim_loss = SSIMLoss()
     optimizer = optim.Adam(autoencoder.parameters(), lr=0.001)
 
     # Convert dataset into batches
     dataset = torch.utils.data.TensorDataset(data_tensor)
-    dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
+    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
     # Training loop
     epochs = 100
@@ -388,7 +433,11 @@ if not skip_training:
             inputs = batch[0]
             optimizer.zero_grad()
             encoded, decoded = autoencoder(inputs)
-            loss = criterion(decoded, inputs)
+            if loss == "MSE":
+                loss = criterion(decoded, inputs)
+            elif loss == "ssim":
+                loss = ssim_loss(inputs, decoded)
+            loss = ssim_loss(inputs, decoded)
             loss.backward()
             optimizer.step()
             total_loss += loss.item()
