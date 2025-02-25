@@ -743,7 +743,7 @@ def create_clusters(segment_vectors, clustering, cluster_number, encoded_feature
 def create_cluster_vector_plot(segment_vectors, cluster_labels, visualization, hovered_segment_id, encoded_features, autoencoder_checkbox):
     if 'enable' in autoencoder_checkbox:
         segment_vectors = encoded_features
-        
+
     # Create a DataFrame for easier plotting
     if visualization == 'pca':
         # Perform PCA for dimensionality reduction
@@ -1403,16 +1403,19 @@ def update_vector_plot(jsonified_slice_data, jsonified_superpixel_data, visualiz
 
     if ctx_id == 'superpixel-plot':
         vector_data = json.loads(jsonified_vector_data)
+        superpixel_data = json.loads(jsonified_superpixel_data)
+        
         segment_vectors = np.array(vector_data['segment_vectors'])
+        encoded_features = np.array(superpixel_data['encoded_features'])
         stored_data = vector_data['segmentColorDict']
         segmentColorDict = {np.int32(key): np.array(value) for key, value in stored_data.items()}
 
         if hover_data is None:
             if visualization == 'pca':
-                vector_space_fig, reduced_data = create_pca_plot(segment_vectors, segmentColorDict, None)
+                vector_space_fig, reduced_data = create_pca_plot(segment_vectors, segmentColorDict, None, encoded_features, autoencoder_checkbox)
 
             elif visualization == 'tsne':
-                vector_space_fig, reduced_data = create_tsne_plot(segment_vectors, segmentColorDict, None)
+                vector_space_fig, reduced_data = create_tsne_plot(segment_vectors, segmentColorDict, None, encoded_features, autoencoder_checkbox)
 
             print('Vector plot ready in:', time.time() - start_time)
 
@@ -1422,10 +1425,10 @@ def update_vector_plot(jsonified_slice_data, jsonified_superpixel_data, visualiz
             hovered_segment_id = int(hover_data['points'][0]['text'])
 
             if visualization == 'pca':
-                vector_space_fig, reduced_data = create_pca_plot(segment_vectors, segmentColorDict, hovered_segment_id)
+                vector_space_fig, reduced_data = create_pca_plot(segment_vectors, segmentColorDict, hovered_segment_id, encoded_features, autoencoder_checkbox)
 
             elif visualization == 'tsne':
-                vector_space_fig, reduced_data = create_tsne_plot(segment_vectors, segmentColorDict, hovered_segment_id)
+                vector_space_fig, reduced_data = create_tsne_plot(segment_vectors, segmentColorDict, hovered_segment_id, encoded_features, autoencoder_checkbox)
 
             print('Vector plot ready in:', time.time() - start_time)
 
