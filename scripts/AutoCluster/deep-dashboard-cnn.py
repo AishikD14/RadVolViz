@@ -335,16 +335,20 @@ class Autoencoder(nn.Module):
 # Load volume data
 volume = np.load('../../xray_volume.npy')
 
-skip_training = True
+skip_training = False
 
 # -------------------------------------------------------------------------------
 
-if not skip_training:
-    # Set seed for reproducibility
-    torch.manual_seed(0)
+# Define the latent dimension
+latent_dim = 32
 
-    # Set device
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+# Set seed for reproducibility
+torch.manual_seed(0)
+
+# Check if GPU is available
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+if not skip_training:
     
     # File path for superpixel CNN training data
     training_data_path = 'superpixels_features_cnn.npy'
@@ -364,7 +368,6 @@ if not skip_training:
     print('Data tensor shape:', data_tensor.shape)
 
     # Initialize model
-    latent_dim = 16
     autoencoder = Autoencoder(latent_dim)
     autoencoder.to(device)
 
@@ -399,14 +402,8 @@ if not skip_training:
 
     # Save the trained model
     torch.save(autoencoder.state_dict(), 'autoencoder_cnn.pth')
-    
+
 else:
-    # Set seed for reproducibility
-    torch.manual_seed(0)
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-    latent_dim = 16
-
     # Load the trained model
     autoencoder = Autoencoder(latent_dim)
     autoencoder.load_state_dict(torch.load('autoencoder_cnn.pth'))
