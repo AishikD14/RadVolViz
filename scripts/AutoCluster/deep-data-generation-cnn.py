@@ -24,6 +24,8 @@ import time
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from skimage.transform import resize
+from numba import njit
 
 # Ignore warnings
 warnings.filterwarnings("ignore")
@@ -196,22 +198,75 @@ def initialize_cluster_centers(data, num_superpixels, grid_spacing):
     for r in range(grid_spacing // 2, rows, grid_spacing):
         for c in range(grid_spacing // 2, cols, grid_spacing):
             centers.append([r, c] + list(data[r, c]))
-            # if len(centers) >= num_superpixels:  # Stop when enough centers are created
-            #     return np.array(centers)
-    return np.array(centers)
+    return np.array(centers, dtype=np.float32)
 
+
+@njit
 def calculate_distance(pixel, center, spatial_weight, feature_weight):
     """
     Compute the combined distance between a pixel and a cluster center.
+    Uses Numba to accelerate this function.
     """
-    spatial_dist = np.linalg.norm(pixel[:2] - center[:2])
-    feature_dist = np.linalg.norm(pixel[2:] - center[2:])
+    spatial_dist = np.sqrt((pixel[0] - center[0])**2 + (pixel[1] - center[1])**2)
+    feature_dist = np.sqrt(np.sum((pixel[2:] - center[2:])**2))
     return np.sqrt((spatial_dist / spatial_weight)**2 + (feature_dist / feature_weight)**2)
 
-# Custom SLIC function with cosine distance metric
-def custom_slic(data, num_superpixels, spatial_weight=5):
+
+@njit
+def assign_pixels_to_clusters(data, cluster_centers, labels, distances, spatial_weight, feature_weight, grid_spacing):
     """
-    Perform SLIC segmentation on 4D input data (metal concentrations per pixel).
+    Assign each pixel to the nearest cluster center within its search window.
+    Uses Numba for faster execution.
+    """
+    rows, cols, _ = data.shape
+    for idx, center in enumerate(cluster_centers):
+        r, c = int(center[0]), int(center[1])
+        
+        # Search window around the cluster center
+        r_min = max(r - grid_spacing, 0)
+        r_max = min(r + grid_spacing + 1, rows)
+        c_min = max(c - grid_spacing, 0)
+        c_max = min(c + grid_spacing + 1, cols)
+
+        for rr in range(r_min, r_max):
+            for cc in range(c_min, c_max):
+                pixel = np.array([rr, cc] + list(data[rr, cc]))
+                distance = calculate_distance(pixel, center, spatial_weight, feature_weight)
+                if distance < distances[rr, cc]:
+                    distances[rr, cc] = distance
+                    labels[rr, cc] = idx
+
+
+@njit
+def update_cluster_centers(data, labels, cluster_centers):
+    """
+    Compute new cluster centers based on the average of assigned pixels.
+    Uses Numba for efficiency.
+    """
+    num_clusters = len(cluster_centers)
+    num_features = data.shape[2]
+    
+    new_centers = np.zeros_like(cluster_centers)
+    counts = np.zeros(num_clusters, dtype=np.int32)
+
+    rows, cols = labels.shape
+    for r in range(rows):
+        for c in range(cols):
+            label = labels[r, c]
+            new_centers[label][:2] += np.array([r, c], dtype=np.float32)
+            new_centers[label][2:] += data[r, c]
+            counts[label] += 1
+
+    for i in range(num_clusters):
+        if counts[i] > 0:
+            new_centers[i] /= counts[i]
+
+    return new_centers
+
+
+def custom_slic(data, num_superpixels, spatial_weight=5, max_iter=20):
+    """
+    Perform optimized SLIC segmentation on 4D input data (metal concentrations per pixel).
     """
     rows, cols, num_features = data.shape
     grid_spacing = int(np.sqrt((rows * cols) / num_superpixels))
@@ -219,57 +274,15 @@ def custom_slic(data, num_superpixels, spatial_weight=5):
 
     # Initialize cluster centers
     cluster_centers = initialize_cluster_centers(data, num_superpixels, grid_spacing)
-    labels = -1 * np.ones((rows, cols), dtype=int)
-    distances = np.full((rows, cols), np.inf)
+    labels = -1 * np.ones((rows, cols), dtype=np.int32)
+    distances = np.full((rows, cols), np.inf, dtype=np.float32)
 
     # Iterate until convergence
-    for _ in range(20):  # Number of iterations
-        for idx, center in enumerate(cluster_centers):
-            r, c = int(center[0]), int(center[1])
-            for dr in range(-grid_spacing, grid_spacing + 1):
-                for dc in range(-grid_spacing, grid_spacing + 1):
-                    rr, cc = r + dr, c + dc
-                    if 0 <= rr < rows and 0 <= cc < cols:
-                        pixel = [rr, cc] + list(data[rr, cc])
-                        distance = calculate_distance(pixel, center, spatial_weight, feature_weight)
-                        if distance < distances[rr, cc]:
-                            distances[rr, cc] = distance
-                            labels[rr, cc] = idx
-
-        # Update cluster centers
-        new_centers = np.zeros_like(cluster_centers)
-        counts = np.zeros(cluster_centers.shape[0], dtype=int)
-        for r in range(rows):
-            for c in range(cols):
-                label = labels[r, c]
-                new_centers[label][:2] += [r, c]
-                new_centers[label][2:] += data[r, c]
-                counts[label] += 1
-
-        for i in range(len(cluster_centers)):
-            if counts[i] > 0:
-                new_centers[i] /= counts[i]
-
-        cluster_centers = new_centers
+    for _ in range(max_iter):
+        assign_pixels_to_clusters(data, cluster_centers, labels, distances, spatial_weight, feature_weight, grid_spacing)
+        cluster_centers = update_cluster_centers(data, labels, cluster_centers)
 
     return labels, cluster_centers
-
-# -------------------------------------------------------------------------------
-
-# Compute superpixel features
-def compute_superpixel_features(image_4ch, superpixels):
-    num_superpixels = np.max(superpixels) + 1  # Number of unique superpixels
-    num_channels = image_4ch.shape[-1]
-    features = np.zeros((num_superpixels, num_channels * 2))  # Mean + Std
-
-    for sp_id in range(num_superpixels):
-        mask = (superpixels == sp_id)
-        pixels = image_4ch[mask]
-        if pixels.size > 0:
-            features[sp_id, :num_channels] = np.mean(pixels, axis=0)
-            features[sp_id, num_channels:] = np.std(pixels, axis=0)
-
-    return features  # Shape: (num_superpixels, 8)
 
 # -------------------------------------------------------------------------------
 
@@ -278,20 +291,11 @@ volume = np.load('../../xray_volume.npy')
 
 # -------------------------------------------------------------------------------
 
-# CSV file path to store the superpixel features
-csv_file_path = 'superpixel_features_mean.csv'
-
-# Create a new CSV file and write the header
-with open(csv_file_path, 'w') as f:
-    f.write('mean1,mean2,mean3,mean4,std1,std2,std3,std4\n')
-
-f.close()
-
-# -------------------------------------------------------------------------------
-
 print("Starting the process...")
 print("Total slices to process:", 160 - 45)
 print("---------------------------------")
+
+all_superpixels = []
 
 # Loop over each x-axis slice in the volume
 for x in range(45, 160):
@@ -330,17 +334,28 @@ for x in range(45, 160):
 
     # -------------------------------------------------------------------------------
 
-    # Compute superpixel features
-    superpixel_features = compute_superpixel_features(resized_image, segments)
+    superpixel_size = 16   # Resize each superpixel to 16x16 pixels
 
-    print("Superpixel features computed for slice", x)
+    # Extract and resize each superpixel
+    for label in np.unique(segments):
+        mask = (segments == label)
+        superpixel = resized_image * mask[..., None]  # Apply mask to extract region
+        resized_sp = resize(superpixel, (superpixel_size, superpixel_size, 4), anti_aliasing=True)
+        all_superpixels.append(resized_sp)
 
-    # -------------------------------------------------------------------------------
+    print("Superpixels extracted for slice", x)
 
-    print("------- Saving superpixel features to CSV file -------")
+    print("--------------------------------------------------")
 
-    # Save superpixel features to a CSV file
-    with open(csv_file_path, 'a') as f:
-        np.savetxt(f, superpixel_features, delimiter=',')
+    # quit()    
 
-    f.close()
+# -------------------------------------------------------------------------------
+
+print("All superpixels extracted")
+
+all_superpixels = np.array(all_superpixels)
+
+print(all_superpixels.shape)
+
+# Save the superpixels to a file
+np.save('superpixels_features_cnn.npy', all_superpixels)
