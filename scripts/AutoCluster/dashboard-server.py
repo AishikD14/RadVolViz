@@ -1271,7 +1271,7 @@ def update_slice_plot(axis, slice_num):
     print("Updating slice plot...")
     start_time = time.time()
     
-    original_slice_fig, resized_image, input_image = create_original_slice(axis, slice_num-1)
+    original_slice_fig, resized_image, input_image = create_original_slice(axis, slice_num)
     
     print('Slice plot ready in:', time.time() - start_time)
     return original_slice_fig, json.dumps({'resized_image': resized_image.tolist(), 'input_image': input_image.tolist()})
