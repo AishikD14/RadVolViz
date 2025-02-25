@@ -564,20 +564,11 @@ def create_tsne_plot(segment_vectors, segmentColorDict, hovered_segment_id):
     return fig, reduced_data
 
 # Function to create cluster stats plot for KMeans clustering
-def create_cluster_stats_plot(segment_vectors, clustering, cluster_number, cluster_stats, test_tensor, autoencoder_checkbox):
+def create_cluster_stats_plot(segment_vectors, clustering, cluster_number, cluster_stats, encoded_features, autoencoder_checkbox):
     distortions = []
     K = range(2, 11)
 
     if 'enable' in autoencoder_checkbox:
-
-        # Setup the model
-        model = setup_model(test_tensor.shape[1])
-
-        with torch.no_grad():
-            encoded_features, _ = model(test_tensor)
-
-        encoded_features = encoded_features.numpy()
-
         segment_vectors = encoded_features
 
     if clustering == 'gmm':
@@ -711,20 +702,10 @@ def create_cluster_stats_plot(segment_vectors, clustering, cluster_number, clust
     return fig
 
 # Function to create clusters
-def create_clusters(segment_vectors, clustering, cluster_number, test_tensor, autoencoder_checkbox):
+def create_clusters(segment_vectors, clustering, cluster_number, encoded_features, autoencoder_checkbox):
     num_clusters = cluster_number
 
     if 'enable' in autoencoder_checkbox:
-        print('Autoencoder enabled')
-
-        # Setup the model
-        model = setup_model(test_tensor.shape[1])
-
-        with torch.no_grad():
-            encoded_features, _ = model(test_tensor)
-
-        encoded_features = encoded_features.numpy()
-
         segment_vectors = encoded_features
 
     if clustering == 'gmm':
@@ -1381,12 +1362,17 @@ def update_superpixel_plot(jsonified_slice_data, hover_data1, hover_data2, num_s
         # Convert to PyTorch tensor
         test_data_tensor = torch.tensor(test_data_normalized, dtype=torch.float32)
 
-        # Convert tensor to a JSON-serializable format (list)
-        tensor_serialized = test_data_tensor.numpy().tolist()
+        # Setup the model
+        model = setup_model(test_data_tensor.shape[1])
+
+        with torch.no_grad():
+            encoded_features, _ = model(test_data_tensor)
+
+        encoded_features = encoded_features.numpy()
         
         print('Superpixel plot ready in:', time.time() - start_time)
 
-        return superpixel_fig, json.dumps({'segments': segments.tolist(), 'image': boundary_image.tolist(), 'trace_info': trace_info, 'test_tensor': tensor_serialized}), []
+        return superpixel_fig, json.dumps({'segments': segments.tolist(), 'image': boundary_image.tolist(), 'trace_info': trace_info, 'encoded_features': encoded_features.tolist()}), []
 
 # -------------------------------------------------------------------------------
 
@@ -1506,10 +1492,7 @@ def update_cluster_stats_plot(jsonified_vector_data, clustering, click_data, clu
 
     # Convert stored lists back to numpy arrays
     segment_vectors = np.array(vector_data['segment_vectors'])
-    test_tensor = np.array(superpixel_data['test_tensor'])
-
-    # Convert back to PyTorch tensor
-    test_tensor = torch.tensor(test_tensor, dtype=torch.float32)
+    encoded_features = np.array(superpixel_data['encoded_features'])
 
     # -------------------------------------------------------------------------------
 
@@ -1526,7 +1509,7 @@ def update_cluster_stats_plot(jsonified_vector_data, clustering, click_data, clu
     else:
         final_cluster_number_data = cluster_number_data
 
-    elbow_fig = create_cluster_stats_plot(segment_vectors, clustering, final_cluster_number_data, cluster_stats, test_tensor, autoencoder_checkbox)
+    elbow_fig = create_cluster_stats_plot(segment_vectors, clustering, final_cluster_number_data, cluster_stats, encoded_features, autoencoder_checkbox)
 
     plot_label = cluster_stats + ' Plot for Clustering'
 
@@ -1568,14 +1551,11 @@ def perform_clustering(jsonified_vector_data, clustering, cluster_number, autoen
 
     # Convert stored lists back to numpy arrays
     segment_vectors = np.array(vector_data['segment_vectors'])
-    test_tensor = np.array(superpixel_data['test_tensor'])
-
-    # Convert back to PyTorch tensor
-    test_tensor = torch.tensor(test_tensor, dtype=torch.float32)
+    encoded_features = np.array(superpixel_data['encoded_features'])
 
     # -------------------------------------------------------------------------------
 
-    cluster_labels, cluster_color_dict = create_clusters(segment_vectors, clustering, cluster_number, test_tensor, autoencoder_checkbox)
+    cluster_labels, cluster_color_dict = create_clusters(segment_vectors, clustering, cluster_number, encoded_features, autoencoder_checkbox)
 
     print('Clustering done in:', time.time() - start_time)
 
