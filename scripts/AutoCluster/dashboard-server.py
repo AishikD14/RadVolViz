@@ -569,6 +569,64 @@ def create_tsne_plot(segment_vectors, segmentColorDict, hovered_segment_id, enco
 
     return fig, reduced_data
 
+# Function create parallel coordinates plot
+def create_parallel_coordinates_plot(segment_vectors, segmentColorDict, hovered_segment_id, encoded_features, autoencoder_checkbox):
+    if 'enable' in autoencoder_checkbox:
+        segment_vectors = encoded_features
+
+    feature_array = ['Ce', 'Co', 'Fe', 'Gd']
+
+    # Create a DataFrame for easier plotting
+    df_parallel = pd.DataFrame(segment_vectors, columns=[i for i in feature_array])
+
+    # Add Segment ID column
+    df_parallel['Segment ID'] = np.arange(len(segment_vectors))
+
+    # Extract colors for each segment in the same order as `segment_ids`
+    color_array = [tuple(segmentColorDict[seg_id].tolist()) for seg_id in df_parallel['Segment ID']]
+    # Convert to 0-255 range
+    color_array = [(int(r * 255), int(g * 255), int(b * 255)) for r, g, b in color_array]
+    # Format as "rgb(R, G, B)"
+    color_array = [f'rgb{color}' for color in color_array]
+
+    # Normalized levels
+    normalized_levels = np.linspace(0, 1, len(segment_vectors))
+
+    # Create color scale of format [[level, color], ...]
+    color_scale = [[level, color] for level, color in zip(normalized_levels, color_array)]
+
+    fig = px.parallel_coordinates(
+        df_parallel,
+        color='Segment ID',
+        color_continuous_scale=color_scale,
+        labels={'Segment ID': 'Segment ID'},
+        dimensions=[i for i in feature_array]
+    )
+
+    fig.update_layout(
+        font=dict(color="white")
+    )
+
+    if hovered_segment_id is not None:
+        # Highlight the corresponding segment in the parallel coordinates plot
+        highlighted_segment = df_parallel[df_parallel['Segment ID'] == hovered_segment_id]
+
+        # Dim non-selected segments
+        fig.update_traces(line=dict(color='rgba(0, 0, 0, 0.1)'), selector=dict(mode='lines'))
+
+        fig.add_trace(
+            go.Scatter(
+                x=highlighted_segment.columns[:-1],
+                y=highlighted_segment.iloc[0, :-1],
+                mode='lines',
+                line=dict(color='black', width=2),
+                hoverinfo='skip',  # Hide hover info for the highlighted segment,
+                showlegend=False  # Hide legend for the highlighted segment
+            )
+        )
+
+    return fig
+
 # Function to create cluster stats plot for KMeans clustering
 def create_cluster_stats_plot(segment_vectors, clustering, cluster_number, cluster_stats, encoded_features, autoencoder_checkbox):
     distortions = []
@@ -761,9 +819,16 @@ def create_cluster_vector_plot(segment_vectors, cluster_labels, visualization, h
         # Create a DataFrame for easier plotting
         df = pd.DataFrame(reduced_data, columns=['t-SNE Dimension 1', 't-SNE Dimension 2'])
 
+    elif visualization == 'PC':
+        reduced_data = segment_vectors
+
+        # Create a DataFrame for easier plotting
+        df = pd.DataFrame(reduced_data, columns=['Ce', 'Co', 'Fe', 'Gd'])
+
     df['Cluster ID'] = cluster_labels
     # Convert Cluster ID to a string to ensure it's treated as categorical
     df['Cluster ID'] = df['Cluster ID'].astype(str)
+    df['Cluster-ID'] = df['Cluster ID'].astype(int)
 
     segment_labels = np.arange(len(reduced_data))
     df['Segment ID'] = segment_labels
@@ -771,6 +836,12 @@ def create_cluster_vector_plot(segment_vectors, cluster_labels, visualization, h
     # Extract Tab10 colors from Matplotlib
     tab10_colors = [plt.get_cmap("tab10")(i) for i in range(10)]
     tab10_colors = ["rgb({}, {}, {})".format(int(r*255), int(g*255), int(b*255)) for r, g, b, _ in tab10_colors]
+
+    # Normalized levels
+    normalized_levels = np.linspace(0, 1, len(reduced_data))
+
+    # Create color scale of format [[level, color], ...]
+    color_scale = [[level, color] for level, color in zip(normalized_levels, tab10_colors)]
 
     if visualization == 'pca':
         fig = px.scatter(
@@ -796,50 +867,67 @@ def create_cluster_vector_plot(segment_vectors, cluster_labels, visualization, h
             color_discrete_sequence=tab10_colors
         )
 
-    fig.update_layout(
-        xaxis_title={
-            'font': {
-                'color': 'white'
-            }
-        },
-        yaxis_title={
-            'font': {
-                'color': 'white'
-            }
-        },
-        xaxis={
-            'tickfont': {
-                'color': 'white'
-            }
-        },
-        yaxis={
-            'tickfont': {
-                'color': 'white'
-            }
-        }
-    )
-
-    fig.update_layout(clickmode='event+select')
-
-    if hovered_segment_id is not None:
-
-        # Highlight the corresponding segment in the t-SNE plot
-        highlighted_segment = df[df['Segment ID'] == hovered_segment_id]
-
-        # Dim non-selected segments
-        fig.update_traces(marker=dict(opacity=0.3), selector=dict(mode='markers'))
-
-        # Add a trace for the highlighted segment
-        fig.add_trace(
-            go.Scatter(
-                x=highlighted_segment['t-SNE Dimension 1' if visualization == 'tsne' else 'PCA Dimension 1'],
-                y=highlighted_segment['t-SNE Dimension 2' if visualization == 'tsne' else 'PCA Dimension 2'],
-                mode='markers',
-                marker=dict(size=15, color='black', opacity=1),
-                hoverinfo='skip',  # Hide hover info for the highlighted segment,
-                showlegend=False  # Hide legend for the highlighted segment
-            )
+    elif visualization == 'PC':
+        print(df.head())
+        fig = px.parallel_coordinates(
+            df,
+            color='Cluster-ID',
+            color_continuous_scale=color_scale,
+            # labels={"Cluster ID": "Cluster ID"},
+            dimensions=['Ce', 'Co', 'Fe', 'Gd', 'Cluster-ID'],
+            # hover_data=['Cluster ID', 'Segment ID'],
+            # color_discrete_sequence=tab10_colors
         )
+
+        fig.update_layout(
+            font=dict(color="white")
+        )
+
+    if visualization == 'pca' or visualization == 'tsne':
+        fig.update_layout(
+            xaxis_title={
+                'font': {
+                    'color': 'white'
+                }
+            },
+            yaxis_title={
+                'font': {
+                    'color': 'white'
+                }
+            },
+            xaxis={
+                'tickfont': {
+                    'color': 'white'
+                }
+            },
+            yaxis={
+                'tickfont': {
+                    'color': 'white'
+                }
+            }
+        )
+
+        fig.update_layout(clickmode='event+select')
+
+        if hovered_segment_id is not None:
+
+            # Highlight the corresponding segment in the t-SNE plot
+            highlighted_segment = df[df['Segment ID'] == hovered_segment_id]
+
+            # Dim non-selected segments
+            fig.update_traces(marker=dict(opacity=0.3), selector=dict(mode='markers'))
+
+            # Add a trace for the highlighted segment
+            fig.add_trace(
+                go.Scatter(
+                    x=highlighted_segment['t-SNE Dimension 1' if visualization == 'tsne' else 'PCA Dimension 1'],
+                    y=highlighted_segment['t-SNE Dimension 2' if visualization == 'tsne' else 'PCA Dimension 2'],
+                    mode='markers',
+                    marker=dict(size=15, color='black', opacity=1),
+                    hoverinfo='skip',  # Hide hover info for the highlighted segment,
+                    showlegend=False  # Hide legend for the highlighted segment
+                )
+            )
 
     return fig
 
@@ -1009,7 +1097,8 @@ app.layout = html.Div([
                         id='visualization-radio',
                         options=[
                             {'label': 'PCA', 'value': 'pca'},
-                            {'label': 't-SNE', 'value': 'tsne'}
+                            {'label': 't-SNE', 'value': 'tsne'},
+                            {'label': 'Parallel Coordinates', 'value': 'PC'}
                         ],
                         value='tsne'
                     ),
@@ -1417,6 +1506,9 @@ def update_vector_plot(jsonified_slice_data, jsonified_superpixel_data, visualiz
             elif visualization == 'tsne':
                 vector_space_fig, reduced_data = create_tsne_plot(segment_vectors, segmentColorDict, None, encoded_features, autoencoder_checkbox)
 
+            elif visualization == 'PC':
+                vector_space_fig = create_parallel_coordinates_plot(segment_vectors, segmentColorDict, None, encoded_features, autoencoder_checkbox)
+
             print('Vector plot ready in:', time.time() - start_time)
 
             return vector_space_fig, dash.no_update
@@ -1429,6 +1521,9 @@ def update_vector_plot(jsonified_slice_data, jsonified_superpixel_data, visualiz
 
             elif visualization == 'tsne':
                 vector_space_fig, reduced_data = create_tsne_plot(segment_vectors, segmentColorDict, hovered_segment_id, encoded_features, autoencoder_checkbox)
+
+            elif visualization == 'PC':
+                vector_space_fig = create_parallel_coordinates_plot(segment_vectors, segmentColorDict, hovered_segment_id, encoded_features, autoencoder_checkbox)
 
             print('Vector plot ready in:', time.time() - start_time)
 
@@ -1479,11 +1574,15 @@ def update_vector_plot(jsonified_slice_data, jsonified_superpixel_data, visualiz
 
     elif visualization == 'tsne':
         vector_space_fig, reduced_data = create_tsne_plot(segment_vectors, segmentColorDict, None, encoded_features, autoencoder_checkbox)
+
+    elif visualization == 'PC':
+        vector_space_fig = create_parallel_coordinates_plot(segment_vectors, segmentColorDict, None, encoded_features, autoencoder_checkbox)
     
     print('Vector plot ready in:', time.time() - start_time)
 
     stored_data = {int(key): value.tolist() for key, value in segmentColorDict.items()}
-    return vector_space_fig, json.dumps({'segment_vectors': segment_vectors.tolist(), 'reduced_data': reduced_data.tolist(), 'segmentColorDict': stored_data})
+    # return vector_space_fig, json.dumps({'segment_vectors': segment_vectors.tolist(), 'reduced_data': reduced_data.tolist(), 'segmentColorDict': stored_data})
+    return vector_space_fig, json.dumps({'segment_vectors': segment_vectors.tolist(), 'segmentColorDict': stored_data})
 
 # -------------------------------------------------------------------------------
 

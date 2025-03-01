@@ -26,8 +26,13 @@ body{
     display: inline-block;
     text-align: center;
 }
-#vector-space-visualization, #cluster-vector-space-visualization, .elbow-plot{
-    width: 50%;
+#vector-space-visualization, #cluster-vector-space-visualization{
+    width: 62%;
+    display: inline-block;
+    text-align: center;
+}
+.elbow-plot{
+    width: 38%;
     display: inline-block;
     text-align: center;
 }
