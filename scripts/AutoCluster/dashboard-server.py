@@ -595,13 +595,40 @@ def create_parallel_coordinates_plot(segment_vectors, segmentColorDict, hovered_
     # Create color scale of format [[level, color], ...]
     color_scale = [[level, color] for level, color in zip(normalized_levels, color_array)]
 
-    fig = px.parallel_coordinates(
-        df_parallel,
-        color='Segment ID',
-        color_continuous_scale=color_scale,
-        labels={'Segment ID': 'Segment ID'},
-        dimensions=[i for i in feature_array]
+    fig = go.Figure(data=
+        go.Parcoords(
+            line = dict(
+                        color = df_parallel['Segment ID'],
+                        colorscale = color_scale
+                    ),
+            dimensions = list([
+                dict(
+                    # range = [0,8],
+                    # constraintrange = [4,8],
+                    label = 'Ce',
+                    values = df_parallel['Ce']
+                ),
+                dict(
+                    label = 'Co', 
+                    values = df_parallel['Co']
+                ),
+                dict(
+                    label = 'Fe', 
+                    values = df_parallel['Fe']
+                ),
+                dict(
+                    label = 'Gd', 
+                    values = df_parallel['Gd']
+                ),
+                dict(
+                    tickvals = np.arange(0, len(df_parallel['Segment ID'].unique()), 100),
+                    label = 'Segment ID', 
+                    values = df_parallel['Segment ID']
+                )
+            ])
+        )
     )
+
 
     fig.update_layout(
         font=dict(color="white")
@@ -834,11 +861,11 @@ def create_cluster_vector_plot(segment_vectors, cluster_labels, visualization, h
     df['Segment ID'] = segment_labels
 
     # Extract Tab10 colors from Matplotlib
-    tab10_colors = [plt.get_cmap("tab10")(i) for i in range(10)]
+    tab10_colors = [plt.get_cmap("tab10")(i) for i in range(len(df['Cluster ID'].unique()))]
     tab10_colors = ["rgb({}, {}, {})".format(int(r*255), int(g*255), int(b*255)) for r, g, b, _ in tab10_colors]
 
     # Normalized levels
-    normalized_levels = np.linspace(0, 1, len(reduced_data))
+    normalized_levels = np.linspace(0, 1, len(tab10_colors))
 
     # Create color scale of format [[level, color], ...]
     color_scale = [[level, color] for level, color in zip(normalized_levels, tab10_colors)]
@@ -868,15 +895,38 @@ def create_cluster_vector_plot(segment_vectors, cluster_labels, visualization, h
         )
 
     elif visualization == 'PC':
-        print(df.head())
-        fig = px.parallel_coordinates(
-            df,
-            color='Cluster-ID',
-            color_continuous_scale=color_scale,
-            # labels={"Cluster ID": "Cluster ID"},
-            dimensions=['Ce', 'Co', 'Fe', 'Gd', 'Cluster-ID'],
-            # hover_data=['Cluster ID', 'Segment ID'],
-            # color_discrete_sequence=tab10_colors
+        fig = go.Figure(data=
+            go.Parcoords(
+                line = dict(
+                            color = df['Cluster-ID'],
+                            colorscale = color_scale
+                        ),
+                dimensions = list([
+                    dict(
+                        # range = [0,8],
+                        # constraintrange = [4,8],
+                        label = 'Ce',
+                        values = df['Ce']
+                    ),
+                    dict(
+                        label = 'Co', 
+                        values = df['Co']
+                    ),
+                    dict(
+                        label = 'Fe', 
+                        values = df['Fe']
+                    ),
+                    dict(
+                        label = 'Gd', 
+                        values = df['Gd']
+                    ),
+                    dict(
+                        tickvals = np.arange(len(df['Cluster-ID'].unique())),
+                        label = 'Cluster ID', 
+                        values = df['Cluster-ID']
+                    )
+                ])
+            )
         )
 
         fig.update_layout(
