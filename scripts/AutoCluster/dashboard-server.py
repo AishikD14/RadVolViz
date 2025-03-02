@@ -351,8 +351,8 @@ def create_original_slice(axis, slice_num):
 # Function to create superpixels
 def create_superpixels(resized_image, input_image, num_superpixels):
     
-    segments, cluster_centers = custom_slic(resized_image, num_superpixels)
-    # segments = segmentation.slic(input_image, n_segments=num_superpixels, compactness=30, start_label=0)
+    # segments, cluster_centers = custom_slic(resized_image, num_superpixels)
+    segments = segmentation.slic(input_image, n_segments=num_superpixels, compactness=30, start_label=0)
 
     boundary_image = mark_boundaries(input_image, segments)
 
@@ -850,7 +850,13 @@ def create_cluster_vector_plot(segment_vectors, cluster_labels, visualization, h
         reduced_data = segment_vectors
 
         # Create a DataFrame for easier plotting
-        df = pd.DataFrame(reduced_data, columns=['Ce', 'Co', 'Fe', 'Gd'])
+        if 'enable' in autoencoder_checkbox:
+            latent_dim = reduced_data.shape[1]
+
+            df = pd.DataFrame(reduced_data, columns=[f'Latent Dimension {i+1}' for i in range(latent_dim)])
+
+        else:
+            df = pd.DataFrame(reduced_data, columns=['Ce', 'Co', 'Fe', 'Gd'])
 
     df['Cluster ID'] = cluster_labels
     # Convert Cluster ID to a string to ensure it's treated as categorical
@@ -895,39 +901,29 @@ def create_cluster_vector_plot(segment_vectors, cluster_labels, visualization, h
         )
 
     elif visualization == 'PC':
-        fig = go.Figure(data=
+
+        df.drop(columns=['Segment ID', 'Cluster ID'], inplace=True)
+
+        color_column = 'Cluster-ID'
+
+        # Generate dimensions dynamically from df, excluding the color column
+        dimensions = list([
+            dict(label=col, values=df[col]) 
+            if col != color_column 
+            else dict(label=col, values=df[col], tickvals=np.arange(len(df[color_column].unique())))
+            for col in df.columns
+        ])
+
+        # Create the figure dynamically
+        fig = go.Figure(data=[
             go.Parcoords(
-                line = dict(
-                    color = df['Cluster-ID'],
-                    colorscale = color_scale
+                line=dict(
+                    color=df[color_column], 
+                    colorscale=color_scale  
                 ),
-                dimensions = list([
-                    dict(
-                        # range = [0,8],
-                        # constraintrange = [4,8],
-                        label = 'Ce',
-                        values = df['Ce']
-                    ),
-                    dict(
-                        label = 'Co', 
-                        values = df['Co']
-                    ),
-                    dict(
-                        label = 'Fe', 
-                        values = df['Fe']
-                    ),
-                    dict(
-                        label = 'Gd', 
-                        values = df['Gd']
-                    ),
-                    dict(
-                        tickvals = np.arange(len(df['Cluster-ID'].unique())),
-                        label = 'Cluster ID', 
-                        values = df['Cluster-ID']
-                    )
-                ])
+                dimensions=dimensions
             )
-        )
+        ])
 
         fig.update_layout(
             font=dict(color="white")
