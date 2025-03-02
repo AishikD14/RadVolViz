@@ -898,9 +898,9 @@ def create_cluster_vector_plot(segment_vectors, cluster_labels, visualization, h
         fig = go.Figure(data=
             go.Parcoords(
                 line = dict(
-                            color = df['Cluster-ID'],
-                            colorscale = color_scale
-                        ),
+                    color = df['Cluster-ID'],
+                    colorscale = color_scale
+                ),
                 dimensions = list([
                     dict(
                         # range = [0,8],
@@ -1221,6 +1221,21 @@ app.layout = html.Div([
                         ],
                         value='Elbow'
                     ),
+
+                    # -------------------------------------------------------------------------------
+
+                    # Add break
+                    html.Br(),
+
+                    # -------------------------------------------------------------------------------
+
+                    # Add reset button
+                    html.Div(
+                        children=[
+                            html.Button('Reset', id='reset-button', n_clicks=0, style={'margin-top': '10px', 'margin-bottom': '10px', 'width': '20%', 'height': '40px', 'background-color': 'red', 'color': 'white'}),
+                        ],
+                        className='reset-button-container'
+                    )
                 
                 ],
                 className="control-panel"
@@ -1728,9 +1743,9 @@ def perform_clustering(jsonified_vector_data, clustering, cluster_number, autoen
 # Callback for updating vector plot with clustering
 @app.callback(
     Output('cluster-vector-plot', 'figure'),
-    [Input('vector-data', 'data'), Input('cluster-data', 'data'), Input('visualization-radio', 'value'), Input('superpixel-plot', 'hoverData'), Input('clustering-checkbox', 'value'), Input('autoencoder-checkbox', 'value'), Input('superpixel-data', 'data')]
+    [Input('vector-data', 'data'), Input('cluster-data', 'data'), Input('visualization-radio', 'value'), Input('superpixel-plot', 'hoverData'), Input('clustering-checkbox', 'value'), Input('autoencoder-checkbox', 'value'), Input('superpixel-data', 'data'), Input('cluster-vector-plot', 'restyleData')]
 )
-def update_cluster_vector_plot(jsonified_vector_data, jsonified_cluster_data, visualization, hover_data, checkbox_value, autoencoder_checkbox, jsonified_superpixel_data):
+def update_cluster_vector_plot(jsonified_vector_data, jsonified_cluster_data, visualization, hover_data, checkbox_value, autoencoder_checkbox, jsonified_superpixel_data, restyle_data):
     ctx_id = ctx.triggered_id.split('.')[0]
 
     if checkbox_value == [[]]:
@@ -1764,6 +1779,16 @@ def update_cluster_vector_plot(jsonified_vector_data, jsonified_cluster_data, vi
             print('Cluster vector plot ready in:', time.time() - start_time)
 
             return cluster_vector_plot_fig
+
+    elif ctx_id == 'cluster-vector-plot':
+        if restyle_data is not None:
+            for key, val in restyle_data[0].items():
+                if 'constraintrange' in key:
+                    print(restyle_data)
+                    # Extract dimension index and label
+                    dimension_index = int(key.split('[')[1].split(']')[0])
+                else:
+                    return dash.no_update
 
     else:
 
