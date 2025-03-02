@@ -574,10 +574,15 @@ def create_parallel_coordinates_plot(segment_vectors, segmentColorDict, hovered_
     if 'enable' in autoencoder_checkbox:
         segment_vectors = encoded_features
 
-    feature_array = ['Ce', 'Co', 'Fe', 'Gd']
+        latent_dim = segment_vectors.shape[1]
 
-    # Create a DataFrame for easier plotting
-    df_parallel = pd.DataFrame(segment_vectors, columns=[i for i in feature_array])
+        df_parallel = pd.DataFrame(segment_vectors, columns=[f'Latent Dimension {i+1}' for i in range(latent_dim)])
+
+    else:
+        feature_array = ['Ce', 'Co', 'Fe', 'Gd']
+
+        # Create a DataFrame for easier plotting
+        df_parallel = pd.DataFrame(segment_vectors, columns=[i for i in feature_array])
 
     # Add Segment ID column
     df_parallel['Segment ID'] = np.arange(len(segment_vectors))
@@ -595,41 +600,27 @@ def create_parallel_coordinates_plot(segment_vectors, segmentColorDict, hovered_
     # Create color scale of format [[level, color], ...]
     color_scale = [[level, color] for level, color in zip(normalized_levels, color_array)]
 
-    fig = go.Figure(data=
+    color_column = 'Segment ID'
+
+    # Generate dimensions dynamically from df, excluding the color column
+    dimensions = list([
+        dict(label=col, values=df_parallel[col]) 
+        if col != color_column 
+        else dict(label=col, values=df_parallel[col], tickvals=np.arange(0, len(df_parallel[color_column].unique()), 100))
+        for col in df_parallel.columns
+    ])
+
+    # Create the figure dynamically
+    fig = go.Figure(data=[
         go.Parcoords(
-            line = dict(
-                        color = df_parallel['Segment ID'],
-                        colorscale = color_scale
-                    ),
-            dimensions = list([
-                dict(
-                    # range = [0,8],
-                    # constraintrange = [4,8],
-                    label = 'Ce',
-                    values = df_parallel['Ce']
-                ),
-                dict(
-                    label = 'Co', 
-                    values = df_parallel['Co']
-                ),
-                dict(
-                    label = 'Fe', 
-                    values = df_parallel['Fe']
-                ),
-                dict(
-                    label = 'Gd', 
-                    values = df_parallel['Gd']
-                ),
-                dict(
-                    tickvals = np.arange(0, len(df_parallel['Segment ID'].unique()), 100),
-                    label = 'Segment ID', 
-                    values = df_parallel['Segment ID']
-                )
-            ])
+            line=dict(
+                color=df_parallel[color_column], 
+                colorscale=color_scale  
+            ),
+            dimensions=dimensions
         )
-    )
-
-
+    ])
+    
     fig.update_layout(
         font=dict(color="white")
     )
