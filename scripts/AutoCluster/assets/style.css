@@ -76,4 +76,19 @@ body{
     display: flex;
     justify-content: center;
     margin-top: 10px;
+    margin-bottom: 10px;
+}
+#reset-button{
+    background-color: #F0AD4E ;
+    font-weight: bold;
+    font-size: 16px;
+    color: black;
+    height: 40px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, box-shadow 0.2s ease;
+}
+/* Hover effect */
+#reset-button:hover {
+    background-color: #C62828; /* Darker red on hover */
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2);
 }

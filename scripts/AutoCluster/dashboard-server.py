@@ -1232,7 +1232,7 @@ app.layout = html.Div([
                     # Add reset button
                     html.Div(
                         children=[
-                            html.Button('Reset', id='reset-button', n_clicks=0, style={'margin-top': '10px', 'margin-bottom': '10px', 'width': '20%', 'height': '40px', 'background-color': 'red', 'color': 'white'}),
+                            html.Button('Reset Dashboard', id='reset-button', n_clicks=0),
                         ],
                         className='reset-button-container'
                     )
@@ -1787,8 +1787,6 @@ def update_cluster_vector_plot(jsonified_vector_data, jsonified_cluster_data, vi
                     print(restyle_data)
                     # Extract dimension index and label
                     dimension_index = int(key.split('[')[1].split(']')[0])
-                else:
-                    return dash.no_update
 
     else:
 
