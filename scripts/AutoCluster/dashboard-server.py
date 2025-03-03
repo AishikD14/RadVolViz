@@ -28,6 +28,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import pickle
+from dash_extensions.enrich import DashProxy, MultiplexerTransform
 
 # Ignore warnings
 warnings.filterwarnings("ignore")
@@ -620,7 +621,7 @@ def create_parallel_coordinates_plot(segment_vectors, segmentColorDict, hovered_
             dimensions=dimensions
         )
     ])
-    
+
     fig.update_layout(
         font=dict(color="white")
     )
@@ -1055,7 +1056,8 @@ def setup_model(input_dimension):
 # -------------------------------------------------------------------------------
 
 # Initialize Dash app
-app = dash.Dash(__name__)
+# app = dash.Dash(__name__)
+app = DashProxy(__name__, transforms=[MultiplexerTransform()])
 
 # Layout of the app
 app.layout = html.Div([
@@ -1529,18 +1531,18 @@ def update_superpixel_plot(jsonified_slice_data, hover_data1, hover_data2, num_s
 # Callback for Vector Space Visualization Plot
 @app.callback(
     [Output('vector-plot', 'figure'), Output('vector-data', 'data')],
-    [Input('slice-data', 'data'), Input('superpixel-data', 'data'), Input('visualization-radio', 'value'), Input('superpixel-plot', 'hoverData'), Input('clustering-checkbox', 'value'), Input('autoencoder-checkbox', 'value')],
+    [Input('slice-data', 'data'), Input('superpixel-data', 'data'), Input('visualization-radio', 'value'), Input('superpixel-plot', 'hoverData'), Input('clustering-checkbox', 'value'), Input('autoencoder-checkbox', 'value'), Input('vector-plot', 'restyleData')],
     [State('vector-data', 'data')]
 )
-def update_vector_plot(jsonified_slice_data, jsonified_superpixel_data, visualization, hover_data, checkbox_value, autoencoder_checkbox, jsonified_vector_data):
-    ctx_id = ctx.triggered_id.split('.')[0]
-
+def update_vector_plot(jsonified_slice_data, jsonified_superpixel_data, visualization, hover_data, checkbox_value, autoencoder_checkbox, restyle_data, jsonified_vector_data):
     if checkbox_value == [['enable']]:
         return dash.no_update, dash.no_update
     
     print("--------------------------------")
     print("Updating vector plot...")
     start_time = time.time()
+
+    ctx_id = ctx.triggered_id.split('.')[0]
 
     if ctx_id == 'superpixel-plot':
         vector_data = json.loads(jsonified_vector_data)
@@ -1580,6 +1582,16 @@ def update_vector_plot(jsonified_slice_data, jsonified_superpixel_data, visualiz
             print('Vector plot ready in:', time.time() - start_time)
 
             return vector_space_fig, dash.no_update
+
+    elif ctx_id == 'vector-plot':
+        if restyle_data is not None:
+            for key, val in restyle_data[0].items():
+                if 'constraintrange' in key:
+                    print(restyle_data)
+                    # Extract dimension index and label
+                    dimension_index = int(key.split('[')[1].split(']')[0])
+                    print(dimension_index)
+                    return dash.no_update, dash.no_update
 
     slice_data = json.loads(jsonified_slice_data)
     superpixel_data = json.loads(jsonified_superpixel_data)
@@ -1818,6 +1830,18 @@ def update_final_plot(jsonified_cluster_data, jsonified_slice_data, jsonified_su
     print('Final segmented slice ready in:', time.time() - start_time)
 
     return final_fig
+
+# -------------------------------------------------------------------------------
+
+# Callback for resetting the dashboard
+@app.callback(
+    [Output('axis-radio', 'value'), Output('slice-slider', 'value'), Output('cluster-number', 'data'), Output('visualization-radio', 'value'), Output('cluster-stats-radio', 'value'), Output('clustering-radio', 'value')],
+    [Input('reset-button', 'n_clicks')],
+    prevent_initial_call=True
+)
+def reset_dashboard(n_clicks):
+    if n_clicks > 0:
+        return "x", 130, 5, "tsne", "Elbow", "kmeans"
 
 # -------------------------------------------------------------------------------
 
