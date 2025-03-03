@@ -15,7 +15,7 @@ from sklearn.manifold import TSNE
 import plotly.express as px
 import plotly.graph_objects as go
 import dash
-from dash import dcc, html, Input, Output, State, ctx
+from dash import dcc, html, Input, Output, State, ctx, ClientsideFunction
 from scipy.spatial.distance import cdist
 from scipy.signal import find_peaks
 import pandas as pd
@@ -1103,7 +1103,7 @@ app.layout = html.Div([
                         marks={45: str(45), 160: str(160)}
                     ),
                     # Display selected slice number
-                    html.Div(id='selected-slice-output', style={'font-size': '15px', 'margin-top': '10px'}),
+                    html.Div(id='selected-slice-output'),
 
                     # -------------------------------------------------------------------------------
 
@@ -1118,7 +1118,6 @@ app.layout = html.Div([
                         id='superpixel-input',
                         type='number',
                         value=450,
-                        style={'width': '10%', 'margin-left': '7px', 'margin-bottom': '10px'},
                         min=100,
                         max=600
                     ),
@@ -1248,7 +1247,10 @@ app.layout = html.Div([
                                         id="loading-spinner1",  # Wrapper to show loading spinner
                                         type="circle",  # Choose the spinner type (circle, dot, default)
                                         children=[
-                                            dcc.Graph(id="slice-plot")  # Graph component wrapped in the loading spinner
+                                            dcc.Graph(
+                                                id="slice-plot",
+                                                className="slice-plot-class",    
+                                            )  # Graph component wrapped in the loading spinner
                                         ]
                                     ),
                                 ],
@@ -1267,6 +1269,7 @@ app.layout = html.Div([
                                         children=[
                                             dcc.Graph(
                                                 id="superpixel-plot",
+                                                className="superpixel-plot-class",
                                                 clear_on_unhover=True
                                             )
                                         ]
@@ -1288,7 +1291,8 @@ app.layout = html.Div([
                                     html.Div(
                                         children=[
                                             dcc.Graph(
-                                                id='final-plot'
+                                                id='final-plot',
+                                                className="final-plot-class",
                                             ),
                                         ],
                                     ),
@@ -1316,6 +1320,7 @@ app.layout = html.Div([
                                         children=[
                                             dcc.Graph(
                                                 id="vector-plot",
+                                                className="vector-plot-class",
                                                 clear_on_unhover=True
                                             ),  # Graph component wrapped in the loading spinner
                                         ]
@@ -1336,6 +1341,7 @@ app.layout = html.Div([
                                         children=[
                                             dcc.Graph(
                                                 id="cluster-vector-plot",
+                                                className="cluster-vector-plot-class",
                                                 clear_on_unhover=True
                                             )  # Graph component wrapped in the loading spinner
                                         ]
@@ -1354,7 +1360,10 @@ app.layout = html.Div([
                                         id="loading-spinner5",  # Wrapper to show loading spinner
                                         type="circle",  # Choose the spinner type (circle, dot, default)
                                         children=[
-                                            dcc.Graph(id="elbow-plot")  # Graph component wrapped in the loading spinner
+                                            dcc.Graph(
+                                                id="elbow-plot",
+                                                className="elbow-plot-class",
+                                            )  # Graph component wrapped in the loading spinner
                                         ]
                                     ),
                                 ],
@@ -1372,6 +1381,9 @@ app.layout = html.Div([
         style={'display': 'flex'}
     ),
 
+    # Dummy Div to store intermediate data
+    html.Div(id='dummy', style={'display': 'none'}),
+
     # -------------------------------------------------------------------------------
 
     # Hidden store to hold intermediate data
@@ -1380,6 +1392,7 @@ app.layout = html.Div([
     dcc.Store(id='vector-data'),
     dcc.Store(id='cluster-data'),
     dcc.Store(id='cluster-number', data=5),
+    dcc.Store(id='class-tracker'),
 ])
 
 # -------------------------------------------------------------------------------
@@ -1396,7 +1409,7 @@ def update_slice_display(slice_value):
 
 # Callback for Slice Plot
 @app.callback(
-    [Output('slice-plot', 'figure'), Output('slice-data', 'data')],
+    [Output('slice-plot', 'figure'), Output('slice-data', 'data'), Output('class-tracker', 'data')],
     [Input('axis-radio', 'value'), Input('slice-slider', 'value')]
 )
 def update_slice_plot(axis, slice_num):
@@ -1407,13 +1420,13 @@ def update_slice_plot(axis, slice_num):
     original_slice_fig, resized_image, input_image = create_original_slice(axis, slice_num)
     
     print('Slice plot ready in:', time.time() - start_time)
-    return original_slice_fig, json.dumps({'resized_image': resized_image.tolist(), 'input_image': input_image.tolist()})
+    return original_slice_fig, json.dumps({'resized_image': resized_image.tolist(), 'input_image': input_image.tolist()}), ".slice-plot-class"
 
 # -------------------------------------------------------------------------------
 
 # Callback for Superpixel Plot
 @app.callback(
-    [Output('superpixel-plot', 'figure'), Output('superpixel-data', 'data'), Output('clustering-checkbox', 'value')],
+    [Output('superpixel-plot', 'figure'), Output('superpixel-data', 'data'), Output('clustering-checkbox', 'value'), Output('class-tracker', 'data')],
     [Input('slice-data', 'data'), Input('vector-plot', 'hoverData'), Input('cluster-vector-plot', 'hoverData'), Input('superpixel-input', 'value')],
     State('superpixel-data', 'data')
 )
@@ -1462,7 +1475,7 @@ def update_superpixel_plot(jsonified_slice_data, hover_data1, hover_data2, num_s
 
                 print('Superpixel plot ready in:', time.time() - start_time)
 
-                return superpixel_fig, dash.no_update, dash.no_update
+                return superpixel_fig, dash.no_update, dash.no_update, dash.no_update
         
         else:
             if ctx_id == 'vector-plot':
@@ -1489,7 +1502,7 @@ def update_superpixel_plot(jsonified_slice_data, hover_data1, hover_data2, num_s
 
                 print('Superpixel plot ready in:', time.time() - start_time)
 
-                return superpixel_fig, dash.no_update, dash.no_update
+                return superpixel_fig, dash.no_update, dash.no_update, dash.no_update
                 
     else:
 
@@ -1524,19 +1537,19 @@ def update_superpixel_plot(jsonified_slice_data, hover_data1, hover_data2, num_s
         
         print('Superpixel plot ready in:', time.time() - start_time)
 
-        return superpixel_fig, json.dumps({'segments': segments.tolist(), 'image': boundary_image.tolist(), 'trace_info': trace_info, 'encoded_features': encoded_features.tolist()}), []
+        return superpixel_fig, json.dumps({'segments': segments.tolist(), 'image': boundary_image.tolist(), 'trace_info': trace_info, 'encoded_features': encoded_features.tolist()}), [], ".superpixel-plot-class"
 
 # -------------------------------------------------------------------------------
 
 # Callback for Vector Space Visualization Plot
 @app.callback(
-    [Output('vector-plot', 'figure'), Output('vector-data', 'data')],
+    [Output('vector-plot', 'figure'), Output('vector-data', 'data'), Output('class-tracker', 'data')],
     [Input('slice-data', 'data'), Input('superpixel-data', 'data'), Input('visualization-radio', 'value'), Input('superpixel-plot', 'hoverData'), Input('clustering-checkbox', 'value'), Input('autoencoder-checkbox', 'value'), Input('vector-plot', 'restyleData')],
     [State('vector-data', 'data')]
 )
 def update_vector_plot(jsonified_slice_data, jsonified_superpixel_data, visualization, hover_data, checkbox_value, autoencoder_checkbox, restyle_data, jsonified_vector_data):
     if checkbox_value == [['enable']]:
-        return dash.no_update, dash.no_update
+        return dash.no_update, dash.no_update, dash.no_update
     
     print("--------------------------------")
     print("Updating vector plot...")
@@ -1565,7 +1578,7 @@ def update_vector_plot(jsonified_slice_data, jsonified_superpixel_data, visualiz
 
             print('Vector plot ready in:', time.time() - start_time)
 
-            return vector_space_fig, dash.no_update
+            return vector_space_fig, dash.no_update, dash.no_update
 
         else:
             hovered_segment_id = int(hover_data['points'][0]['text'])
@@ -1581,7 +1594,7 @@ def update_vector_plot(jsonified_slice_data, jsonified_superpixel_data, visualiz
 
             print('Vector plot ready in:', time.time() - start_time)
 
-            return vector_space_fig, dash.no_update
+            return vector_space_fig, dash.no_update, dash.no_update
 
     elif ctx_id == 'vector-plot':
         if restyle_data is not None:
@@ -1590,8 +1603,7 @@ def update_vector_plot(jsonified_slice_data, jsonified_superpixel_data, visualiz
                     print(restyle_data)
                     # Extract dimension index and label
                     dimension_index = int(key.split('[')[1].split(']')[0])
-                    print(dimension_index)
-                    return dash.no_update, dash.no_update
+                    return dash.no_update, dash.no_update, dash.no_update
 
     slice_data = json.loads(jsonified_slice_data)
     superpixel_data = json.loads(jsonified_superpixel_data)
@@ -1646,13 +1658,13 @@ def update_vector_plot(jsonified_slice_data, jsonified_superpixel_data, visualiz
 
     stored_data = {int(key): value.tolist() for key, value in segmentColorDict.items()}
     # return vector_space_fig, json.dumps({'segment_vectors': segment_vectors.tolist(), 'reduced_data': reduced_data.tolist(), 'segmentColorDict': stored_data})
-    return vector_space_fig, json.dumps({'segment_vectors': segment_vectors.tolist(), 'segmentColorDict': stored_data})
+    return vector_space_fig, json.dumps({'segment_vectors': segment_vectors.tolist(), 'segmentColorDict': stored_data}), ".vector-plot-class"
 
 # -------------------------------------------------------------------------------
 
 # Callback for Cluster Stats Plot
 @app.callback(
-    [Output('elbow-plot', 'figure'), Output('cluster-number', 'data'), Output('cluster-stats-label', 'children')],
+    [Output('elbow-plot', 'figure'), Output('cluster-number', 'data'), Output('cluster-stats-label', 'children'), Output('class-tracker', 'data')],
     [Input('vector-data', 'data'), Input('clustering-radio', 'value'), Input('elbow-plot', 'clickData'), Input('cluster-stats-radio', 'value'), Input('autoencoder-checkbox', 'value')],
     [State('cluster-number', 'data'), State('superpixel-data', 'data')]
 )
@@ -1677,7 +1689,7 @@ def update_cluster_stats_plot(jsonified_vector_data, clustering, click_data, clu
 
         if cluster_number == cluster_number_data:
             print('Cluster stats plot ready in:', time.time() - start_time)
-            return dash.no_update, dash.no_update, dash.no_update
+            return dash.no_update, dash.no_update, dash.no_update, dash.no_update
         
         else:
             final_cluster_number_data = cluster_number
@@ -1692,9 +1704,9 @@ def update_cluster_stats_plot(jsonified_vector_data, clustering, click_data, clu
     print('Cluster stats plot ready in:', time.time() - start_time)
 
     if cluster_number_data == final_cluster_number_data:
-        return elbow_fig, dash.no_update, plot_label
+        return elbow_fig, dash.no_update, plot_label, ".elbow-plot-class"
     else:
-        return elbow_fig, final_cluster_number_data, plot_label
+        return elbow_fig, final_cluster_number_data, plot_label, ".elbow-plot-class"
 
 # -------------------------------------------------------------------------------
 
@@ -1741,14 +1753,14 @@ def perform_clustering(jsonified_vector_data, clustering, cluster_number, autoen
 
 # Callback for updating vector plot with clustering
 @app.callback(
-    Output('cluster-vector-plot', 'figure'),
+    [Output('cluster-vector-plot', 'figure'), Output('class-tracker', 'data')],
     [Input('vector-data', 'data'), Input('cluster-data', 'data'), Input('visualization-radio', 'value'), Input('superpixel-plot', 'hoverData'), Input('clustering-checkbox', 'value'), Input('autoencoder-checkbox', 'value'), Input('superpixel-data', 'data'), Input('cluster-vector-plot', 'restyleData')]
 )
 def update_cluster_vector_plot(jsonified_vector_data, jsonified_cluster_data, visualization, hover_data, checkbox_value, autoencoder_checkbox, jsonified_superpixel_data, restyle_data):
     ctx_id = ctx.triggered_id.split('.')[0]
 
     if checkbox_value == [[]]:
-        return dash.no_update
+        return dash.no_update, dash.no_update
     
     print("--------------------------------")
     print("Updating cluster vector plot...")
@@ -1769,7 +1781,7 @@ def update_cluster_vector_plot(jsonified_vector_data, jsonified_cluster_data, vi
 
             print('Cluster vector plot ready in:', time.time() - start_time)
 
-            return cluster_vector_plot_fig
+            return cluster_vector_plot_fig, dash.no_update
         else:
             hovered_segment_id = int(hover_data['points'][0]['text'])
 
@@ -1777,7 +1789,7 @@ def update_cluster_vector_plot(jsonified_vector_data, jsonified_cluster_data, vi
 
             print('Cluster vector plot ready in:', time.time() - start_time)
 
-            return cluster_vector_plot_fig
+            return cluster_vector_plot_fig, dash.no_update
 
     elif ctx_id == 'cluster-vector-plot':
         if restyle_data is not None:
@@ -1786,20 +1798,21 @@ def update_cluster_vector_plot(jsonified_vector_data, jsonified_cluster_data, vi
                     print(restyle_data)
                     # Extract dimension index and label
                     dimension_index = int(key.split('[')[1].split(']')[0])
-
+                    return dash.no_update, dash.no_update
+                
     else:
 
         cluster_vector_plot_fig = create_cluster_vector_plot(segment_vectors, cluster_labels, visualization, None, encoded_features, autoencoder_checkbox)
 
         print('Cluster vector plot ready in:', time.time() - start_time)
 
-        return cluster_vector_plot_fig
+        return cluster_vector_plot_fig, ".cluster-vector-plot-class"
 
 # -------------------------------------------------------------------------------
 
 # Callback for Final Segmented Slice
 @app.callback(
-    Output('final-plot', 'figure'),
+    [Output('final-plot', 'figure'), Output('class-tracker', 'data')],
     [Input('cluster-data', 'data'), Input('slice-data', 'data'), Input('superpixel-data', 'data')]
 )
 def update_final_plot(jsonified_cluster_data, jsonified_slice_data, jsonified_superpixel_data):
@@ -1829,19 +1842,29 @@ def update_final_plot(jsonified_cluster_data, jsonified_slice_data, jsonified_su
 
     print('Final segmented slice ready in:', time.time() - start_time)
 
-    return final_fig
+    return final_fig, ".final-plot-class"
 
 # -------------------------------------------------------------------------------
 
 # Callback for resetting the dashboard
 @app.callback(
-    [Output('axis-radio', 'value'), Output('slice-slider', 'value'), Output('cluster-number', 'data'), Output('visualization-radio', 'value'), Output('cluster-stats-radio', 'value'), Output('clustering-radio', 'value')],
+    [Output('axis-radio', 'value'), Output('slice-slider', 'value'), Output('cluster-number', 'data'), Output('visualization-radio', 'value'), Output('cluster-stats-radio', 'value'), Output('clustering-radio', 'value'), Output('autoencoder-checkbox', 'value'), Output('clustering-checkbox', 'value')],
     [Input('reset-button', 'n_clicks')],
     prevent_initial_call=True
 )
 def reset_dashboard(n_clicks):
     if n_clicks > 0:
-        return "x", 130, 5, "tsne", "Elbow", "kmeans"
+        return "x", 130, 5, "tsne", "Elbow", "kmeans", [], []
+
+# -------------------------------------------------------------------------------
+
+# Clientside callback to trigger JavaScript
+app.clientside_callback(
+    ClientsideFunction(namespace="clientside", function_name="changeStyle"),
+    Output("dummy", "children"),  # Dummy output
+    Input("class-tracker", "data"),
+    prevent_initial_call=True
+)
 
 # -------------------------------------------------------------------------------
 
