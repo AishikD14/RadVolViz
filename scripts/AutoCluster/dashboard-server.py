@@ -1427,10 +1427,10 @@ def update_slice_plot(axis, slice_num):
 # Callback for Superpixel Plot
 @app.callback(
     [Output('superpixel-plot', 'figure'), Output('superpixel-data', 'data'), Output('clustering-checkbox', 'value'), Output('class-tracker', 'data'), Output('vector-data', 'data')],
-    [Input('slice-data', 'data'), Input('vector-plot', 'hoverData'), Input('cluster-vector-plot', 'hoverData'), Input('superpixel-input', 'value'), Input('vector-plot', 'restyleData')],
-    [State('superpixel-data', 'data'), State('autoencoder-checkbox', 'value'), State('vector-data', 'data')]
+    [Input('slice-data', 'data'), Input('vector-plot', 'hoverData'), Input('cluster-vector-plot', 'hoverData'), Input('superpixel-input', 'value'), Input('vector-plot', 'restyleData'), Input('visualization-radio', 'value')],
+    [State('superpixel-data', 'data'), State('vector-data', 'data')]
 )
-def update_superpixel_plot(jsonified_slice_data, hover_data1, hover_data2, num_superpixels, restyle_data, jsonified_superpixel_data, autoencoder_checkbox, jsonified_vector_data):
+def update_superpixel_plot(jsonified_slice_data, hover_data1, hover_data2, num_superpixels, restyle_data, visualization, jsonified_superpixel_data, jsonified_vector_data):
     print("--------------------------------")
     print("Updating superpixel plot...")
     start_time = time.time()
@@ -1439,7 +1439,7 @@ def update_superpixel_plot(jsonified_slice_data, hover_data1, hover_data2, num_s
 
     if ctx_id == 'vector-plot' or ctx_id == 'cluster-vector-plot':
 
-        if restyle_data is not None:
+        if visualization == "PC" and restyle_data is not None:
             for key, val in restyle_data[0].items():
                 if 'constraintrange' in key:
                     print(restyle_data)
@@ -1575,7 +1575,51 @@ def update_superpixel_plot(jsonified_slice_data, hover_data1, hover_data2, num_s
                 print('Superpixel plot ready in:', time.time() - start_time)
 
                 return superpixel_fig, dash.no_update, dash.no_update, dash.no_update, dash.no_update
-                
+
+    elif ctx_id == 'visualization-radio':
+        vector_data = json.loads(jsonified_vector_data)
+        filters = vector_data['filters']
+
+        if filters == {}:
+            return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
+
+        # Clear data selection from superpixel plot
+        superpixel_data = json.loads(jsonified_superpixel_data)
+
+        segments = np.array(superpixel_data['segments'])
+        boundary_image = np.array(superpixel_data['image'])
+        segment_coords = superpixel_data['trace_info']['segment_coords']
+        segment_ids = superpixel_data['trace_info']['segment_ids']
+        segment_ids = [np.int32(num) for num in segment_ids]
+
+        # Create a Plotly scatter plot for segment IDs at each pixel location
+        scatter_trace = {
+            'x': [coord[1] for coord in segment_coords],  # x-coordinates (columns)
+            'y': [coord[0] for coord in segment_coords],  # y-coordinates (rows)
+            'mode': 'markers',
+            'marker': {'color': 'rgba(0, 0, 0, 0)', 'size': 1},  # Invisible markers
+            'text': [seg_id for seg_id in segment_ids],  # Text for hover
+            'hovertemplate': '<b>%{text}</b><extra></extra>',  # Custom hover template to show the segment ID
+        }
+
+        # Create a plotly figure
+        superpixel_fig = px.imshow(boundary_image)
+
+        # Add the scatter trace to the figure
+        superpixel_fig.add_traces([scatter_trace])
+
+        # Update the layout of the figure
+        superpixel_fig.update_layout(
+            margin=dict(l=0, r=0, b=0, t=0),
+            xaxis=dict(visible=False),
+            yaxis=dict(visible=False),
+            coloraxis_showscale=False
+        )
+
+        print('Superpixel plot ready in:', time.time() - start_time)
+
+        return superpixel_fig, dash.no_update, dash.no_update, dash.no_update, dash.no_update
+
     else:
 
         slice_data = json.loads(jsonified_slice_data)
