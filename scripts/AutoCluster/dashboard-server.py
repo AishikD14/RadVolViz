@@ -967,7 +967,7 @@ def create_cluster_vector_plot(segment_vectors, cluster_labels, visualization, h
                 )
             )
 
-    return fig
+    return fig, df
 
 # Function to create final segmented slice
 def create_final_image(cluster_labels, cluster_color_dict, resized_image, segments):
@@ -1413,7 +1413,7 @@ def update_slice_display(slice_value):
     [Input('axis-radio', 'value'), Input('slice-slider', 'value')]
 )
 def update_slice_plot(axis, slice_num):
-    print("--------------------------------")
+    print("------------------------------------------------------------------------------------------------------------")
     print("Updating slice plot...")
     start_time = time.time()
     
@@ -1427,10 +1427,10 @@ def update_slice_plot(axis, slice_num):
 # Callback for Superpixel Plot
 @app.callback(
     [Output('superpixel-plot', 'figure'), Output('superpixel-data', 'data'), Output('clustering-checkbox', 'value'), Output('class-tracker', 'data'), Output('vector-data', 'data')],
-    [Input('slice-data', 'data'), Input('vector-plot', 'hoverData'), Input('cluster-vector-plot', 'hoverData'), Input('superpixel-input', 'value'), Input('vector-plot', 'restyleData'), Input('visualization-radio', 'value')],
+    [Input('slice-data', 'data'), Input('vector-plot', 'hoverData'), Input('cluster-vector-plot', 'hoverData'), Input('superpixel-input', 'value'), Input('vector-plot', 'restyleData'), Input('cluster-vector-plot', 'restyleData'), Input('visualization-radio', 'value'), Input('clustering-checkbox', 'value'), Input('autoencoder-checkbox', 'value')],
     [State('superpixel-data', 'data'), State('vector-data', 'data')]
 )
-def update_superpixel_plot(jsonified_slice_data, hover_data1, hover_data2, num_superpixels, restyle_data, visualization, jsonified_superpixel_data, jsonified_vector_data):
+def update_superpixel_plot(jsonified_slice_data, hover_data1, hover_data2, num_superpixels, restyle_data1, restyle_data2, visualization, clustering_checkbox, autoencoder_checkbox, jsonified_superpixel_data, jsonified_vector_data):
     print("--------------------------------")
     print("Updating superpixel plot...")
     start_time = time.time()
@@ -1439,77 +1439,83 @@ def update_superpixel_plot(jsonified_slice_data, hover_data1, hover_data2, num_s
 
     if ctx_id == 'vector-plot' or ctx_id == 'cluster-vector-plot':
 
-        if visualization == "PC" and restyle_data is not None:
-            for key, val in restyle_data[0].items():
-                if 'constraintrange' in key:
-                    print(restyle_data)
+        if visualization == "PC":
+            if restyle_data1 is not None or restyle_data2 is not None:
+                if restyle_data1 is not None and ctx_id == 'vector-plot':
+                    restyle_data = restyle_data1
+                elif restyle_data2 is not None and ctx_id == 'cluster-vector-plot':
+                    restyle_data = restyle_data2
 
-                    vector_data = json.loads(jsonified_vector_data)
-                    superpixel_data = json.loads(jsonified_superpixel_data)
+                for key, val in restyle_data[0].items():
+                    if 'constraintrange' in key:
+                        print(restyle_data)
 
-                    segments = np.array(superpixel_data['segments'])
-                    highlighted_image = np.array(superpixel_data['image'])
+                        vector_data = json.loads(jsonified_vector_data)
+                        superpixel_data = json.loads(jsonified_superpixel_data)
 
-                    # Retrieve DataFrame
-                    df_original = pd.read_json(vector_data["dataframe"], orient="split")
-                    updated_filters = vector_data["filters"].copy()
+                        segments = np.array(superpixel_data['segments'])
+                        highlighted_image = np.array(superpixel_data['image'])
 
-                    # Extract dimension index and label
-                    dimension_index = int(key.split('[')[1].split(']')[0])
-                    dimension_label = df_original.columns[dimension_index]
+                        # Retrieve DataFrame
+                        df_original = pd.read_json(vector_data["dataframe"], orient="split")
+                        updated_filters = vector_data["filters"].copy()
 
-                    if val is None or val == []:  # If filter is removed, delete it
-                        updated_filters.pop(dimension_label, None)
-                    else:
-                        updated_filters[dimension_label] = val[0]
+                        # Extract dimension index and label
+                        dimension_index = int(key.split('[')[1].split(']')[0])
+                        dimension_label = df_original.columns[dimension_index]
 
-                    print(updated_filters)
-
-                    # Filter the DataFrame based on the updated filters
-                    filtered_df  = df_original.copy()
-
-                    print("Applying filters...")
-
-                    # Apply all active filters
-                    for column_name, filter_ranges in updated_filters.items():
-                        print("Filter ranges", filter_ranges)
-
-                        multiple_filter = False
-
-                        if isinstance(filter_ranges[0], list):
-                            multiple_filter = True
-
-                        if multiple_filter:
-                            # Take into account multiple filters for the same column
-                            mask = np.zeros(len(filtered_df), dtype=bool)
-                            for filter in filter_ranges:
-                                mask |= (filtered_df[column_name] >= filter[0]) & (filtered_df[column_name] <= filter[1])
-                                
+                        if val is None or val == []:  # If filter is removed, delete it
+                            updated_filters.pop(dimension_label, None)
                         else:
-                            mask = (filtered_df[column_name] >= filter_ranges[0]) & (filtered_df[column_name] <= filter_ranges[1])
-                            
-                        filtered_df = filtered_df[mask]
+                            updated_filters[dimension_label] = val[0]
 
-                    # Extract the segment IDs
-                    segment_ids = filtered_df['Segment ID'].tolist()
+                        print(updated_filters)
 
-                    highlighted_image[~np.isin(segments, segment_ids)] *= 0.3  # Dim non-selected segments
+                        # Filter the DataFrame based on the updated filters
+                        filtered_df  = df_original.copy()
 
-                    # Create a new figure with highlighted segment
-                    superpixel_fig = px.imshow(highlighted_image)
-                    superpixel_fig.update_layout(
-                        margin=dict(l=27, r=27, b=27, t=27),
-                        xaxis=dict(visible=False),
-                        yaxis=dict(visible=False),
-                        coloraxis_showscale=False
-                    )
+                        print("Applying filters...")
 
-                    print('Superpixel plot ready in:', time.time() - start_time)
+                        # Apply all active filters
+                        for column_name, filter_ranges in updated_filters.items():
+                            print("Filter ranges", filter_ranges)
 
-                    # Create vector_data JSON
-                    vector_data["filters"] = updated_filters
+                            multiple_filter = False
 
-                    return superpixel_fig, dash.no_update, dash.no_update, dash.no_update, json.dumps(vector_data)
+                            if isinstance(filter_ranges[0], list):
+                                multiple_filter = True
+
+                            if multiple_filter:
+                                # Take into account multiple filters for the same column
+                                mask = np.zeros(len(filtered_df), dtype=bool)
+                                for filter in filter_ranges:
+                                    mask |= (filtered_df[column_name] >= filter[0]) & (filtered_df[column_name] <= filter[1])
+                                    
+                            else:
+                                mask = (filtered_df[column_name] >= filter_ranges[0]) & (filtered_df[column_name] <= filter_ranges[1])
+                                
+                            filtered_df = filtered_df[mask]
+
+                        # Extract the segment IDs
+                        segment_ids = filtered_df['Segment ID'].tolist()
+
+                        highlighted_image[~np.isin(segments, segment_ids)] *= 0.3  # Dim non-selected segments
+
+                        # Create a new figure with highlighted segment
+                        superpixel_fig = px.imshow(highlighted_image)
+                        superpixel_fig.update_layout(
+                            margin=dict(l=27, r=27, b=27, t=27),
+                            xaxis=dict(visible=False),
+                            yaxis=dict(visible=False),
+                            coloraxis_showscale=False
+                        )
+
+                        print('Superpixel plot ready in:', time.time() - start_time)
+
+                        # Create vector_data JSON
+                        vector_data["filters"] = updated_filters
+
+                        return superpixel_fig, dash.no_update, dash.no_update, dash.no_update, json.dumps(vector_data)
 
         if hover_data1 is None and hover_data2 is None:
             if jsonified_superpixel_data is not None:
@@ -1576,11 +1582,12 @@ def update_superpixel_plot(jsonified_slice_data, hover_data1, hover_data2, num_s
 
                 return superpixel_fig, dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
-    elif ctx_id == 'visualization-radio':
+    elif ctx_id == 'visualization-radio' or ctx_id == 'clustering-checkbox' or ctx_id == 'autoencoder-checkbox':
         vector_data = json.loads(jsonified_vector_data)
         filters = vector_data['filters']
 
         if filters == {}:
+            print('Superpixel plot ready in:', time.time() - start_time)
             return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
         # Clear data selection from superpixel plot
@@ -1664,7 +1671,7 @@ def update_superpixel_plot(jsonified_slice_data, hover_data1, hover_data2, num_s
     [State('vector-data', 'data')]
 )
 def update_vector_plot(jsonified_slice_data, jsonified_superpixel_data, visualization, hover_data, checkbox_value, autoencoder_checkbox, jsonified_vector_data):
-    if checkbox_value == [['enable']]:
+    if checkbox_value == ['enable']:
         return dash.no_update, dash.no_update, dash.no_update
     
     print("--------------------------------")
@@ -1834,17 +1841,20 @@ def enable_clustering(checkbox_value):
 # Callback for performing clustering
 @app.callback(
     Output('cluster-data', 'data'),
-    [Input('vector-data', 'data'), Input('clustering-radio', 'value'), Input('cluster-number', 'data'), Input('autoencoder-checkbox', 'value')],
-    State('superpixel-data', 'data'),
+    [Input('clustering-radio', 'value'), Input('cluster-number', 'data'), Input('autoencoder-checkbox', 'value'), Input('clustering-checkbox', 'value')],
+    [State('superpixel-data', 'data'), State('vector-data', 'data')],
     prevent_initial_call=True
 )
-def perform_clustering(jsonified_vector_data, clustering, cluster_number, autoencoder_checkbox, jsonified_superpixel_data):
-    vector_data = json.loads(jsonified_vector_data)
-    superpixel_data = json.loads(jsonified_superpixel_data)
-
+def perform_clustering(clustering, cluster_number, autoencoder_checkbox, clustering_checkbox, jsonified_superpixel_data, jsonified_vector_data):
+    if jsonified_superpixel_data is None or jsonified_vector_data is None:
+        return dash.no_update
+    
     print("--------------------------------")
     print("Performing clustering...")
     start_time = time.time()
+
+    vector_data = json.loads(jsonified_vector_data)
+    superpixel_data = json.loads(jsonified_superpixel_data)
 
     # Convert stored lists back to numpy arrays
     segment_vectors = np.array(vector_data['segment_vectors'])
@@ -1863,21 +1873,22 @@ def perform_clustering(jsonified_vector_data, clustering, cluster_number, autoen
 # Callback for updating vector plot with clustering
 @app.callback(
     [Output('cluster-vector-plot', 'figure'), Output('class-tracker', 'data')],
-    [Input('vector-data', 'data'), Input('cluster-data', 'data'), Input('visualization-radio', 'value'), Input('superpixel-plot', 'hoverData'), Input('clustering-checkbox', 'value'), Input('autoencoder-checkbox', 'value'), Input('superpixel-data', 'data'), Input('cluster-vector-plot', 'restyleData')],
+    [Input('cluster-data', 'data'), Input('visualization-radio', 'value'), Input('superpixel-plot', 'hoverData'), Input('clustering-checkbox', 'value'), Input('autoencoder-checkbox', 'value'), Input('superpixel-data', 'data')],
+    [State('vector-data', 'data')], 
     prevent_initial_call=True
 )
-def update_cluster_vector_plot(jsonified_vector_data, jsonified_cluster_data, visualization, hover_data, checkbox_value, autoencoder_checkbox, jsonified_superpixel_data, restyle_data):
-    ctx_id = ctx.triggered_id.split('.')[0]
-
-    if checkbox_value == [[]]:
+def update_cluster_vector_plot(jsonified_cluster_data, visualization, hover_data, checkbox_value, autoencoder_checkbox, jsonified_superpixel_data, jsonified_vector_data):
+    if checkbox_value == []:
+        return dash.no_update, dash.no_update
+    
+    if jsonified_vector_data is None or jsonified_cluster_data is None or jsonified_superpixel_data is None:
         return dash.no_update, dash.no_update
     
     print("--------------------------------")
     print("Updating cluster vector plot...")
     start_time = time.time()
 
-    if jsonified_vector_data is None or jsonified_cluster_data is None or jsonified_superpixel_data is None:
-        return dash.no_update, dash.no_update
+    ctx_id = ctx.triggered_id.split('.')[0]
 
     vector_data = json.loads(jsonified_vector_data)
     cluster_data = json.loads(jsonified_cluster_data)
@@ -1903,19 +1914,10 @@ def update_cluster_vector_plot(jsonified_vector_data, jsonified_cluster_data, vi
             print('Cluster vector plot ready in:', time.time() - start_time)
 
             return cluster_vector_plot_fig, dash.no_update
-
-    elif ctx_id == 'cluster-vector-plot':
-        if restyle_data is not None:
-            for key, val in restyle_data[0].items():
-                if 'constraintrange' in key:
-                    print(restyle_data)
-                    # Extract dimension index and label
-                    dimension_index = int(key.split('[')[1].split(']')[0])
-                    return dash.no_update, dash.no_update
                 
     else:
 
-        cluster_vector_plot_fig = create_cluster_vector_plot(segment_vectors, cluster_labels, visualization, None, encoded_features, autoencoder_checkbox)
+        cluster_vector_plot_fig, df = create_cluster_vector_plot(segment_vectors, cluster_labels, visualization, None, encoded_features, autoencoder_checkbox)
 
         print('Cluster vector plot ready in:', time.time() - start_time)
 
@@ -1927,19 +1929,20 @@ def update_cluster_vector_plot(jsonified_vector_data, jsonified_cluster_data, vi
 @app.callback(
     [Output('final-plot', 'figure'), Output('class-tracker', 'data')],
     [Input('cluster-data', 'data'), Input('slice-data', 'data'), Input('superpixel-data', 'data')],
+    State('class-tracker', 'data'),
     prevent_initial_call=True
 )
-def update_final_plot(jsonified_cluster_data, jsonified_slice_data, jsonified_superpixel_data):
+def update_final_plot(jsonified_cluster_data, jsonified_slice_data, jsonified_superpixel_data, class_tracker):
     if jsonified_cluster_data is None or jsonified_slice_data is None or jsonified_superpixel_data is None:
         return dash.no_update, dash.no_update
-
-    cluster_data = json.loads(jsonified_cluster_data)
-    slice_data = json.loads(jsonified_slice_data)
-    superpixel_data = json.loads(jsonified_superpixel_data)
 
     print("--------------------------------")
     print("Updating final segmented slice...")
     start_time = time.time()
+
+    cluster_data = json.loads(jsonified_cluster_data)
+    slice_data = json.loads(jsonified_slice_data)
+    superpixel_data = json.loads(jsonified_superpixel_data)
 
     # Convert stored lists back to numpy arrays
     cluster_labels = np.array(cluster_data['cluster_labels'])
@@ -1956,6 +1959,10 @@ def update_final_plot(jsonified_cluster_data, jsonified_slice_data, jsonified_su
     # -------------------------------------------------------------------------------
 
     final_fig = create_final_image(cluster_labels, cluster_color_dict, resized_image, segments)
+
+    if class_tracker != ".cluster-vector-plot-class":
+        # Delay the update of the class tracker to allow the cluster vector plot to be rendered first
+        time.sleep(1)
 
     print('Final segmented slice ready in:', time.time() - start_time)
 
