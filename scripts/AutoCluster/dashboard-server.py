@@ -479,7 +479,7 @@ def create_pca_plot(segment_vectors, segmentColorDict, hovered_segment_id, encod
             )
         )
 
-    return fig, reduced_data
+    return fig, df_pca
 
 # Function to create t-SNE plot
 def create_tsne_plot(segment_vectors, segmentColorDict, hovered_segment_id, encoded_features, autoencoder_checkbox):
@@ -568,7 +568,7 @@ def create_tsne_plot(segment_vectors, segmentColorDict, hovered_segment_id, enco
             )
         )
 
-    return fig, reduced_data
+    return fig, df_tsne
 
 # Function create parallel coordinates plot
 def create_parallel_coordinates_plot(segment_vectors, segmentColorDict, hovered_segment_id, encoded_features, autoencoder_checkbox):
@@ -644,7 +644,7 @@ def create_parallel_coordinates_plot(segment_vectors, segmentColorDict, hovered_
             )
         )
 
-    return fig
+    return fig, df_parallel
 
 # Function to create cluster stats plot for KMeans clustering
 def create_cluster_stats_plot(segment_vectors, clustering, cluster_number, cluster_stats, encoded_features, autoencoder_checkbox):
@@ -1138,7 +1138,7 @@ app.layout = html.Div([
                             {'label': 't-SNE', 'value': 'tsne'},
                             {'label': 'Parallel Coordinates', 'value': 'PC'}
                         ],
-                        value='tsne'
+                        value='PC'
                     ),
 
                     # -------------------------------------------------------------------------------
@@ -1426,11 +1426,11 @@ def update_slice_plot(axis, slice_num):
 
 # Callback for Superpixel Plot
 @app.callback(
-    [Output('superpixel-plot', 'figure'), Output('superpixel-data', 'data'), Output('clustering-checkbox', 'value'), Output('class-tracker', 'data')],
-    [Input('slice-data', 'data'), Input('vector-plot', 'hoverData'), Input('cluster-vector-plot', 'hoverData'), Input('superpixel-input', 'value')],
-    State('superpixel-data', 'data')
+    [Output('superpixel-plot', 'figure'), Output('superpixel-data', 'data'), Output('clustering-checkbox', 'value'), Output('class-tracker', 'data'), Output('vector-data', 'data')],
+    [Input('slice-data', 'data'), Input('vector-plot', 'hoverData'), Input('cluster-vector-plot', 'hoverData'), Input('superpixel-input', 'value'), Input('vector-plot', 'restyleData')],
+    [State('superpixel-data', 'data'), State('autoencoder-checkbox', 'value'), State('vector-data', 'data')]
 )
-def update_superpixel_plot(jsonified_slice_data, hover_data1, hover_data2, num_superpixels, jsonified_superpixel_data):
+def update_superpixel_plot(jsonified_slice_data, hover_data1, hover_data2, num_superpixels, restyle_data, jsonified_superpixel_data, autoencoder_checkbox, jsonified_vector_data):
     print("--------------------------------")
     print("Updating superpixel plot...")
     start_time = time.time()
@@ -1438,6 +1438,78 @@ def update_superpixel_plot(jsonified_slice_data, hover_data1, hover_data2, num_s
     ctx_id = ctx.triggered_id.split('.')[0]
 
     if ctx_id == 'vector-plot' or ctx_id == 'cluster-vector-plot':
+
+        if restyle_data is not None:
+            for key, val in restyle_data[0].items():
+                if 'constraintrange' in key:
+                    print(restyle_data)
+
+                    vector_data = json.loads(jsonified_vector_data)
+                    superpixel_data = json.loads(jsonified_superpixel_data)
+
+                    segments = np.array(superpixel_data['segments'])
+                    highlighted_image = np.array(superpixel_data['image'])
+
+                    # Retrieve DataFrame
+                    df_original = pd.read_json(vector_data["dataframe"], orient="split")
+                    updated_filters = vector_data["filters"].copy()
+
+                    # Extract dimension index and label
+                    dimension_index = int(key.split('[')[1].split(']')[0])
+                    dimension_label = df_original.columns[dimension_index]
+
+                    if val is None or val == []:  # If filter is removed, delete it
+                        updated_filters.pop(dimension_label, None)
+                    else:
+                        updated_filters[dimension_label] = val[0]
+
+                    print(updated_filters)
+
+                    # Filter the DataFrame based on the updated filters
+                    filtered_df  = df_original.copy()
+
+                    print("Applying filters...")
+
+                    # Apply all active filters
+                    for column_name, filter_ranges in updated_filters.items():
+                        print("Filter ranges", filter_ranges)
+
+                        multiple_filter = False
+
+                        if isinstance(filter_ranges[0], list):
+                            multiple_filter = True
+
+                        if multiple_filter:
+                            # Take into account multiple filters for the same column
+                            mask = np.zeros(len(filtered_df), dtype=bool)
+                            for filter in filter_ranges:
+                                mask |= (filtered_df[column_name] >= filter[0]) & (filtered_df[column_name] <= filter[1])
+                                
+                        else:
+                            mask = (filtered_df[column_name] >= filter_ranges[0]) & (filtered_df[column_name] <= filter_ranges[1])
+                            
+                        filtered_df = filtered_df[mask]
+
+                    # Extract the segment IDs
+                    segment_ids = filtered_df['Segment ID'].tolist()
+
+                    highlighted_image[~np.isin(segments, segment_ids)] *= 0.3  # Dim non-selected segments
+
+                    # Create a new figure with highlighted segment
+                    superpixel_fig = px.imshow(highlighted_image)
+                    superpixel_fig.update_layout(
+                        margin=dict(l=27, r=27, b=27, t=27),
+                        xaxis=dict(visible=False),
+                        yaxis=dict(visible=False),
+                        coloraxis_showscale=False
+                    )
+
+                    print('Superpixel plot ready in:', time.time() - start_time)
+
+                    # Create vector_data JSON
+                    vector_data["filters"] = updated_filters
+
+                    return superpixel_fig, dash.no_update, dash.no_update, dash.no_update, json.dumps(vector_data)
 
         if hover_data1 is None and hover_data2 is None:
             if jsonified_superpixel_data is not None:
@@ -1475,7 +1547,7 @@ def update_superpixel_plot(jsonified_slice_data, hover_data1, hover_data2, num_s
 
                 print('Superpixel plot ready in:', time.time() - start_time)
 
-                return superpixel_fig, dash.no_update, dash.no_update, dash.no_update
+                return superpixel_fig, dash.no_update, dash.no_update, dash.no_update, dash.no_update
         
         else:
             if ctx_id == 'vector-plot':
@@ -1502,7 +1574,7 @@ def update_superpixel_plot(jsonified_slice_data, hover_data1, hover_data2, num_s
 
                 print('Superpixel plot ready in:', time.time() - start_time)
 
-                return superpixel_fig, dash.no_update, dash.no_update, dash.no_update
+                return superpixel_fig, dash.no_update, dash.no_update, dash.no_update, dash.no_update
                 
     else:
 
@@ -1537,17 +1609,17 @@ def update_superpixel_plot(jsonified_slice_data, hover_data1, hover_data2, num_s
         
         print('Superpixel plot ready in:', time.time() - start_time)
 
-        return superpixel_fig, json.dumps({'segments': segments.tolist(), 'image': boundary_image.tolist(), 'trace_info': trace_info, 'encoded_features': encoded_features.tolist()}), [], ".superpixel-plot-class"
+        return superpixel_fig, json.dumps({'segments': segments.tolist(), 'image': boundary_image.tolist(), 'trace_info': trace_info, 'encoded_features': encoded_features.tolist()}), [], ".superpixel-plot-class", dash.no_update
 
 # -------------------------------------------------------------------------------
 
 # Callback for Vector Space Visualization Plot
 @app.callback(
     [Output('vector-plot', 'figure'), Output('vector-data', 'data'), Output('class-tracker', 'data')],
-    [Input('slice-data', 'data'), Input('superpixel-data', 'data'), Input('visualization-radio', 'value'), Input('superpixel-plot', 'hoverData'), Input('clustering-checkbox', 'value'), Input('autoencoder-checkbox', 'value'), Input('vector-plot', 'restyleData')],
+    [Input('slice-data', 'data'), Input('superpixel-data', 'data'), Input('visualization-radio', 'value'), Input('superpixel-plot', 'hoverData'), Input('clustering-checkbox', 'value'), Input('autoencoder-checkbox', 'value')],
     [State('vector-data', 'data')]
 )
-def update_vector_plot(jsonified_slice_data, jsonified_superpixel_data, visualization, hover_data, checkbox_value, autoencoder_checkbox, restyle_data, jsonified_vector_data):
+def update_vector_plot(jsonified_slice_data, jsonified_superpixel_data, visualization, hover_data, checkbox_value, autoencoder_checkbox, jsonified_vector_data):
     if checkbox_value == [['enable']]:
         return dash.no_update, dash.no_update, dash.no_update
     
@@ -1568,13 +1640,13 @@ def update_vector_plot(jsonified_slice_data, jsonified_superpixel_data, visualiz
 
         if hover_data is None:
             if visualization == 'pca':
-                vector_space_fig, reduced_data = create_pca_plot(segment_vectors, segmentColorDict, None, encoded_features, autoencoder_checkbox)
+                vector_space_fig, df = create_pca_plot(segment_vectors, segmentColorDict, None, encoded_features, autoencoder_checkbox)
 
             elif visualization == 'tsne':
-                vector_space_fig, reduced_data = create_tsne_plot(segment_vectors, segmentColorDict, None, encoded_features, autoencoder_checkbox)
+                vector_space_fig, df = create_tsne_plot(segment_vectors, segmentColorDict, None, encoded_features, autoencoder_checkbox)
 
             elif visualization == 'PC':
-                vector_space_fig = create_parallel_coordinates_plot(segment_vectors, segmentColorDict, None, encoded_features, autoencoder_checkbox)
+                vector_space_fig, df = create_parallel_coordinates_plot(segment_vectors, segmentColorDict, None, encoded_features, autoencoder_checkbox)
 
             print('Vector plot ready in:', time.time() - start_time)
 
@@ -1584,26 +1656,17 @@ def update_vector_plot(jsonified_slice_data, jsonified_superpixel_data, visualiz
             hovered_segment_id = int(hover_data['points'][0]['text'])
 
             if visualization == 'pca':
-                vector_space_fig, reduced_data = create_pca_plot(segment_vectors, segmentColorDict, hovered_segment_id, encoded_features, autoencoder_checkbox)
+                vector_space_fig, df = create_pca_plot(segment_vectors, segmentColorDict, hovered_segment_id, encoded_features, autoencoder_checkbox)
 
             elif visualization == 'tsne':
-                vector_space_fig, reduced_data = create_tsne_plot(segment_vectors, segmentColorDict, hovered_segment_id, encoded_features, autoencoder_checkbox)
+                vector_space_fig, df = create_tsne_plot(segment_vectors, segmentColorDict, hovered_segment_id, encoded_features, autoencoder_checkbox)
 
             elif visualization == 'PC':
-                vector_space_fig = create_parallel_coordinates_plot(segment_vectors, segmentColorDict, hovered_segment_id, encoded_features, autoencoder_checkbox)
+                vector_space_fig, df = create_parallel_coordinates_plot(segment_vectors, segmentColorDict, hovered_segment_id, encoded_features, autoencoder_checkbox)
 
             print('Vector plot ready in:', time.time() - start_time)
 
             return vector_space_fig, dash.no_update, dash.no_update
-
-    elif ctx_id == 'vector-plot':
-        if restyle_data is not None:
-            for key, val in restyle_data[0].items():
-                if 'constraintrange' in key:
-                    print(restyle_data)
-                    # Extract dimension index and label
-                    dimension_index = int(key.split('[')[1].split(']')[0])
-                    return dash.no_update, dash.no_update, dash.no_update
 
     slice_data = json.loads(jsonified_slice_data)
     superpixel_data = json.loads(jsonified_superpixel_data)
@@ -1646,19 +1709,19 @@ def update_vector_plot(jsonified_slice_data, jsonified_superpixel_data, visualiz
     # -------------------------------------------------------------------------------
 
     if visualization == 'pca':
-        vector_space_fig, reduced_data = create_pca_plot(segment_vectors, segmentColorDict, None, encoded_features, autoencoder_checkbox)
+        vector_space_fig, df = create_pca_plot(segment_vectors, segmentColorDict, None, encoded_features, autoencoder_checkbox)
 
     elif visualization == 'tsne':
-        vector_space_fig, reduced_data = create_tsne_plot(segment_vectors, segmentColorDict, None, encoded_features, autoencoder_checkbox)
+        vector_space_fig, df = create_tsne_plot(segment_vectors, segmentColorDict, None, encoded_features, autoencoder_checkbox)
 
     elif visualization == 'PC':
-        vector_space_fig = create_parallel_coordinates_plot(segment_vectors, segmentColorDict, None, encoded_features, autoencoder_checkbox)
+        vector_space_fig, df = create_parallel_coordinates_plot(segment_vectors, segmentColorDict, None, encoded_features, autoencoder_checkbox)
     
     print('Vector plot ready in:', time.time() - start_time)
 
     stored_data = {int(key): value.tolist() for key, value in segmentColorDict.items()}
-    # return vector_space_fig, json.dumps({'segment_vectors': segment_vectors.tolist(), 'reduced_data': reduced_data.tolist(), 'segmentColorDict': stored_data})
-    return vector_space_fig, json.dumps({'segment_vectors': segment_vectors.tolist(), 'segmentColorDict': stored_data}), ".vector-plot-class"
+
+    return vector_space_fig, json.dumps({'segment_vectors': segment_vectors.tolist(), 'segmentColorDict': stored_data, "dataframe": df.to_json(orient="split"), "filters": {}}), ".vector-plot-class"
 
 # -------------------------------------------------------------------------------
 
@@ -1666,7 +1729,8 @@ def update_vector_plot(jsonified_slice_data, jsonified_superpixel_data, visualiz
 @app.callback(
     [Output('elbow-plot', 'figure'), Output('cluster-number', 'data'), Output('cluster-stats-label', 'children'), Output('class-tracker', 'data')],
     [Input('vector-data', 'data'), Input('clustering-radio', 'value'), Input('elbow-plot', 'clickData'), Input('cluster-stats-radio', 'value'), Input('autoencoder-checkbox', 'value')],
-    [State('cluster-number', 'data'), State('superpixel-data', 'data')]
+    [State('cluster-number', 'data'), State('superpixel-data', 'data')],
+    prevent_initial_call=True
 )
 def update_cluster_stats_plot(jsonified_vector_data, clustering, click_data, cluster_stats, autoencoder_checkbox, cluster_number_data, jsonified_superpixel_data):
     ctx_id = ctx.triggered_id.split('.')[0]
@@ -1727,7 +1791,8 @@ def enable_clustering(checkbox_value):
 @app.callback(
     Output('cluster-data', 'data'),
     [Input('vector-data', 'data'), Input('clustering-radio', 'value'), Input('cluster-number', 'data'), Input('autoencoder-checkbox', 'value')],
-    State('superpixel-data', 'data')
+    State('superpixel-data', 'data'),
+    prevent_initial_call=True
 )
 def perform_clustering(jsonified_vector_data, clustering, cluster_number, autoencoder_checkbox, jsonified_superpixel_data):
     vector_data = json.loads(jsonified_vector_data)
@@ -1754,7 +1819,8 @@ def perform_clustering(jsonified_vector_data, clustering, cluster_number, autoen
 # Callback for updating vector plot with clustering
 @app.callback(
     [Output('cluster-vector-plot', 'figure'), Output('class-tracker', 'data')],
-    [Input('vector-data', 'data'), Input('cluster-data', 'data'), Input('visualization-radio', 'value'), Input('superpixel-plot', 'hoverData'), Input('clustering-checkbox', 'value'), Input('autoencoder-checkbox', 'value'), Input('superpixel-data', 'data'), Input('cluster-vector-plot', 'restyleData')]
+    [Input('vector-data', 'data'), Input('cluster-data', 'data'), Input('visualization-radio', 'value'), Input('superpixel-plot', 'hoverData'), Input('clustering-checkbox', 'value'), Input('autoencoder-checkbox', 'value'), Input('superpixel-data', 'data'), Input('cluster-vector-plot', 'restyleData')],
+    prevent_initial_call=True
 )
 def update_cluster_vector_plot(jsonified_vector_data, jsonified_cluster_data, visualization, hover_data, checkbox_value, autoencoder_checkbox, jsonified_superpixel_data, restyle_data):
     ctx_id = ctx.triggered_id.split('.')[0]
@@ -1765,6 +1831,9 @@ def update_cluster_vector_plot(jsonified_vector_data, jsonified_cluster_data, vi
     print("--------------------------------")
     print("Updating cluster vector plot...")
     start_time = time.time()
+
+    if jsonified_vector_data is None or jsonified_cluster_data is None or jsonified_superpixel_data is None:
+        return dash.no_update, dash.no_update
 
     vector_data = json.loads(jsonified_vector_data)
     cluster_data = json.loads(jsonified_cluster_data)
@@ -1813,9 +1882,13 @@ def update_cluster_vector_plot(jsonified_vector_data, jsonified_cluster_data, vi
 # Callback for Final Segmented Slice
 @app.callback(
     [Output('final-plot', 'figure'), Output('class-tracker', 'data')],
-    [Input('cluster-data', 'data'), Input('slice-data', 'data'), Input('superpixel-data', 'data')]
+    [Input('cluster-data', 'data'), Input('slice-data', 'data'), Input('superpixel-data', 'data')],
+    prevent_initial_call=True
 )
 def update_final_plot(jsonified_cluster_data, jsonified_slice_data, jsonified_superpixel_data):
+    if jsonified_cluster_data is None or jsonified_slice_data is None or jsonified_superpixel_data is None:
+        return dash.no_update, dash.no_update
+
     cluster_data = json.loads(jsonified_cluster_data)
     slice_data = json.loads(jsonified_slice_data)
     superpixel_data = json.loads(jsonified_superpixel_data)
