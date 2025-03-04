@@ -626,23 +626,23 @@ def create_parallel_coordinates_plot(segment_vectors, segmentColorDict, hovered_
         font=dict(color="white")
     )
 
-    if hovered_segment_id is not None:
-        # Highlight the corresponding segment in the parallel coordinates plot
-        highlighted_segment = df_parallel[df_parallel['Segment ID'] == hovered_segment_id]
+    # if hovered_segment_id is not None:
+    #     # Highlight the corresponding segment in the parallel coordinates plot
+    #     highlighted_segment = df_parallel[df_parallel['Segment ID'] == hovered_segment_id]
 
-        # Dim non-selected segments
-        fig.update_traces(line=dict(color='rgba(0, 0, 0, 0.1)'), selector=dict(mode='lines'))
+    #     # Dim non-selected segments
+    #     fig.update_traces(line=dict(color='rgba(0, 0, 0, 0.1)'), selector=dict(mode='lines'))
 
-        fig.add_trace(
-            go.Scatter(
-                x=highlighted_segment.columns[:-1],
-                y=highlighted_segment.iloc[0, :-1],
-                mode='lines',
-                line=dict(color='black', width=2),
-                hoverinfo='skip',  # Hide hover info for the highlighted segment,
-                showlegend=False  # Hide legend for the highlighted segment
-            )
-        )
+    #     fig.add_trace(
+    #         go.Scatter(
+    #             x=highlighted_segment.columns[:-1],
+    #             y=highlighted_segment.iloc[0, :-1],
+    #             mode='lines',
+    #             line=dict(color='black', width=2),
+    #             hoverinfo='skip',  # Hide hover info for the highlighted segment,
+    #             showlegend=False  # Hide legend for the highlighted segment
+    #         )
+    #     )
 
     return fig, df_parallel
 
@@ -894,23 +894,25 @@ def create_cluster_vector_plot(segment_vectors, cluster_labels, visualization, h
 
     elif visualization == 'PC':
 
-        df.drop(columns=['Segment ID', 'Cluster ID'], inplace=True)
+        df_copy = df.copy()
+
+        df_copy.drop(columns=['Segment ID', 'Cluster ID'], inplace=True)
 
         color_column = 'Cluster-ID'
 
-        # Generate dimensions dynamically from df, excluding the color column
+        # Generate dimensions dynamically from df_copy, excluding the color column
         dimensions = list([
-            dict(label=col, values=df[col]) 
+            dict(label=col, values=df_copy[col]) 
             if col != color_column 
-            else dict(label=col, values=df[col], tickvals=np.arange(len(df[color_column].unique())))
-            for col in df.columns
+            else dict(label=col, values=df_copy[col], tickvals=np.arange(len(df_copy[color_column].unique())))
+            for col in df_copy.columns
         ])
 
         # Create the figure dynamically
         fig = go.Figure(data=[
             go.Parcoords(
                 line=dict(
-                    color=df[color_column], 
+                    color=df_copy[color_column], 
                     colorscale=color_scale  
                 ),
                 dimensions=dimensions
@@ -1713,7 +1715,8 @@ def update_vector_plot(jsonified_slice_data, jsonified_superpixel_data, visualiz
                 vector_space_fig, df = create_tsne_plot(segment_vectors, segmentColorDict, hovered_segment_id, encoded_features, autoencoder_checkbox)
 
             elif visualization == 'PC':
-                vector_space_fig, df = create_parallel_coordinates_plot(segment_vectors, segmentColorDict, hovered_segment_id, encoded_features, autoencoder_checkbox)
+                # vector_space_fig, df = create_parallel_coordinates_plot(segment_vectors, segmentColorDict, hovered_segment_id, encoded_features, autoencoder_checkbox)
+                return dash.no_update, dash.no_update, dash.no_update
 
             print('Vector plot ready in:', time.time() - start_time)
 
@@ -1872,17 +1875,17 @@ def perform_clustering(clustering, cluster_number, autoencoder_checkbox, cluster
 
 # Callback for updating vector plot with clustering
 @app.callback(
-    [Output('cluster-vector-plot', 'figure'), Output('class-tracker', 'data')],
+    [Output('cluster-vector-plot', 'figure'), Output('class-tracker', 'data'), Output('vector-data', 'data')],
     [Input('cluster-data', 'data'), Input('visualization-radio', 'value'), Input('superpixel-plot', 'hoverData'), Input('clustering-checkbox', 'value'), Input('autoencoder-checkbox', 'value'), Input('superpixel-data', 'data')],
     [State('vector-data', 'data')], 
     prevent_initial_call=True
 )
 def update_cluster_vector_plot(jsonified_cluster_data, visualization, hover_data, checkbox_value, autoencoder_checkbox, jsonified_superpixel_data, jsonified_vector_data):
     if checkbox_value == []:
-        return dash.no_update, dash.no_update
+        return dash.no_update, dash.no_update, dash.no_update
     
     if jsonified_vector_data is None or jsonified_cluster_data is None or jsonified_superpixel_data is None:
-        return dash.no_update, dash.no_update
+        return dash.no_update, dash.no_update, dash.no_update
     
     print("--------------------------------")
     print("Updating cluster vector plot...")
@@ -1905,7 +1908,7 @@ def update_cluster_vector_plot(jsonified_cluster_data, visualization, hover_data
 
             print('Cluster vector plot ready in:', time.time() - start_time)
 
-            return cluster_vector_plot_fig, dash.no_update
+            return cluster_vector_plot_fig, dash.no_update, dash.no_update
         else:
             hovered_segment_id = int(hover_data['points'][0]['text'])
 
@@ -1913,7 +1916,7 @@ def update_cluster_vector_plot(jsonified_cluster_data, visualization, hover_data
 
             print('Cluster vector plot ready in:', time.time() - start_time)
 
-            return cluster_vector_plot_fig, dash.no_update
+            return cluster_vector_plot_fig, dash.no_update, dash.no_update
                 
     else:
 
@@ -1921,7 +1924,10 @@ def update_cluster_vector_plot(jsonified_cluster_data, visualization, hover_data
 
         print('Cluster vector plot ready in:', time.time() - start_time)
 
-        return cluster_vector_plot_fig, ".cluster-vector-plot-class"
+        # Create vector_data JSON
+        vector_data["dataframe"] = df.to_json(orient="split")
+
+        return cluster_vector_plot_fig, ".cluster-vector-plot-class", json.dumps(vector_data)
 
 # -------------------------------------------------------------------------------
 
@@ -1978,7 +1984,7 @@ def update_final_plot(jsonified_cluster_data, jsonified_slice_data, jsonified_su
 )
 def reset_dashboard(n_clicks):
     if n_clicks > 0:
-        return "x", 130, 5, "tsne", "Elbow", "kmeans", [], []
+        return "x", 130, 5, "PC", "Elbow", "kmeans", [], []
 
 # -------------------------------------------------------------------------------
 
