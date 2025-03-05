@@ -972,7 +972,7 @@ def create_cluster_vector_plot(segment_vectors, cluster_labels, visualization, h
     return fig, df
 
 # Function to create final segmented slice
-def create_final_image(cluster_labels, cluster_color_dict, resized_image, segments):
+def create_final_image(cluster_labels, cluster_color_dict, resized_image, segments, selected_segment_ids, segmentCordDict):
     # Create an image to store the colors for each pixel
     final_segmented_image = np.zeros_like(resized_image, dtype=np.uint8)
     # Drop the alpha channel
@@ -981,6 +981,21 @@ def create_final_image(cluster_labels, cluster_color_dict, resized_image, segmen
     for i in range(resized_image.shape[0]):
         for j in range(resized_image.shape[1]):
             final_segmented_image[i][j] = cluster_color_dict[cluster_labels[segments[i][j]]]
+
+    # Get all segment IDs
+    all_segment_ids = set(segmentCordDict.keys())
+
+    # Determine unselected segments
+    unselected_segment_ids = all_segment_ids - set(selected_segment_ids)
+
+    # Dim non-selected segments
+    for segment_id in unselected_segment_ids:
+        for cord in segmentCordDict[segment_id]:
+            # Get original pixel value
+            original_pixel = final_segmented_image[cord[0]][cord[1]]
+            
+            # Apply dimming (reduce intensity)
+            final_segmented_image[cord[0]][cord[1]] = (np.array(original_pixel) * 0.2).astype(np.uint8)
 
     # Create a plotly figure
     fig = px.imshow(final_segmented_image)
@@ -1748,6 +1763,17 @@ def update_vector_plot(jsonified_slice_data, jsonified_superpixel_data, visualiz
         segmentColorDict[key] = np.mean(segmentColorDict[key], axis=0)
 
     # -------------------------------------------------------------------------------
+
+    # Make segment ID as the key and pixel coordinates as the value
+    segmentCordDict = dict()
+
+    for i in range(resized_image.shape[0]):
+        for j in range(resized_image.shape[1]):
+            if segments[i][j] not in segmentCordDict:
+                segmentCordDict[segments[i][j]] = []
+            segmentCordDict[segments[i][j]].append((i, j))
+
+    # -------------------------------------------------------------------------------
     
     unique_segments = np.unique(segments)  # Get unique segment IDs
     segment_vectors = []
@@ -1774,9 +1800,11 @@ def update_vector_plot(jsonified_slice_data, jsonified_superpixel_data, visualiz
     
     print('Vector plot ready in:', time.time() - start_time)
 
-    stored_data = {int(key): value.tolist() for key, value in segmentColorDict.items()}
+    segmentColorDict_data = {int(key): value.tolist() for key, value in segmentColorDict.items()}
 
-    return vector_space_fig, json.dumps({'segment_vectors': segment_vectors.tolist(), 'segmentColorDict': stored_data, "dataframe": df.to_json(orient="split"), "filters": {}}), ".vector-plot-class"
+    segmentCordDict_data = {int(key): value for key, value in segmentCordDict.items()}
+
+    return vector_space_fig, json.dumps({'segment_vectors': segment_vectors.tolist(), 'segmentColorDict': segmentColorDict_data, "segmentCordDict": segmentCordDict_data, "dataframe": df.to_json(orient="split"), "filters": {}}), ".vector-plot-class"
 
 # -------------------------------------------------------------------------------
 
@@ -1943,11 +1971,11 @@ def update_cluster_vector_plot(jsonified_cluster_data, visualization, hover_data
 # Callback for Final Segmented Slice
 @app.callback(
     [Output('final-plot', 'figure'), Output('class-tracker', 'data')],
-    [Input('cluster-data', 'data'), Input('slice-data', 'data'), Input('superpixel-data', 'data')],
-    State('class-tracker', 'data'),
+    [Input('cluster-data', 'data'), Input('slice-data', 'data'), Input('superpixel-data', 'data'), Input('cluster-vector-plot', 'restyleData'), Input('visualization-radio', 'value')],
+    [State('class-tracker', 'data'), State('vector-data', 'data')],
     prevent_initial_call=True
 )
-def update_final_plot(jsonified_cluster_data, jsonified_slice_data, jsonified_superpixel_data, class_tracker):
+def update_final_plot(jsonified_cluster_data, jsonified_slice_data, jsonified_superpixel_data, restyle_data, visualization, class_tracker, jsonified_vector_data):
     if jsonified_cluster_data is None or jsonified_slice_data is None or jsonified_superpixel_data is None:
         return dash.no_update, dash.no_update
 
@@ -1958,6 +1986,7 @@ def update_final_plot(jsonified_cluster_data, jsonified_slice_data, jsonified_su
     cluster_data = json.loads(jsonified_cluster_data)
     slice_data = json.loads(jsonified_slice_data)
     superpixel_data = json.loads(jsonified_superpixel_data)
+    vector_data = json.loads(jsonified_vector_data)
 
     # Convert stored lists back to numpy arrays
     cluster_labels = np.array(cluster_data['cluster_labels'])
@@ -1973,15 +2002,74 @@ def update_final_plot(jsonified_cluster_data, jsonified_slice_data, jsonified_su
 
     # -------------------------------------------------------------------------------
 
-    final_fig = create_final_image(cluster_labels, cluster_color_dict, resized_image, segments)
+    ctx_id = ctx.triggered_id.split('.')[0]
 
-    if class_tracker != ".cluster-vector-plot-class":
-        # Delay the update of the class tracker to allow the cluster vector plot to be rendered first
-        time.sleep(1)
+    if ctx_id == 'cluster-vector-plot' and visualization == 'PC':
+        if restyle_data is not None:
+            for key, val in restyle_data[0].items():
+                if 'constraintrange' in key:
+                    print(restyle_data)
 
-    print('Final segmented slice ready in:', time.time() - start_time)
+                    # Retrieve DataFrame
+                    df_original = pd.read_json(vector_data["dataframe"], orient="split")
+                    updated_filters = vector_data["filters"].copy()
+                    segmentCordDict = vector_data["segmentCordDict"]
+                    segmentCordDict = {np.int32(key): np.array(value) for key, value in segmentCordDict.items()}
 
-    return final_fig, ".final-plot-class"
+                    # Extract dimension index and label
+                    dimension_index = int(key.split('[')[1].split(']')[0])
+                    dimension_label = df_original.columns[dimension_index]
+
+                    if val is None or val == []:  # If filter is removed, delete it
+                        updated_filters.pop(dimension_label, None)
+                    else:
+                        updated_filters[dimension_label] = val[0]
+
+                    print(updated_filters)
+
+                    # Filter the DataFrame based on the updated filters
+                    filtered_df  = df_original.copy()
+
+                    print("Applying filters...")
+
+                    # Apply all active filters
+                    for column_name, filter_ranges in updated_filters.items():
+                        print("Filter ranges", filter_ranges)
+
+                        multiple_filter = False
+
+                        if isinstance(filter_ranges[0], list):
+                            multiple_filter = True
+
+                        if multiple_filter:
+                            # Take into account multiple filters for the same column
+                            mask = np.zeros(len(filtered_df), dtype=bool)
+                            for filter in filter_ranges:
+                                mask |= (filtered_df[column_name] >= filter[0]) & (filtered_df[column_name] <= filter[1])
+                                
+                        else:
+                            mask = (filtered_df[column_name] >= filter_ranges[0]) & (filtered_df[column_name] <= filter_ranges[1])
+                            
+                        filtered_df = filtered_df[mask]
+
+                    # Extract the segment IDs
+                    selected_segment_ids = filtered_df['Segment ID'].tolist()
+
+                    final_fig = create_final_image(cluster_labels, cluster_color_dict, resized_image, segments, selected_segment_ids, segmentCordDict)
+
+                    return final_fig, dash.no_update
+
+    else:
+
+        final_fig = create_final_image(cluster_labels, cluster_color_dict, resized_image, segments, [], {})
+
+        if class_tracker != ".cluster-vector-plot-class":
+            # Delay the update of the class tracker to allow the cluster vector plot to be rendered first
+            time.sleep(1)
+
+        print('Final segmented slice ready in:', time.time() - start_time)
+
+        return final_fig, ".final-plot-class"
 
 # -------------------------------------------------------------------------------
 
