@@ -760,25 +760,40 @@ def create_cluster_stats_plot(segment_vectors, clustering, cluster_number, clust
         fig.update_layout(
             xaxis_title={
                 'font': {
-                    'color': 'white'
+                    'color': '#eeeeee'
                 }
             },
             yaxis_title={
                 'font': {
-                    'color': 'white'
+                    'color': '#eeeeee'
                 }
             },
             xaxis={
                 'tickfont': {
                     'color': 'white'
-                }
+                },
+                'showgrid': False,
+                'zeroline': True,
+                'zerolinecolor': 'white',
+                'linecolor': '#eeeeee',
+                'linewidth': 2
             },
             yaxis={
                 'tickfont': {
                     'color': 'white'
-                }
-            }
+                },
+                'showgrid': False,
+                'zeroline': True,
+                'zerolinecolor': 'white',
+                'linecolor': '#eeeeee',
+                'linewidth': 2
+            },
+            # Set the background color to light gray
+            plot_bgcolor='#222831',
         )
+
+        # Color the line
+        fig.update_traces(line=dict(color='#00adb5'))
 
         fig.update_layout(clickmode='event')
 
