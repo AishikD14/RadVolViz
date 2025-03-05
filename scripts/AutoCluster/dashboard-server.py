@@ -607,7 +607,7 @@ def create_parallel_coordinates_plot(segment_vectors, segmentColorDict, hovered_
     dimensions = list([
         dict(label=col, values=df_parallel[col]) 
         if col != color_column 
-        else dict(label=col, values=df_parallel[col], tickvals=np.arange(0, len(df_parallel[color_column].unique()), 100))
+        else dict(label=col, values=df_parallel[col], tickvals=np.arange(0, len(df_parallel[color_column].unique()), int(len(df_parallel[color_column].unique())/5)))
         for col in df_parallel.columns
     ])
 
@@ -616,7 +616,7 @@ def create_parallel_coordinates_plot(segment_vectors, segmentColorDict, hovered_
         go.Parcoords(
             line=dict(
                 color=df_parallel[color_column], 
-                colorscale=color_scale  
+                # colorscale=color_scale  
             ),
             dimensions=dimensions
         )
@@ -1978,6 +1978,7 @@ def update_cluster_vector_plot(jsonified_cluster_data, visualization, hover_data
 
         # Create vector_data JSON
         vector_data["dataframe"] = df.to_json(orient="split")
+        vector_data["filters"] = {}
 
         return cluster_vector_plot_fig, ".cluster-vector-plot-class", json.dumps(vector_data)
 
