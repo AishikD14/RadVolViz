@@ -101,3 +101,6 @@ body{
     margin-left: 7px;
     margin-bottom: 10px;
 }
+#vector-plot .parcoords .axis-title, #cluster-vector-plot .parcoords .axis-title{
+    font-size: 13px !important;
+}
