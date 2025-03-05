@@ -1459,10 +1459,10 @@ def update_slice_plot(axis, slice_num):
 # Callback for Superpixel Plot
 @app.callback(
     [Output('superpixel-plot', 'figure'), Output('superpixel-data', 'data'), Output('clustering-checkbox', 'value'), Output('class-tracker', 'data'), Output('vector-data', 'data')],
-    [Input('slice-data', 'data'), Input('vector-plot', 'hoverData'), Input('cluster-vector-plot', 'hoverData'), Input('superpixel-input', 'value'), Input('vector-plot', 'restyleData'), Input('cluster-vector-plot', 'restyleData'), Input('visualization-radio', 'value'), Input('clustering-checkbox', 'value'), Input('autoencoder-checkbox', 'value')],
+    [Input('slice-data', 'data'), Input('vector-plot', 'hoverData'), Input('cluster-vector-plot', 'hoverData'), Input('superpixel-input', 'value'), Input('vector-plot', 'restyleData'), Input('cluster-vector-plot', 'restyleData'), Input('visualization-radio', 'value'), Input('clustering-checkbox', 'value'), Input('autoencoder-checkbox', 'value'), Input('elbow-plot', 'clickData')],
     [State('superpixel-data', 'data'), State('vector-data', 'data')]
 )
-def update_superpixel_plot(jsonified_slice_data, hover_data1, hover_data2, num_superpixels, restyle_data1, restyle_data2, visualization, clustering_checkbox, autoencoder_checkbox, jsonified_superpixel_data, jsonified_vector_data):
+def update_superpixel_plot(jsonified_slice_data, hover_data1, hover_data2, num_superpixels, restyle_data1, restyle_data2, visualization, clustering_checkbox, autoencoder_checkbox, click_data, jsonified_superpixel_data, jsonified_vector_data):
     print("--------------------------------")
     print("Updating superpixel plot...")
     start_time = time.time()
@@ -1614,7 +1614,7 @@ def update_superpixel_plot(jsonified_slice_data, hover_data1, hover_data2, num_s
 
                 return superpixel_fig, dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
-    elif ctx_id == 'visualization-radio' or ctx_id == 'clustering-checkbox' or ctx_id == 'autoencoder-checkbox':
+    elif ctx_id == 'visualization-radio' or ctx_id == 'clustering-checkbox' or ctx_id == 'autoencoder-checkbox' or ctx_id == 'elbow-plot':
         vector_data = json.loads(jsonified_vector_data)
         filters = vector_data['filters']
 
