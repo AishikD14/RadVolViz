@@ -352,8 +352,8 @@ def create_original_slice(axis, slice_num):
 # Function to create superpixels
 def create_superpixels(resized_image, input_image, num_superpixels):
     
-    # segments, cluster_centers = custom_slic(resized_image, num_superpixels)
-    segments = segmentation.slic(input_image, n_segments=num_superpixels, compactness=30, start_label=0)
+    segments, cluster_centers = custom_slic(resized_image, num_superpixels)
+    # segments = segmentation.slic(input_image, n_segments=num_superpixels, compactness=30, start_label=0)
 
     boundary_image = mark_boundaries(input_image, segments)
 
@@ -833,8 +833,8 @@ def create_clusters(segment_vectors, clustering, cluster_number, encoded_feature
 
 # Function to create cluster vector plot
 def create_cluster_vector_plot(segment_vectors, cluster_labels, visualization, hovered_segment_id, encoded_features, autoencoder_checkbox):
-    if 'enable' in autoencoder_checkbox:
-        segment_vectors = encoded_features
+    # if 'enable' in autoencoder_checkbox:
+    #     segment_vectors = encoded_features
 
     # Create a DataFrame for easier plotting
     if visualization == 'pca':
@@ -857,13 +857,15 @@ def create_cluster_vector_plot(segment_vectors, cluster_labels, visualization, h
         reduced_data = segment_vectors
 
         # Create a DataFrame for easier plotting
-        if 'enable' in autoencoder_checkbox:
-            latent_dim = reduced_data.shape[1]
+        # if 'enable' in autoencoder_checkbox:
+        #     latent_dim = reduced_data.shape[1]
 
-            df = pd.DataFrame(reduced_data, columns=[f'Latent Dimension {i+1}' for i in range(latent_dim)])
+        #     df = pd.DataFrame(reduced_data, columns=[f'Latent Dimension {i+1}' for i in range(latent_dim)])
 
-        else:
-            df = pd.DataFrame(reduced_data, columns=['Ce', 'Co', 'Fe', 'Gd'])
+        # else:
+        #     df = pd.DataFrame(reduced_data, columns=['Ce', 'Co', 'Fe', 'Gd'])
+
+        df = pd.DataFrame(reduced_data, columns=['Ce', 'Co', 'Fe', 'Gd'])
 
     df['Cluster ID'] = cluster_labels
     # Convert Cluster ID to a string to ensure it's treated as categorical
@@ -1459,10 +1461,10 @@ def update_slice_plot(axis, slice_num):
 # Callback for Superpixel Plot
 @app.callback(
     [Output('superpixel-plot', 'figure'), Output('superpixel-data', 'data'), Output('clustering-checkbox', 'value'), Output('class-tracker', 'data'), Output('vector-data', 'data')],
-    [Input('slice-data', 'data'), Input('vector-plot', 'hoverData'), Input('cluster-vector-plot', 'hoverData'), Input('superpixel-input', 'value'), Input('vector-plot', 'restyleData'), Input('cluster-vector-plot', 'restyleData'), Input('visualization-radio', 'value'), Input('clustering-checkbox', 'value'), Input('autoencoder-checkbox', 'value'), Input('elbow-plot', 'clickData')],
+    [Input('slice-data', 'data'), Input('vector-plot', 'hoverData'), Input('cluster-vector-plot', 'hoverData'), Input('superpixel-input', 'value'), Input('vector-plot', 'restyleData'), Input('cluster-vector-plot', 'restyleData'), Input('visualization-radio', 'value'), Input('clustering-checkbox', 'value'), Input('autoencoder-checkbox', 'value'), Input('elbow-plot', 'clickData'), Input('clustering-radio', 'value')],
     [State('superpixel-data', 'data'), State('vector-data', 'data')]
 )
-def update_superpixel_plot(jsonified_slice_data, hover_data1, hover_data2, num_superpixels, restyle_data1, restyle_data2, visualization, clustering_checkbox, autoencoder_checkbox, click_data, jsonified_superpixel_data, jsonified_vector_data):
+def update_superpixel_plot(jsonified_slice_data, hover_data1, hover_data2, num_superpixels, restyle_data1, restyle_data2, visualization, clustering_checkbox, autoencoder_checkbox, click_data, clustering, jsonified_superpixel_data, jsonified_vector_data):
     print("--------------------------------")
     print("Updating superpixel plot...")
     start_time = time.time()
@@ -1614,7 +1616,7 @@ def update_superpixel_plot(jsonified_slice_data, hover_data1, hover_data2, num_s
 
                 return superpixel_fig, dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
-    elif ctx_id == 'visualization-radio' or ctx_id == 'clustering-checkbox' or ctx_id == 'autoencoder-checkbox' or ctx_id == 'elbow-plot':
+    elif ctx_id == 'visualization-radio' or ctx_id == 'clustering-checkbox' or ctx_id == 'autoencoder-checkbox' or ctx_id == 'elbow-plot' or ctx_id == 'clustering-radio':
         vector_data = json.loads(jsonified_vector_data)
         filters = vector_data['filters']
 
