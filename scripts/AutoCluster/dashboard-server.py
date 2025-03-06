@@ -1183,7 +1183,7 @@ app.layout = html.Div([
                             {'label': 't-SNE', 'value': 'tsne'},
                             {'label': 'Parallel Coordinates', 'value': 'PC'}
                         ],
-                        value='tsne'
+                        value='PC'
                     ),
 
                     # -------------------------------------------------------------------------------
