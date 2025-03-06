@@ -3,13 +3,13 @@ body{
     color: white;
 }
 .control-panel{
-    width: 18%;
+    width: 15%;
     display: inline-block;
     border: 2px solid black;
     padding-left: 10px;
 }
 .display-panel{
-    width: 82%;
+    width: 85%;
     border: 2px solid black;
 }
 .top-half-display{
@@ -37,6 +37,9 @@ body{
     text-align: center;
     border-left: 2px solid black;
 }
+#slice-slider{
+    margin-top: 10px;
+}
 #slice-plot .svg-container .main-svg:first-child{
     background: none !important;
 }
@@ -57,6 +60,9 @@ body{
 }
 #elbow-plot .svg-container .main-svg:first-child{
     background: none !important;
+}
+#elbow-plot{
+    padding-left: 10px;
 }
 .final-segmented-slice{
     display: flex;

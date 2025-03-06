@@ -1124,7 +1124,7 @@ app.layout = html.Div([
                     # -------------------------------------------------------------------------------
 
                     # Slider for selecting slice
-                    html.Label('Select slice:'),
+                    html.Label('Select slice to visualize:'),
                     dcc.Slider(
                         id='slice-slider',
                         # min=1,
@@ -1134,10 +1134,12 @@ app.layout = html.Div([
                         step=1,
                         value=130,
                         # marks={1: str(1), volume.shape[0]: str(volume.shape[0])}
-                        marks={45: str(45), 160: str(160)}
+                        marks={
+                            45: {'label': str(45), 'style': {'color': 'white', 'font-size': '14px'}},
+                            160: {'label': str(160), 'style': {'color': 'white', 'font-size': '14px'}}
+                        },
+                        tooltip={"placement": "bottom", "always_visible": True}
                     ),
-                    # Display selected slice number
-                    html.Div(id='selected-slice-output'),
 
                     # -------------------------------------------------------------------------------
 
@@ -1147,7 +1149,7 @@ app.layout = html.Div([
                     # -------------------------------------------------------------------------------
 
                     # Input text box for number of superpixels
-                    html.Label('Number of Superpixels:'),
+                    html.Label('No of Superpixels:'),
                     dcc.Input(
                         id='superpixel-input',
                         type='number',
@@ -1431,16 +1433,6 @@ app.layout = html.Div([
 
 # -------------------------------------------------------------------------------
 
-# Callback to update the displayed slice number
-@app.callback(
-    Output('selected-slice-output', 'children'),
-    Input('slice-slider', 'value')
-)
-def update_slice_display(slice_value):
-    return f"Selected Slice: {slice_value}"
-
-# -------------------------------------------------------------------------------
-
 # Callback for Slice Plot
 @app.callback(
     [Output('slice-plot', 'figure'), Output('slice-data', 'data'), Output('class-tracker', 'data')],
@@ -1701,10 +1693,10 @@ def update_superpixel_plot(jsonified_slice_data, hover_data1, hover_data2, num_s
 # Callback for Vector Space Visualization Plot
 @app.callback(
     [Output('vector-plot', 'figure'), Output('vector-data', 'data'), Output('class-tracker', 'data')],
-    [Input('slice-data', 'data'), Input('superpixel-data', 'data'), Input('visualization-radio', 'value'), Input('superpixel-plot', 'hoverData'), Input('clustering-checkbox', 'value'), Input('autoencoder-checkbox', 'value')],
+    [Input('slice-data', 'data'), Input('superpixel-data', 'data'), Input('visualization-radio', 'value'), Input('clustering-checkbox', 'value'), Input('autoencoder-checkbox', 'value')],
     [State('vector-data', 'data')]
 )
-def update_vector_plot(jsonified_slice_data, jsonified_superpixel_data, visualization, hover_data, checkbox_value, autoencoder_checkbox, jsonified_vector_data):
+def update_vector_plot(jsonified_slice_data, jsonified_superpixel_data, visualization, checkbox_value, autoencoder_checkbox, jsonified_vector_data):
     if checkbox_value == ['enable']:
         return dash.no_update, dash.no_update, dash.no_update
     
@@ -1922,11 +1914,11 @@ def perform_clustering(clustering, cluster_number, autoencoder_checkbox, cluster
 # Callback for updating vector plot with clustering
 @app.callback(
     [Output('cluster-vector-plot', 'figure'), Output('class-tracker', 'data'), Output('vector-data', 'data')],
-    [Input('cluster-data', 'data'), Input('visualization-radio', 'value'), Input('superpixel-plot', 'hoverData'), Input('clustering-checkbox', 'value'), Input('autoencoder-checkbox', 'value'), Input('superpixel-data', 'data')],
+    [Input('cluster-data', 'data'), Input('visualization-radio', 'value'), Input('clustering-checkbox', 'value'), Input('autoencoder-checkbox', 'value'), Input('superpixel-data', 'data')],
     [State('vector-data', 'data')], 
     prevent_initial_call=True
 )
-def update_cluster_vector_plot(jsonified_cluster_data, visualization, hover_data, checkbox_value, autoencoder_checkbox, jsonified_superpixel_data, jsonified_vector_data):
+def update_cluster_vector_plot(jsonified_cluster_data, visualization, checkbox_value, autoencoder_checkbox, jsonified_superpixel_data, jsonified_vector_data):
     if checkbox_value == []:
         return dash.no_update, dash.no_update, dash.no_update
     
