@@ -1713,49 +1713,6 @@ def update_vector_plot(jsonified_slice_data, jsonified_superpixel_data, visualiz
     print("Updating vector plot...")
     start_time = time.time()
 
-    ctx_id = ctx.triggered_id.split('.')[0]
-
-    # if ctx_id == 'superpixel-plot':
-    #     vector_data = json.loads(jsonified_vector_data)
-    #     superpixel_data = json.loads(jsonified_superpixel_data)
-        
-    #     segment_vectors = np.array(vector_data['segment_vectors'])
-    #     encoded_features = np.array(superpixel_data['encoded_features'])
-    #     stored_data = vector_data['segmentColorDict']
-    #     segmentColorDict = {np.int32(key): np.array(value) for key, value in stored_data.items()}
-
-    #     if hover_data is None:
-    #         if visualization == 'PC':
-    #             print('Vector plot ready in:', time.time() - start_time)
-    #             return dash.no_update, dash.no_update, dash.no_update
-            
-    #         if visualization == 'pca':
-    #             vector_space_fig, df = create_pca_plot(segment_vectors, segmentColorDict, None, encoded_features, autoencoder_checkbox)
-
-    #         elif visualization == 'tsne':
-    #             vector_space_fig, df = create_tsne_plot(segment_vectors, segmentColorDict, None, encoded_features, autoencoder_checkbox)
-
-    #         print('Vector plot ready in:', time.time() - start_time)
-
-    #         return vector_space_fig, dash.no_update, dash.no_update
-
-    #     else:
-    #         if visualization == 'PC':
-    #             print('Vector plot ready in:', time.time() - start_time)
-    #             return dash.no_update, dash.no_update, dash.no_update
-            
-    #         hovered_segment_id = int(hover_data['points'][0]['text'])
-
-    #         if visualization == 'pca':
-    #             vector_space_fig, df = create_pca_plot(segment_vectors, segmentColorDict, hovered_segment_id, encoded_features, autoencoder_checkbox)
-
-    #         elif visualization == 'tsne':
-    #             vector_space_fig, df = create_tsne_plot(segment_vectors, segmentColorDict, hovered_segment_id, encoded_features, autoencoder_checkbox)
-
-    #         print('Vector plot ready in:', time.time() - start_time)
-
-    #         return vector_space_fig, dash.no_update, dash.no_update
-
     slice_data = json.loads(jsonified_slice_data)
     superpixel_data = json.loads(jsonified_superpixel_data)
 
@@ -1941,8 +1898,6 @@ def update_cluster_vector_plot(jsonified_cluster_data, visualization, checkbox_v
     print("Updating cluster vector plot...")
     start_time = time.time()
 
-    # ctx_id = ctx.triggered_id.split('.')[0]
-
     vector_data = json.loads(jsonified_vector_data)
     cluster_data = json.loads(jsonified_cluster_data)
     superpixel_data = json.loads(jsonified_superpixel_data)
@@ -1951,32 +1906,6 @@ def update_cluster_vector_plot(jsonified_cluster_data, visualization, checkbox_v
     segment_vectors = np.array(vector_data['segment_vectors'])
     cluster_labels = np.array(cluster_data['cluster_labels'])
     encoded_features = np.array(superpixel_data['encoded_features'])
-
-    # if ctx_id == 'superpixel-plot':
-        # if hover_data is None:
-        #     if visualization == 'PC':
-        #         print('Cluster vector plot ready in:', time.time() - start_time)
-        #         return dash.no_update, dash.no_update, dash.no_update
-
-        #     cluster_vector_plot_fig = create_cluster_vector_plot(segment_vectors, cluster_labels, visualization, None, encoded_features, autoencoder_checkbox)
-
-        #     print('Cluster vector plot ready in:', time.time() - start_time)
-
-        #     return cluster_vector_plot_fig, dash.no_update, dash.no_update
-        # else:
-        #     if visualization == 'PC':
-        #         print('Cluster vector plot ready in:', time.time() - start_time)
-        #         return dash.no_update, dash.no_update, dash.no_update
-            
-        #     hovered_segment_id = int(hover_data['points'][0]['text'])
-
-        #     cluster_vector_plot_fig = create_cluster_vector_plot(segment_vectors, cluster_labels, visualization, hovered_segment_id, encoded_features, autoencoder_checkbox)
-
-        #     print('Cluster vector plot ready in:', time.time() - start_time)
-
-        #     return cluster_vector_plot_fig, dash.no_update, dash.no_update
-                
-    # else:
 
     cluster_vector_plot_fig, df = create_cluster_vector_plot(segment_vectors, cluster_labels, visualization, None, encoded_features, autoencoder_checkbox)
 
