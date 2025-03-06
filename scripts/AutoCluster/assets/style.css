@@ -40,6 +40,10 @@ body{
 #slice-slider, #superpixel-input{
     margin-top: 10px;
 }
+#slice-slider .rc-slider-mark-text, #superpixel-input .rc-slider-mark-text{
+    font-size: 14px;
+    color: white;
+}
 #slice-plot .svg-container .main-svg:first-child{
     background: none !important;
 }

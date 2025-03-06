@@ -352,8 +352,8 @@ def create_original_slice(axis, slice_num):
 # Function to create superpixels
 def create_superpixels(resized_image, input_image, num_superpixels):
     
-    segments, cluster_centers = custom_slic(resized_image, num_superpixels)
-    # segments = segmentation.slic(input_image, n_segments=num_superpixels, compactness=30, start_label=0)
+    # segments, cluster_centers = custom_slic(resized_image, num_superpixels)
+    segments = segmentation.slic(input_image, n_segments=num_superpixels, compactness=30, start_label=0)
 
     boundary_image = mark_boundaries(input_image, segments)
 
@@ -460,6 +460,8 @@ def create_pca_plot(segment_vectors, segmentColorDict, hovered_segment_id, encod
             }
         }
     )
+    
+    fig.update_layout(clickmode='event')
 
     if hovered_segment_id is not None:
         # Highlight the corresponding segment in the PCA plot
@@ -549,6 +551,8 @@ def create_tsne_plot(segment_vectors, segmentColorDict, hovered_segment_id, enco
             }
         }
     )
+
+    fig.update_layout(clickmode='event')
 
     if hovered_segment_id is not None:
         # Highlight the corresponding segment in the t-SNE plot
@@ -1135,8 +1139,8 @@ app.layout = html.Div([
                         value=130,
                         # marks={1: str(1), volume.shape[0]: str(volume.shape[0])}
                         marks={
-                            45: {'label': str(45), 'style': {'color': 'white', 'font-size': '14px'}},
-                            160: {'label': str(160), 'style': {'color': 'white', 'font-size': '14px'}}
+                            45: {'label': str(45)},
+                            160: {'label': str(160)}
                         },
                         tooltip={"placement": "bottom", "always_visible": True}
                     ),
@@ -1157,8 +1161,8 @@ app.layout = html.Div([
                         step=1,
                         value=450,
                         marks={
-                            100: {'label': str(100), 'style': {'color': 'white', 'font-size': '14px'}},
-                            600: {'label': str(600), 'style': {'color': 'white', 'font-size': '14px'}}
+                            100: {'label': str(100)},
+                            600: {'label': str(600)}
                         },
                         tooltip={"placement": "bottom", "always_visible": True}
                     ),
@@ -1179,7 +1183,7 @@ app.layout = html.Div([
                             {'label': 't-SNE', 'value': 'tsne'},
                             {'label': 'Parallel Coordinates', 'value': 'PC'}
                         ],
-                        value='PC'
+                        value='tsne'
                     ),
 
                     # -------------------------------------------------------------------------------
@@ -1458,10 +1462,10 @@ def update_slice_plot(axis, slice_num):
 # Callback for Superpixel Plot
 @app.callback(
     [Output('superpixel-plot', 'figure'), Output('superpixel-data', 'data'), Output('clustering-checkbox', 'value'), Output('class-tracker', 'data'), Output('vector-data', 'data')],
-    [Input('slice-data', 'data'), Input('vector-plot', 'hoverData'), Input('cluster-vector-plot', 'hoverData'), Input('superpixel-input', 'value'), Input('vector-plot', 'restyleData'), Input('cluster-vector-plot', 'restyleData'), Input('visualization-radio', 'value'), Input('clustering-checkbox', 'value'), Input('autoencoder-checkbox', 'value'), Input('elbow-plot', 'clickData'), Input('clustering-radio', 'value')],
+    [Input('slice-data', 'data'), Input('vector-plot', 'clickData'), Input('cluster-vector-plot', 'clickData'), Input('superpixel-input', 'value'), Input('vector-plot', 'restyleData'), Input('cluster-vector-plot', 'restyleData'), Input('visualization-radio', 'value'), Input('clustering-checkbox', 'value'), Input('autoencoder-checkbox', 'value'), Input('elbow-plot', 'clickData'), Input('clustering-radio', 'value')],
     [State('superpixel-data', 'data'), State('vector-data', 'data')]
 )
-def update_superpixel_plot(jsonified_slice_data, hover_data1, hover_data2, num_superpixels, restyle_data1, restyle_data2, visualization, clustering_checkbox, autoencoder_checkbox, click_data, clustering, jsonified_superpixel_data, jsonified_vector_data):
+def update_superpixel_plot(jsonified_slice_data, vector_click_data1, vector_click_data2, num_superpixels, restyle_data1, restyle_data2, visualization, clustering_checkbox, autoencoder_checkbox, click_data, clustering, jsonified_superpixel_data, jsonified_vector_data):
     print("--------------------------------")
     print("Updating superpixel plot...")
     start_time = time.time()
@@ -1548,7 +1552,7 @@ def update_superpixel_plot(jsonified_slice_data, hover_data1, hover_data2, num_s
 
                         return superpixel_fig, dash.no_update, dash.no_update, dash.no_update, json.dumps(vector_data)
 
-        if hover_data1 is None and hover_data2 is None:
+        if vector_click_data1 is None and vector_click_data2 is None:
             if jsonified_superpixel_data is not None:
                 superpixel_data = json.loads(jsonified_superpixel_data)
 
@@ -1588,9 +1592,9 @@ def update_superpixel_plot(jsonified_slice_data, hover_data1, hover_data2, num_s
         
         else:
             if ctx_id == 'vector-plot':
-                hovered_segment_id = hover_data1['points'][0]['customdata'][0]
+                clicked_segment_id = vector_click_data1['points'][0]['customdata'][0]
             elif ctx_id == 'cluster-vector-plot':
-                hovered_segment_id = hover_data2['points'][0]['customdata'][1]
+                clicked_segment_id = vector_click_data2['points'][0]['customdata'][1]
 
             if jsonified_superpixel_data is not None:
                 superpixel_data = json.loads(jsonified_superpixel_data)
@@ -1598,7 +1602,7 @@ def update_superpixel_plot(jsonified_slice_data, hover_data1, hover_data2, num_s
                 segments = np.array(superpixel_data['segments'])
                 highlighted_image = np.array(superpixel_data['image'])
 
-                highlighted_image[segments != hovered_segment_id] *= 0.3  # Dim non-selected segments
+                highlighted_image[segments != clicked_segment_id] *= 0.3  # Dim non-selected segments
 
                 # Create a new figure with highlighted segment
                 superpixel_fig = px.imshow(highlighted_image)
@@ -1615,11 +1619,11 @@ def update_superpixel_plot(jsonified_slice_data, hover_data1, hover_data2, num_s
 
     elif ctx_id == 'visualization-radio' or ctx_id == 'clustering-checkbox' or ctx_id == 'autoencoder-checkbox' or ctx_id == 'elbow-plot' or ctx_id == 'clustering-radio':
         vector_data = json.loads(jsonified_vector_data)
-        filters = vector_data['filters']
+        # filters = vector_data['filters']
 
-        if filters == {}:
-            print('Superpixel plot ready in:', time.time() - start_time)
-            return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
+        # if visualization == "PC" and filters == {}:
+        #     print('Superpixel plot ready in:', time.time() - start_time)
+        #     return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
         # Clear data selection from superpixel plot
         superpixel_data = json.loads(jsonified_superpixel_data)
@@ -1818,7 +1822,7 @@ def update_vector_plot(jsonified_slice_data, jsonified_superpixel_data, visualiz
 
     segmentCordDict_data = {int(key): value for key, value in segmentCordDict.items()}
 
-    return vector_space_fig, json.dumps({'segment_vectors': segment_vectors.tolist(), 'segmentColorDict': segmentColorDict_data, "segmentCordDict": segmentCordDict_data, "dataframe": df.to_json(orient="split"), "filters": {}}), ".vector-plot-class"
+    return vector_space_fig, json.dumps({'segment_vectors': segment_vectors.tolist(), 'segmentColorDict': segmentColorDict_data, "segmentCordDict": segmentCordDict_data, "dataframe": df.to_json(orient="split"), "filters": {}, "clicks": []}), ".vector-plot-class"
 
 # -------------------------------------------------------------------------------
 
