@@ -1894,6 +1894,9 @@ def enable_clustering(checkbox_value):
 def perform_clustering(clustering, cluster_number, autoencoder_checkbox, clustering_checkbox, jsonified_superpixel_data, jsonified_vector_data):
     if jsonified_superpixel_data is None or jsonified_vector_data is None:
         return dash.no_update
+
+    if 'enable' not in clustering_checkbox:
+        return dash.no_update
     
     print("--------------------------------")
     print("Performing clustering...")
@@ -1987,11 +1990,14 @@ def update_cluster_vector_plot(jsonified_cluster_data, visualization, checkbox_v
 @app.callback(
     [Output('final-plot', 'figure'), Output('class-tracker', 'data')],
     [Input('cluster-data', 'data'), Input('slice-data', 'data'), Input('superpixel-data', 'data'), Input('cluster-vector-plot', 'restyleData'), Input('visualization-radio', 'value')],
-    [State('class-tracker', 'data'), State('vector-data', 'data')],
+    [State('class-tracker', 'data'), State('vector-data', 'data'), State('clustering-checkbox', 'value')],
     prevent_initial_call=True
 )
-def update_final_plot(jsonified_cluster_data, jsonified_slice_data, jsonified_superpixel_data, restyle_data, visualization, class_tracker, jsonified_vector_data):
+def update_final_plot(jsonified_cluster_data, jsonified_slice_data, jsonified_superpixel_data, restyle_data, visualization, class_tracker, jsonified_vector_data, clustering_checkbox):
     if jsonified_cluster_data is None or jsonified_slice_data is None or jsonified_superpixel_data is None:
+        return dash.no_update, dash.no_update
+
+    if 'enable' not in clustering_checkbox:
         return dash.no_update, dash.no_update
 
     print("--------------------------------")
