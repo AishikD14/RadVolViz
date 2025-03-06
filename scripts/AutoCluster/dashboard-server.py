@@ -1148,14 +1148,19 @@ app.layout = html.Div([
 
                     # -------------------------------------------------------------------------------
 
-                    # Input text box for number of superpixels
-                    html.Label('No of Superpixels:'),
-                    dcc.Input(
+                    # Slider for selecting superpixel count
+                    html.Label('Select number of superpixels:'),
+                    dcc.Slider(
                         id='superpixel-input',
-                        type='number',
-                        value=450,
                         min=100,
-                        max=600
+                        max=600,
+                        step=1,
+                        value=450,
+                        marks={
+                            100: {'label': str(100), 'style': {'color': 'white', 'font-size': '14px'}},
+                            600: {'label': str(600), 'style': {'color': 'white', 'font-size': '14px'}}
+                        },
+                        tooltip={"placement": "bottom", "always_visible": True}
                     ),
 
                     # -------------------------------------------------------------------------------

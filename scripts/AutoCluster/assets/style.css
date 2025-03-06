@@ -37,7 +37,7 @@ body{
     text-align: center;
     border-left: 2px solid black;
 }
-#slice-slider{
+#slice-slider, #superpixel-input{
     margin-top: 10px;
 }
 #slice-plot .svg-container .main-svg:first-child{
@@ -101,11 +101,6 @@ body{
 #selected-slice-output{
     font-size: 15px;
     margin-top: 10px;
-}
-#superpixel-input{
-    width: 10%;
-    margin-left: 7px;
-    margin-bottom: 10px;
 }
 #vector-plot .parcoords .axis-title, #cluster-vector-plot .parcoords .axis-title{
     font-size: 13px !important;
