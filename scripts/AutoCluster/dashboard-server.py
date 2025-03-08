@@ -352,8 +352,8 @@ def create_original_slice(axis, slice_num):
 # Function to create superpixels
 def create_superpixels(resized_image, input_image, num_superpixels):
     
-    # segments, cluster_centers = custom_slic(resized_image, num_superpixels)
-    segments = segmentation.slic(input_image, n_segments=num_superpixels, compactness=30, start_label=0)
+    segments, cluster_centers = custom_slic(resized_image, num_superpixels)
+    # segments = segmentation.slic(input_image, n_segments=num_superpixels, compactness=30, start_label=0)
 
     boundary_image = mark_boundaries(input_image, segments)
 
@@ -699,25 +699,42 @@ def create_cluster_stats_plot(segment_vectors, clustering, cluster_number, clust
         fig.update_layout(
             xaxis_title={
                 'font': {
-                    'color': 'white'
+                    # 'color': 'white'
+                    'color': '#eeeeee'
                 }
             },
             yaxis_title={
                 'font': {
-                    'color': 'white'
+                    # 'color': 'white'
+                    'color': '#eeeeee'
                 }
             },
             xaxis={
                 'tickfont': {
                     'color': 'white'
-                }
+                },
+                'showgrid': False,
+                'zeroline': True,
+                'zerolinecolor': 'white',
+                'linecolor': '#eeeeee',
+                'linewidth': 2
             },
             yaxis={
                 'tickfont': {
                     'color': 'white'
-                }
-            }
+                },
+                'showgrid': False,
+                'zeroline': True,
+                'zerolinecolor': 'white',
+                'linecolor': '#eeeeee',
+                'linewidth': 2
+            },
+            # Set the background color to light gray
+            plot_bgcolor='#222831',
         )
+
+        # Color the line
+        fig.update_traces(line=dict(color='#00adb5'))
 
         fig.update_layout(clickmode='event')
 
