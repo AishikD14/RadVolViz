@@ -1112,7 +1112,7 @@ def setup_model(input_dimension):
 
 # Initialize Dash app
 # app = dash.Dash(__name__)
-app = DashProxy(__name__, transforms=[MultiplexerTransform()])
+app = DashProxy(__name__, transforms=[MultiplexerTransform()])  # Helps to generate the same output from multiple callbacks
 
 # Layout of the app
 app.layout = html.Div([
