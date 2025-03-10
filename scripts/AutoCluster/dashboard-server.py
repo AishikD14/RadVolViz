@@ -193,6 +193,103 @@ def cropImage(image, zoom_factor):
 
 # -------------------------------------------------------------------------------
 
+def initialize_cluster_centers1(data, num_superpixels, grid_spacing):
+    """
+    Initialize cluster centers based on a uniform grid.
+    """
+    rows, cols, _ = data.shape
+    centers = []
+    for r in range(grid_spacing // 2, rows, grid_spacing):
+        for c in range(grid_spacing // 2, cols, grid_spacing):
+            centers.append([r, c] + list(data[r, c]))
+    return np.array(centers, dtype=np.float32)
+
+
+@njit
+def calculate_distance1(pixel, center, spatial_weight, feature_weight):
+    """
+    Compute the combined distance between a pixel and a cluster center.
+    Uses Numba to accelerate this function.
+    """
+    spatial_dist = np.sqrt((pixel[0] - center[0])**2 + (pixel[1] - center[1])**2)
+    feature_dist = np.sqrt(np.sum((pixel[2:] - center[2:])**2))
+    return np.sqrt((spatial_dist / spatial_weight)**2 + (feature_dist / feature_weight)**2)
+
+
+@njit
+def assign_pixels_to_clusters1(data, cluster_centers, labels, distances, spatial_weight, feature_weight, grid_spacing):
+    """
+    Assign each pixel to the nearest cluster center within its search window.
+    Uses Numba for faster execution.
+    """
+    rows, cols, _ = data.shape
+    for idx, center in enumerate(cluster_centers):
+        r, c = int(center[0]), int(center[1])
+        
+        # Search window around the cluster center
+        r_min = max(r - grid_spacing, 0)
+        r_max = min(r + grid_spacing + 1, rows)
+        c_min = max(c - grid_spacing, 0)
+        c_max = min(c + grid_spacing + 1, cols)
+
+        for rr in range(r_min, r_max):
+            for cc in range(c_min, c_max):
+                pixel = np.array([rr, cc] + list(data[rr, cc]))
+                distance = calculate_distance1(pixel, center, spatial_weight, feature_weight)
+                if distance < distances[rr, cc]:
+                    distances[rr, cc] = distance
+                    labels[rr, cc] = idx
+
+
+@njit
+def update_cluster_centers1(data, labels, cluster_centers):
+    """
+    Compute new cluster centers based on the average of assigned pixels.
+    Uses Numba for efficiency.
+    """
+    num_clusters = len(cluster_centers)
+    num_features = data.shape[2]
+    
+    new_centers = np.zeros_like(cluster_centers)
+    counts = np.zeros(num_clusters, dtype=np.int32)
+
+    rows, cols = labels.shape
+    for r in range(rows):
+        for c in range(cols):
+            label = labels[r, c]
+            new_centers[label][:2] += np.array([r, c], dtype=np.float32)
+            new_centers[label][2:] += data[r, c]
+            counts[label] += 1
+
+    for i in range(num_clusters):
+        if counts[i] > 0:
+            new_centers[i] /= counts[i]
+
+    return new_centers
+
+
+def custom_slic1(data, num_superpixels, spatial_weight=5, max_iter=20):
+    """
+    Perform optimized SLIC segmentation on 4D input data (metal concentrations per pixel).
+    """
+    rows, cols, num_features = data.shape
+    grid_spacing = int(np.sqrt((rows * cols) / num_superpixels))
+    feature_weight = np.std(data.reshape(-1, num_features), axis=0).mean()
+
+    # Initialize cluster centers
+    cluster_centers = initialize_cluster_centers1(data, num_superpixels, grid_spacing)
+    labels = -1 * np.ones((rows, cols), dtype=np.int32)
+    distances = np.full((rows, cols), np.inf, dtype=np.float32)
+
+    # Iterate until convergence
+    for _ in range(max_iter):
+        assign_pixels_to_clusters1(data, cluster_centers, labels, distances, spatial_weight, feature_weight, grid_spacing)
+        cluster_centers = update_cluster_centers1(data, labels, cluster_centers)
+
+    return labels, cluster_centers
+
+# ===============================================================================
+
 def initialize_cluster_centers(data, num_superpixels, grid_spacing):
     """
     Initialize cluster centers based on a uniform grid, ignoring zero-value pixels.
@@ -367,10 +464,15 @@ def create_original_slice(axis, slice_num):
     return fig, resized_image, input_image
 
 # Function to create superpixels
-def create_superpixels(resized_image, input_image, num_superpixels):
-    
-    segments, cluster_centers = custom_slic(resized_image, num_superpixels)
+def create_superpixels(resized_image, input_image, num_superpixels,dropzero_checkbox):
+    if 'enable' in dropzero_checkbox:
+        segments, cluster_centers = custom_slic(resized_image, num_superpixels)
+    else:
+        segments, cluster_centers = custom_slic1(resized_image, num_superpixels)
+
     # segments = segmentation.slic(input_image, n_segments=num_superpixels, compactness=30, start_label=0)
+
+    print("Segment Range:", np.min(segments), np.max(segments))
 
     boundary_image = mark_boundaries(input_image, segments)
 
@@ -628,7 +730,7 @@ def create_parallel_coordinates_plot(segment_vectors, segmentColorDict, hovered_
     dimensions = list([
         dict(label=col, values=df_parallel[col]) 
         if col != color_column 
-        else dict(label=col, values=df_parallel[col], tickvals=np.arange(0, len(df_parallel[color_column].unique()), int(len(df_parallel[color_column].unique())/5)))
+        else dict(label=col, values=df_parallel[col], tickvals=np.linspace(0, len(df_parallel[color_column].unique()) - 1, num=5, dtype=int))
         for col in df_parallel.columns
     ])
 
@@ -1035,7 +1137,10 @@ def create_final_image(cluster_labels, cluster_color_dict, resized_image, segmen
 
     for i in range(resized_image.shape[0]):
         for j in range(resized_image.shape[1]):
-            final_segmented_image[i][j] = cluster_color_dict[cluster_labels[segments[i][j]]]
+            if segments[i][j] >= len(cluster_labels):
+                final_segmented_image[i][j] = (0, 0, 0)
+            else:
+                final_segmented_image[i][j] = cluster_color_dict[cluster_labels[segments[i][j]]]
 
     # Get all segment IDs
     all_segment_ids = set(segmentCordDict.keys())
@@ -1091,8 +1196,12 @@ class Autoencoder(nn.Module):
         decoded = self.decoder(encoded)
         return encoded, decoded
 
-def compute_superpixel_features(image_4ch, superpixels):
-    num_superpixels = np.max(superpixels) + 1  # Number of unique superpixels
+def compute_superpixel_features(image_4ch, superpixels, dropzero_checkbox):
+    if 'enable' in dropzero_checkbox:
+        num_superpixels = np.max(superpixels)  # Number of unique superpixels
+    else:
+        num_superpixels = np.max(superpixels) + 1  # Number of unique superpixels
+
     num_channels = image_4ch.shape[-1]
     features = np.zeros((num_superpixels, num_channels * 2))  # Mean + Std
 
@@ -1113,14 +1222,19 @@ def cluster_autoencoded_features(model, data_tensor, n_clusters=5):
     kmeans = KMeans(n_clusters=n_clusters, random_state=42).fit(encoded_features)
     return kmeans.labels_, encoded_features
 
-def setup_model(input_dimension):
+def setup_model(input_dimension, dropzero_checkbox):
     # Model Setup
     input_dim = input_dimension
     latent_dim=2
 
     # Load the trained autoencoder model
     model = Autoencoder(input_dim, latent_dim)
-    model.load_state_dict(torch.load('autoencoder_mean.pth', map_location=torch.device('cuda' if torch.cuda.is_available() else 'cpu')))
+
+    if 'enable' in dropzero_checkbox:
+        model.load_state_dict(torch.load('autoencoder_mean_nozero.pth', map_location=torch.device('cuda' if torch.cuda.is_available() else 'cpu')))
+    else:
+        model.load_state_dict(torch.load('autoencoder_mean.pth', map_location=torch.device('cuda' if torch.cuda.is_available() else 'cpu')))
+        
     model.eval()
 
     return model
@@ -1199,6 +1313,22 @@ app.layout = html.Div([
                             600: {'label': str(600)}
                         },
                         tooltip={"placement": "bottom", "always_visible": True}
+                    ),
+
+                    # -------------------------------------------------------------------------------
+
+                    # Add break
+                    html.Br(),
+
+                    # -------------------------------------------------------------------------------
+
+                    # Checkbox to enable/disable zero-value pixels dropping
+                    dcc.Checklist(
+                        id='dropzero-checkbox',
+                        options=[
+                            {'label': 'Drop zero-value pixels', 'value': 'enable'}
+                        ],
+                        value=['enable']
                     ),
 
                     # -------------------------------------------------------------------------------
@@ -1496,10 +1626,10 @@ def update_slice_plot(axis, slice_num):
 # Callback for Superpixel Plot
 @app.callback(
     [Output('superpixel-plot', 'figure'), Output('superpixel-data', 'data'), Output('clustering-checkbox', 'value'), Output('class-tracker', 'data'), Output('vector-data', 'data')],
-    [Input('slice-data', 'data'), Input('vector-plot', 'clickData'), Input('cluster-vector-plot', 'clickData'), Input('superpixel-input', 'value'), Input('vector-plot', 'restyleData'), Input('cluster-vector-plot', 'restyleData'), Input('visualization-radio', 'value'), Input('clustering-checkbox', 'value'), Input('autoencoder-checkbox', 'value'), Input('elbow-plot', 'clickData'), Input('clustering-radio', 'value')],
+    [Input('slice-data', 'data'), Input('vector-plot', 'clickData'), Input('cluster-vector-plot', 'clickData'), Input('superpixel-input', 'value'), Input('dropzero-checkbox', 'value'), Input('vector-plot', 'restyleData'), Input('cluster-vector-plot', 'restyleData'), Input('visualization-radio', 'value'), Input('clustering-checkbox', 'value'), Input('autoencoder-checkbox', 'value'), Input('elbow-plot', 'clickData'), Input('clustering-radio', 'value')],
     [State('superpixel-data', 'data'), State('vector-data', 'data')]
 )
-def update_superpixel_plot(jsonified_slice_data, vector_click_data1, vector_click_data2, num_superpixels, restyle_data1, restyle_data2, visualization, clustering_checkbox, autoencoder_checkbox, click_data, clustering, jsonified_superpixel_data, jsonified_vector_data):
+def update_superpixel_plot(jsonified_slice_data, vector_click_data1, vector_click_data2, num_superpixels, dropzero_checkbox, restyle_data1, restyle_data2, visualization, clustering_checkbox, autoencoder_checkbox, click_data, clustering, jsonified_superpixel_data, jsonified_vector_data):
     print("--------------------------------")
     print("Updating superpixel plot...")
     start_time = time.time()
@@ -1740,14 +1870,18 @@ def update_superpixel_plot(jsonified_slice_data, vector_click_data1, vector_clic
         resized_image = np.array(slice_data['resized_image'])
         input_image = np.array(slice_data['input_image'], dtype=np.uint8)
         
-        superpixel_fig, segments, boundary_image, trace_info = create_superpixels(resized_image, input_image, num_superpixels)
+        superpixel_fig, segments, boundary_image, trace_info = create_superpixels(resized_image, input_image, num_superpixels, dropzero_checkbox)
 
         # Compute superpixel features for testing data
-        superpixel_features = compute_superpixel_features(resized_image, segments)
+        superpixel_features = compute_superpixel_features(resized_image, segments, dropzero_checkbox)
 
         # Load the scaler
-        with open("scaler_autoencoder_mean.pkl", "rb") as f:
-            loaded_scaler = pickle.load(f)
+        if 'enable' in dropzero_checkbox:
+            with open("scaler_autoencoder_mean_nozero.pkl", "rb") as f:
+                loaded_scaler = pickle.load(f)
+        else:
+            with open("scaler_autoencoder_mean.pkl", "rb") as f:
+                loaded_scaler = pickle.load(f)
 
         # Normalize the data
         test_data_normalized = loaded_scaler.transform(superpixel_features)
@@ -1756,7 +1890,7 @@ def update_superpixel_plot(jsonified_slice_data, vector_click_data1, vector_clic
         test_data_tensor = torch.tensor(test_data_normalized, dtype=torch.float32)
 
         # Setup the model
-        model = setup_model(test_data_tensor.shape[1])
+        model = setup_model(test_data_tensor.shape[1], dropzero_checkbox)
 
         with torch.no_grad():
             encoded_features, _ = model(test_data_tensor)
@@ -1773,9 +1907,9 @@ def update_superpixel_plot(jsonified_slice_data, vector_click_data1, vector_clic
 @app.callback(
     [Output('vector-plot', 'figure'), Output('vector-data', 'data'), Output('class-tracker', 'data')],
     [Input('slice-data', 'data'), Input('superpixel-data', 'data'), Input('visualization-radio', 'value'), Input('clustering-checkbox', 'value'), Input('autoencoder-checkbox', 'value')],
-    [State('vector-data', 'data')]
+    [State('vector-data', 'data'), State('dropzero-checkbox', 'value')]
 )
-def update_vector_plot(jsonified_slice_data, jsonified_superpixel_data, visualization, checkbox_value, autoencoder_checkbox, jsonified_vector_data):
+def update_vector_plot(jsonified_slice_data, jsonified_superpixel_data, visualization, checkbox_value, autoencoder_checkbox, jsonified_vector_data, dropzero_checkbox):
     if checkbox_value == ['enable']:
         return dash.no_update, dash.no_update, dash.no_update
     
@@ -1822,6 +1956,10 @@ def update_vector_plot(jsonified_slice_data, jsonified_superpixel_data, visualiz
     
     unique_segments = np.unique(segments)  # Get unique segment IDs
     segment_vectors = []
+
+    # Drop last segment as it is the zero-value pixel superpixel
+    if 'enable' in dropzero_checkbox:
+        unique_segments = unique_segments[:-1]
     
     # Loop through each segment ID and compute mean feature vector
     for segment_id in unique_segments:

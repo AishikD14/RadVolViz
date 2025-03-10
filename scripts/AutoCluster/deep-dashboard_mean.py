@@ -27,6 +27,7 @@ import torch.nn as nn
 import torch.optim as optim
 from numba import njit
 import pickle
+from scipy.spatial import cKDTree
 
 # Ignore warnings
 warnings.filterwarnings("ignore")
@@ -190,7 +191,7 @@ def cropImage(image, zoom_factor):
 
 # -------------------------------------------------------------------------------
 
-def initialize_cluster_centers(data, num_superpixels, grid_spacing):
+def initialize_cluster_centers1(data, num_superpixels, grid_spacing):
     """
     Initialize cluster centers based on a uniform grid.
     """
@@ -203,7 +204,7 @@ def initialize_cluster_centers(data, num_superpixels, grid_spacing):
 
 
 @njit
-def calculate_distance(pixel, center, spatial_weight, feature_weight):
+def calculate_distance1(pixel, center, spatial_weight, feature_weight):
     """
     Compute the combined distance between a pixel and a cluster center.
     Uses Numba to accelerate this function.
@@ -214,7 +215,7 @@ def calculate_distance(pixel, center, spatial_weight, feature_weight):
 
 
 @njit
-def assign_pixels_to_clusters(data, cluster_centers, labels, distances, spatial_weight, feature_weight, grid_spacing):
+def assign_pixels_to_clusters1(data, cluster_centers, labels, distances, spatial_weight, feature_weight, grid_spacing):
     """
     Assign each pixel to the nearest cluster center within its search window.
     Uses Numba for faster execution.
@@ -232,14 +233,14 @@ def assign_pixels_to_clusters(data, cluster_centers, labels, distances, spatial_
         for rr in range(r_min, r_max):
             for cc in range(c_min, c_max):
                 pixel = np.array([rr, cc] + list(data[rr, cc]))
-                distance = calculate_distance(pixel, center, spatial_weight, feature_weight)
+                distance = calculate_distance1(pixel, center, spatial_weight, feature_weight)
                 if distance < distances[rr, cc]:
                     distances[rr, cc] = distance
                     labels[rr, cc] = idx
 
 
 @njit
-def update_cluster_centers(data, labels, cluster_centers):
+def update_cluster_centers1(data, labels, cluster_centers):
     """
     Compute new cluster centers based on the average of assigned pixels.
     Uses Numba for efficiency.
@@ -265,9 +266,106 @@ def update_cluster_centers(data, labels, cluster_centers):
     return new_centers
 
 
-def custom_slic(data, num_superpixels, spatial_weight=5, max_iter=20):
+def custom_slic1(data, num_superpixels, spatial_weight=5, max_iter=20):
     """
     Perform optimized SLIC segmentation on 4D input data (metal concentrations per pixel).
+    """
+    rows, cols, num_features = data.shape
+    grid_spacing = int(np.sqrt((rows * cols) / num_superpixels))
+    feature_weight = np.std(data.reshape(-1, num_features), axis=0).mean()
+
+    # Initialize cluster centers
+    cluster_centers = initialize_cluster_centers1(data, num_superpixels, grid_spacing)
+    labels = -1 * np.ones((rows, cols), dtype=np.int32)
+    distances = np.full((rows, cols), np.inf, dtype=np.float32)
+
+    # Iterate until convergence
+    for _ in range(max_iter):
+        assign_pixels_to_clusters1(data, cluster_centers, labels, distances, spatial_weight, feature_weight, grid_spacing)
+        cluster_centers = update_cluster_centers1(data, labels, cluster_centers)
+
+    return labels, cluster_centers
+
+# ===============================================================================
+
+def initialize_cluster_centers(data, num_superpixels, grid_spacing):
+    """
+    Initialize cluster centers based on a uniform grid, ignoring zero-value pixels.
+    """
+    rows, cols, _ = data.shape
+    centers = []
+    for r in range(grid_spacing // 2, rows, grid_spacing):
+        for c in range(grid_spacing // 2, cols, grid_spacing):
+            if not np.all(data[r, c] == 0):  # Ignore zero-value pixels
+                centers.append([r, c] + list(data[r, c]))
+    return np.array(centers, dtype=np.float32)
+
+@njit
+def calculate_distance(pixel, center, spatial_weight, feature_weight):
+    """
+    Compute the combined distance between a pixel and a cluster center.
+    """
+    spatial_dist = np.sqrt((pixel[0] - center[0])**2 + (pixel[1] - center[1])**2)
+    feature_dist = np.sqrt(np.sum((pixel[2:] - center[2:])**2))
+    return np.sqrt((spatial_dist / spatial_weight)**2 + (feature_dist / feature_weight)**2)
+
+@njit
+def assign_pixels_to_clusters(data, cluster_centers, labels, distances, spatial_weight, feature_weight, grid_spacing):
+    """
+    Assign each pixel to the nearest cluster center within its search window, ignoring zero-value pixels.
+    """
+    rows, cols, _ = data.shape
+    for idx, center in enumerate(cluster_centers):
+        r, c = int(center[0]), int(center[1])
+        
+        # Search window around the cluster center
+        r_min = max(r - grid_spacing, 0)
+        r_max = min(r + grid_spacing + 1, rows)
+        c_min = max(c - grid_spacing, 0)
+        c_max = min(c + grid_spacing + 1, cols)
+
+        for rr in range(r_min, r_max):
+            for cc in range(c_min, c_max):
+                if np.all(data[rr, cc] == 0):
+                    continue  # Ignore zero-value pixels
+                
+                pixel = np.array([rr, cc] + list(data[rr, cc]))
+                distance = calculate_distance(pixel, center, spatial_weight, feature_weight)
+                if distance < distances[rr, cc]:
+                    distances[rr, cc] = distance
+                    labels[rr, cc] = idx
+
+@njit
+def update_cluster_centers(data, labels, cluster_centers):
+    """
+    Compute new cluster centers based on the average of assigned pixels.
+    """
+    num_clusters = len(cluster_centers)
+    num_features = data.shape[2]
+    
+    new_centers = np.zeros_like(cluster_centers)
+    counts = np.zeros(num_clusters, dtype=np.int32)
+
+    rows, cols = labels.shape
+    for r in range(rows):
+        for c in range(cols):
+            label = labels[r, c]
+            if label == -1:
+                continue  # Skip unassigned pixels
+            new_centers[label][:2] += np.array([r, c], dtype=np.float32)
+            new_centers[label][2:] += data[r, c]
+            counts[label] += 1
+
+    for i in range(num_clusters):
+        if counts[i] > 0:
+            new_centers[i] /= counts[i]
+
+    return new_centers
+
+def custom_slic(data, num_superpixels, spatial_weight=5, max_iter=20):
+    """
+    Perform optimized SLIC segmentation on 4D input data (metal concentrations per pixel),
+    ensuring zero-value pixels are ignored in segmentation and grouped into a single superpixel at the end.
     """
     rows, cols, num_features = data.shape
     grid_spacing = int(np.sqrt((rows * cols) / num_superpixels))
@@ -282,6 +380,22 @@ def custom_slic(data, num_superpixels, spatial_weight=5, max_iter=20):
     for _ in range(max_iter):
         assign_pixels_to_clusters(data, cluster_centers, labels, distances, spatial_weight, feature_weight, grid_spacing)
         cluster_centers = update_cluster_centers(data, labels, cluster_centers)
+    
+    # Assign all zero-value pixels to a single superpixel label
+    zero_pixel_label = (np.max(labels) + 1)  # Assign a new label
+    for r in range(rows):
+        for c in range(cols):
+            # if np.all(data[r, c] == 0):
+            if np.all(np.abs(data[r, c]) < 1e-15):
+                labels[r, c] = zero_pixel_label
+
+    # Ensure all pixels are assigned to a cluster
+    unassigned = np.where(labels == -1)
+    if unassigned[0].size > 0:
+        tree = cKDTree(cluster_centers[:, :2])
+        points = np.column_stack(unassigned)
+        _, nearest_labels = tree.query(points)
+        labels[unassigned] = nearest_labels
 
     return labels, cluster_centers
 
@@ -312,8 +426,12 @@ class Autoencoder(nn.Module):
         decoded = self.decoder(encoded)
         return encoded, decoded
 
-def compute_superpixel_features(image_4ch, superpixels):
-    num_superpixels = np.max(superpixels) + 1  # Number of unique superpixels
+def compute_superpixel_features(image_4ch, superpixels, drop_zero_pixels):
+    if drop_zero_pixels:
+        num_superpixels = np.max(superpixels)  # Number of unique superpixels
+    else:
+        num_superpixels = np.max(superpixels) + 1  # Include zero-value pixels as a superpixel
+
     num_channels = image_4ch.shape[-1]
     features = np.zeros((num_superpixels, num_channels * 2))  # Mean + Std
 
@@ -341,12 +459,17 @@ volume = np.load('../../xray_volume.npy')
 
 skip_training = True
 
+drop_zero_pixels = True
+
 # -------------------------------------------------------------------------------
 
 if not skip_training:
 
     # CSV file path containing the superpixel features
-    csv_file_path = 'superpixel_features_mean.csv'
+    if drop_zero_pixels:
+        csv_file_path = 'superpixel_features_mean_nozero.csv'
+    else:
+        csv_file_path = 'superpixel_features_mean.csv'
 
     # Load the superpixel features from the CSV file
     superpixel_features = pd.read_csv(csv_file_path)
@@ -364,8 +487,12 @@ if not skip_training:
     data_normalized = scaler.fit_transform(data)
 
     # Save the scaler
-    with open("scaler_autoencoder_mean.pkl", "wb") as f:
-        pickle.dump(scaler, f)
+    if drop_zero_pixels:
+        with open("scaler_autoencoder_mean_nozero.pkl", "wb") as f:
+            pickle.dump(scaler, f)
+    else:
+        with open("scaler_autoencoder_mean.pkl", "wb") as f:
+            pickle.dump(scaler, f)
 
     # Convert to PyTorch tensor
     data_tensor = torch.tensor(data_normalized, dtype=torch.float32)
@@ -414,19 +541,31 @@ if not skip_training:
     print("Model Trained Successfully!")
 
     # Save the model
-    torch.save(autoencoder.state_dict(), 'autoencoder_mean.pth')
+    if drop_zero_pixels:
+        torch.save(autoencoder.state_dict(), 'autoencoder_mean_nozero.pth')
+    else:
+        torch.save(autoencoder.state_dict(), 'autoencoder_mean.pth')
 
 else:
     input_dim = 8
     latent_dim=2
 
     # Load the scaler
-    with open("scaler_autoencoder_mean.pkl", "rb") as f:
-        scaler = pickle.load(f)
+    if drop_zero_pixels:
+        with open("scaler_autoencoder_mean_nozero.pkl", "rb") as f:
+            scaler = pickle.load(f)
+    else:
+        with open("scaler_autoencoder_mean.pkl", "rb") as f:
+            scaler = pickle.load(f)
 
     # Load the model
     autoencoder = Autoencoder(input_dim, latent_dim)
-    autoencoder.load_state_dict(torch.load('autoencoder_mean.pth', map_location=torch.device('cuda')))
+
+    if drop_zero_pixels:
+        autoencoder.load_state_dict(torch.load('autoencoder_mean_nozero.pth', map_location=torch.device('cuda')))
+    else:
+        autoencoder.load_state_dict(torch.load('autoencoder_mean.pth', map_location=torch.device('cuda')))
+
     autoencoder.eval()
 
     print("Model Loaded Successfully!")
@@ -463,14 +602,17 @@ for i in range(resized_image.shape[0]):
         else:
             input_image[i][j] = getColorfromRatio(resized_image[i][j])
 
-segments, cluster_centers = custom_slic(resized_image, 450)
+if drop_zero_pixels:
+    segments, cluster_centers = custom_slic(resized_image, 450)
+else:
+    segments, cluster_centers = custom_slic1(resized_image, 450)
 
 print("Superpixels Generated Successfully for test data!")
 
 # -------------------------------------------------------------------------------
 
 # Compute superpixel features for testing data
-superpixel_features = compute_superpixel_features(resized_image, segments)
+superpixel_features = compute_superpixel_features(resized_image, segments, drop_zero_pixels)
 
 # Normalize the data
 test_data_normalized = scaler.transform(superpixel_features)
@@ -567,7 +709,10 @@ final_segmented_image = final_segmented_image[:, :, :3]
 
 for i in range(resized_image.shape[0]):
     for j in range(resized_image.shape[1]):
-        final_segmented_image[i][j] = cluster_color_dict[cluster_labels1[segments[i][j]]]
+        if segments[i][j] >= len(cluster_labels1):
+            final_segmented_image[i][j] = (0, 0, 0)
+        else:
+            final_segmented_image[i][j] = cluster_color_dict[cluster_labels1[segments[i][j]]]
 
 # Display the original image and the final segmented image
 plt.figure(figsize=(12, 5))
