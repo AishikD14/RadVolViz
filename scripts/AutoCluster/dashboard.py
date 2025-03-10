@@ -654,6 +654,9 @@ pca = False
 random_colormap = False
 radviz_colormap = True
 
+# Superpixel Segmentation Configuration
+drop_zero_value = True
+
 # -------------------------------------------------------------------------------
 
 # Loop over each x-axis slice
@@ -730,9 +733,9 @@ for x in range(volume.shape[0]):
     plt.suptitle(f'Volume Slice {x}')
 
     plt.tight_layout()
-    plt.show()
+    # plt.show()
 
-    quit()
+    # quit()
 
     # -------------------------------------------------------------------------------
 
@@ -781,6 +784,10 @@ for x in range(volume.shape[0]):
 
     unique_segments = np.unique(segments)  # Get unique segment IDs
     segment_vectors = []
+
+    if drop_zero_value:
+        # Drop last segment as it is the zero-value pixel superpixel
+        unique_segments = unique_segments[:-1]
     
     # Loop through each segment ID and compute mean feature vector
     for segment_id in unique_segments:
@@ -1297,7 +1304,7 @@ for x in range(volume.shape[0]):
         redraw_plot()
         fig.canvas.mpl_connect('button_press_event', on_click)
 
-        plt.show()
+        # plt.show()
         # quit()
 
         # -----------------------------------------------------------------------------------------------
@@ -1323,7 +1330,10 @@ for x in range(volume.shape[0]):
 
     for i in range(resized_image.shape[0]):
         for j in range(resized_image.shape[1]):
-            final_segmented_image[i][j] = cluster_color_dict[cluster_labels[segments[i][j]]]
+            if segments[i][j] >= len(cluster_labels):
+                final_segmented_image[i][j] = (0, 0, 0)
+            else:
+                final_segmented_image[i][j] = cluster_color_dict[cluster_labels[segments[i][j]]]
 
     # Display the original image and the final segmented image
     plt.figure(figsize=(12, 5))
