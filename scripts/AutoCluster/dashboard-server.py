@@ -29,6 +29,7 @@ import torch.nn as nn
 import torch.optim as optim
 import pickle
 from dash_extensions.enrich import DashProxy, MultiplexerTransform
+from scipy.spatial import cKDTree
 
 # Ignore warnings
 warnings.filterwarnings("ignore")
@@ -194,32 +195,29 @@ def cropImage(image, zoom_factor):
 
 def initialize_cluster_centers(data, num_superpixels, grid_spacing):
     """
-    Initialize cluster centers based on a uniform grid.
+    Initialize cluster centers based on a uniform grid, ignoring zero-value pixels.
     """
     rows, cols, _ = data.shape
     centers = []
     for r in range(grid_spacing // 2, rows, grid_spacing):
         for c in range(grid_spacing // 2, cols, grid_spacing):
-            centers.append([r, c] + list(data[r, c]))
+            if not np.all(data[r, c] == 0):  # Ignore zero-value pixels
+                centers.append([r, c] + list(data[r, c]))
     return np.array(centers, dtype=np.float32)
-
 
 @njit
 def calculate_distance(pixel, center, spatial_weight, feature_weight):
     """
     Compute the combined distance between a pixel and a cluster center.
-    Uses Numba to accelerate this function.
     """
     spatial_dist = np.sqrt((pixel[0] - center[0])**2 + (pixel[1] - center[1])**2)
     feature_dist = np.sqrt(np.sum((pixel[2:] - center[2:])**2))
     return np.sqrt((spatial_dist / spatial_weight)**2 + (feature_dist / feature_weight)**2)
 
-
 @njit
 def assign_pixels_to_clusters(data, cluster_centers, labels, distances, spatial_weight, feature_weight, grid_spacing):
     """
-    Assign each pixel to the nearest cluster center within its search window.
-    Uses Numba for faster execution.
+    Assign each pixel to the nearest cluster center within its search window, ignoring zero-value pixels.
     """
     rows, cols, _ = data.shape
     for idx, center in enumerate(cluster_centers):
@@ -233,18 +231,19 @@ def assign_pixels_to_clusters(data, cluster_centers, labels, distances, spatial_
 
         for rr in range(r_min, r_max):
             for cc in range(c_min, c_max):
+                if np.all(data[rr, cc] == 0):
+                    continue  # Ignore zero-value pixels
+                
                 pixel = np.array([rr, cc] + list(data[rr, cc]))
                 distance = calculate_distance(pixel, center, spatial_weight, feature_weight)
                 if distance < distances[rr, cc]:
                     distances[rr, cc] = distance
                     labels[rr, cc] = idx
 
-
 @njit
 def update_cluster_centers(data, labels, cluster_centers):
     """
     Compute new cluster centers based on the average of assigned pixels.
-    Uses Numba for efficiency.
     """
     num_clusters = len(cluster_centers)
     num_features = data.shape[2]
@@ -256,6 +255,8 @@ def update_cluster_centers(data, labels, cluster_centers):
     for r in range(rows):
         for c in range(cols):
             label = labels[r, c]
+            if label == -1:
+                continue  # Skip unassigned pixels
             new_centers[label][:2] += np.array([r, c], dtype=np.float32)
             new_centers[label][2:] += data[r, c]
             counts[label] += 1
@@ -266,10 +267,10 @@ def update_cluster_centers(data, labels, cluster_centers):
 
     return new_centers
 
-
 def custom_slic(data, num_superpixels, spatial_weight=5, max_iter=20):
     """
-    Perform optimized SLIC segmentation on 4D input data (metal concentrations per pixel).
+    Perform optimized SLIC segmentation on 4D input data (metal concentrations per pixel),
+    ensuring zero-value pixels are ignored in segmentation and grouped into a single superpixel at the end.
     """
     rows, cols, num_features = data.shape
     grid_spacing = int(np.sqrt((rows * cols) / num_superpixels))
@@ -284,10 +285,26 @@ def custom_slic(data, num_superpixels, spatial_weight=5, max_iter=20):
     for _ in range(max_iter):
         assign_pixels_to_clusters(data, cluster_centers, labels, distances, spatial_weight, feature_weight, grid_spacing)
         cluster_centers = update_cluster_centers(data, labels, cluster_centers)
+    
+    # Assign all zero-value pixels to a single superpixel label
+    zero_pixel_label = (np.max(labels) + 1)  # Assign a new label
+    for r in range(rows):
+        for c in range(cols):
+            # if np.all(data[r, c] == 0):
+            if np.all(np.abs(data[r, c]) < 1e-15):
+                labels[r, c] = zero_pixel_label
+
+    # Ensure all pixels are assigned to a cluster
+    unassigned = np.where(labels == -1)
+    if unassigned[0].size > 0:
+        tree = cKDTree(cluster_centers[:, :2])
+        points = np.column_stack(unassigned)
+        _, nearest_labels = tree.query(points)
+        labels[unassigned] = nearest_labels
 
     return labels, cluster_centers
 
-# -------------------------------------------------------------------------------
+# ===============================================================================
 
 # Set seed for reproducibility
 torch.manual_seed(0)
@@ -463,23 +480,23 @@ def create_pca_plot(segment_vectors, segmentColorDict, hovered_segment_id, encod
     
     fig.update_layout(clickmode='event')
 
-    if hovered_segment_id is not None:
-        # Highlight the corresponding segment in the PCA plot
-        highlighted_segment = df_pca[df_pca['Segment ID'] == hovered_segment_id]
+    # if hovered_segment_id is not None:
+    #     # Highlight the corresponding segment in the PCA plot
+    #     highlighted_segment = df_pca[df_pca['Segment ID'] == hovered_segment_id]
 
-        # Dim non-selected segments
-        fig.update_traces(marker=dict(opacity=0.3), selector=dict(mode='markers'))
+    #     # Dim non-selected segments
+    #     fig.update_traces(marker=dict(opacity=0.3), selector=dict(mode='markers'))
 
-        fig.add_trace(
-            go.Scatter(
-                x=highlighted_segment['PCA Dimension 1'],
-                y=highlighted_segment['PCA Dimension 2'],
-                mode='markers',
-                marker=dict(size=15, color='black', opacity=1),
-                hoverinfo='skip',  # Hide hover info for the highlighted segment,
-                showlegend=False  # Hide legend for the highlighted segment
-            )
-        )
+    #     fig.add_trace(
+    #         go.Scatter(
+    #             x=highlighted_segment['PCA Dimension 1'],
+    #             y=highlighted_segment['PCA Dimension 2'],
+    #             mode='markers',
+    #             marker=dict(size=15, color='black', opacity=1),
+    #             hoverinfo='skip',  # Hide hover info for the highlighted segment,
+    #             showlegend=False  # Hide legend for the highlighted segment
+    #         )
+    #     )
 
     return fig, df_pca
 
@@ -554,23 +571,23 @@ def create_tsne_plot(segment_vectors, segmentColorDict, hovered_segment_id, enco
 
     fig.update_layout(clickmode='event')
 
-    if hovered_segment_id is not None:
-        # Highlight the corresponding segment in the t-SNE plot
-        highlighted_segment = df_tsne[df_tsne['Segment ID'] == hovered_segment_id]
+    # if hovered_segment_id is not None:
+    #     # Highlight the corresponding segment in the t-SNE plot
+    #     highlighted_segment = df_tsne[df_tsne['Segment ID'] == hovered_segment_id]
 
-        # Dim non-selected segments
-        fig.update_traces(marker=dict(opacity=0.3), selector=dict(mode='markers'))
+    #     # Dim non-selected segments
+    #     fig.update_traces(marker=dict(opacity=0.3), selector=dict(mode='markers'))
 
-        fig.add_trace(
-            go.Scatter(
-                x=highlighted_segment['t-SNE Dimension 1'],
-                y=highlighted_segment['t-SNE Dimension 2'],
-                mode='markers',
-                marker=dict(size=15, color='black', opacity=1),
-                hoverinfo='skip',  # Hide hover info for the highlighted segment,
-                showlegend=False  # Hide legend for the highlighted segment
-            )
-        )
+    #     fig.add_trace(
+    #         go.Scatter(
+    #             x=highlighted_segment['t-SNE Dimension 1'],
+    #             y=highlighted_segment['t-SNE Dimension 2'],
+    #             mode='markers',
+    #             marker=dict(size=15, color='black', opacity=1),
+    #             hoverinfo='skip',  # Hide hover info for the highlighted segment,
+    #             showlegend=False  # Hide legend for the highlighted segment
+    #         )
+    #     )
 
     return fig, df_tsne
 
@@ -1507,6 +1524,9 @@ def update_superpixel_plot(jsonified_slice_data, vector_click_data1, vector_clic
 
                         segments = np.array(superpixel_data['segments'])
                         highlighted_image = np.array(superpixel_data['image'])
+                        segment_coords = superpixel_data['trace_info']['segment_coords']
+                        segment_IDs = superpixel_data['trace_info']['segment_ids']
+                        segment_IDs = [np.int32(num) for num in segment_IDs]
 
                         # Retrieve DataFrame
                         df_original = pd.read_json(vector_data["dataframe"], orient="split")
@@ -1555,8 +1575,23 @@ def update_superpixel_plot(jsonified_slice_data, vector_click_data1, vector_clic
 
                         # Create a new figure with highlighted segment
                         superpixel_fig = px.imshow(highlighted_image)
+
+                        # Create a Plotly scatter plot for segment IDs at each pixel location
+                        scatter_trace = {
+                            'x': [coord[1] for coord in segment_coords],  # x-coordinates (columns)
+                            'y': [coord[0] for coord in segment_coords],  # y-coordinates (rows)
+                            'mode': 'markers',
+                            'marker': {'color': 'rgba(0, 0, 0, 0)', 'size': 1},  # Invisible markers
+                            'text': [seg_id for seg_id in segment_IDs],  # Text for hover
+                            'hovertemplate': '<b>%{text}</b><extra></extra>',  # Custom hover template to show the segment ID
+                        }
+
+                        # Add the scatter trace to the figure
+                        superpixel_fig.add_traces([scatter_trace])
+
+                        # Update the layout of the figure
                         superpixel_fig.update_layout(
-                            margin=dict(l=27, r=27, b=27, t=27),
+                            margin=dict(l=0, r=0, b=0, t=0),
                             xaxis=dict(visible=False),
                             yaxis=dict(visible=False),
                             coloraxis_showscale=False
@@ -1609,7 +1644,7 @@ def update_superpixel_plot(jsonified_slice_data, vector_click_data1, vector_clic
         
         else:
             if ctx_id == 'vector-plot':
-                clicked_segment_id = vector_click_data1['points'][0]['customdata'][0]
+                clicked_segment_id = vector_click_data1['points'][0]['marker.color']
             elif ctx_id == 'cluster-vector-plot':
                 clicked_segment_id = vector_click_data2['points'][0]['customdata'][1]
 
@@ -1618,13 +1653,31 @@ def update_superpixel_plot(jsonified_slice_data, vector_click_data1, vector_clic
 
                 segments = np.array(superpixel_data['segments'])
                 highlighted_image = np.array(superpixel_data['image'])
+                segment_coords = superpixel_data['trace_info']['segment_coords']
+                segment_IDs = superpixel_data['trace_info']['segment_ids']
+                segment_IDs = [np.int32(num) for num in segment_IDs]
 
                 highlighted_image[segments != clicked_segment_id] *= 0.3  # Dim non-selected segments
 
                 # Create a new figure with highlighted segment
                 superpixel_fig = px.imshow(highlighted_image)
+
+                # Create a Plotly scatter plot for segment IDs at each pixel location
+                scatter_trace = {
+                    'x': [coord[1] for coord in segment_coords],  # x-coordinates (columns)
+                    'y': [coord[0] for coord in segment_coords],  # y-coordinates (rows)
+                    'mode': 'markers',
+                    'marker': {'color': 'rgba(0, 0, 0, 0)', 'size': 1},  # Invisible markers
+                    'text': [seg_id for seg_id in segment_IDs],  # Text for hover
+                    'hovertemplate': '<b>%{text}</b><extra></extra>',  # Custom hover template to show the segment ID
+                }
+
+                # Add the scatter trace to the figure
+                superpixel_fig.add_traces([scatter_trace])
+
+                # Update the layout of the figure
                 superpixel_fig.update_layout(
-                    margin=dict(l=27, r=27, b=27, t=27),
+                    margin=dict(l=0, r=0, b=0, t=0),
                     xaxis=dict(visible=False),
                     yaxis=dict(visible=False),
                     coloraxis_showscale=False
@@ -2068,4 +2121,5 @@ app.clientside_callback(
 
 # Run the app
 if __name__ == '__main__':
-    app.run_server(debug=True, use_reloader=True)
+    # app.run_server(debug=True, use_reloader=True)
+    app.run(dev_tools_hot_reload=True, debug=True)  # Disable hot reload to prevent multiple threads
