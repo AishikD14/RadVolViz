@@ -22,6 +22,8 @@ from sklearn.mixture import GaussianMixture
 import time
 from numba import njit
 from scipy.spatial import cKDTree
+from mayavi import mlab
+from scipy.ndimage import zoom
 
 # Ignore warnings
 warnings.filterwarnings("ignore")
@@ -152,6 +154,36 @@ def getColorfromRatio(ratio):
     color = CoordToColor(ss[0], ss[1])
 
     return (np.array(color)[:3] * 255).astype(int)
+
+def cropVolume(volume, zoom_factor):
+    # Calculate new dimensions for cropping
+    depth, height, width = volume.shape[:3]
+    center_d, center_h, center_w = depth // 2, height // 2, width // 2
+
+    # Calculate crop dimensions
+    crop_depth = int(depth / zoom_factor)
+    crop_height = int(height / zoom_factor)
+    crop_width = int(width / zoom_factor)
+
+    # Define crop box around the center
+    d_min = max(center_d - crop_depth // 2, 0)
+    d_max = min(center_d + crop_depth // 2, depth)
+    h_min = max(center_h - crop_height // 2, 0)
+    h_max = min(center_h + crop_height // 2, height)
+    w_min = max(center_w - crop_width // 2, 0)
+    w_max = min(center_w + crop_width // 2, width)
+
+    # Crop the volume
+    cropped_volume = volume[d_min:d_max, h_min:h_max, w_min:w_max]
+
+    # Resize back to original size
+    resized_volume = zoom(cropped_volume, (depth / cropped_volume.shape[0],
+                                           height / cropped_volume.shape[1],
+                                           width / cropped_volume.shape[2],
+                                           1),
+                          order=1)  # Linear interpolation for smooth resizing
+
+    return resized_volume
 
 # -------------------------------------------------------------------------------
 
@@ -284,34 +316,13 @@ color_assignment = False
 superpixel_generation = False
 
 # -------------------------------------------------------------------------------
+# Zoom in on the center of the volume
+# -------------------------------------------------------------------------------
 
-if superpixel_generation:
-    start_time = time.time()
+# Define a zoom factor (increase this value to zoom in more)
+zoom_factor = 1.4
 
-    # Call the custom SLIC function
-    num_superpixels = 500
-    labels, cluster_centers = custom_slic(volume, num_superpixels)
-
-    print("SLIC segmentation complete.")
-    print("Superpixel generation time:", time.time() - start_time)
-
-    print("Number of superpixels:", len(cluster_centers))
-    print("Range of labels:", np.min(labels), np.max(labels))
-
-    # Save the labels
-    np.save('../../xray_volume_labels.npy', labels)
-
-    print("Labels saved.")
-
-else:
-
-    # Load the labels
-    labels = np.load('../../xray_volume_labels.npy')
-
-    print("Labels loaded.")
-
-    print("Number of superpixels:", len(np.unique(labels)))
-    print("Range of labels:", np.min(labels), np.max(labels))
+resized_volume = cropVolume(volume, zoom_factor)  # Adjust zoom factor as needed
 
 # -------------------------------------------------------------------------------
 
@@ -320,7 +331,7 @@ if color_assignment:
     start_time = time.time()
 
     # Create an input volume to store the custom colors
-    input_volume = np.zeros_like(volume, dtype=np.uint8)
+    input_volume = np.zeros_like(resized_volume, dtype=np.uint8)
 
     print(input_volume.shape)
 
@@ -331,14 +342,14 @@ if color_assignment:
     print("This may take a while...")
 
     # Loop though each pixel in the image and assign custom colors
-    for i in range(volume.shape[0]):
-        for j in range(volume.shape[1]):
-            for k in range(volume.shape[2]):
+    for i in range(resized_volume.shape[0]):
+        for j in range(resized_volume.shape[1]):
+            for k in range(resized_volume.shape[2]):
                 print(i, j, k)
-                if np.all(volume[i][j][k] == 0):
+                if np.all(resized_volume[i][j][k] == 0):
                     input_volume[i, j, k] = (0, 0, 0)
                 else:
-                    input_volume[i, j, k] = getColorfromRatio(volume[i][j][k])
+                    input_volume[i, j, k] = getColorfromRatio(resized_volume[i][j][k])
 
     print("Color assignment complete.")
     print("Color assignment time:", time.time() - start_time)
@@ -361,19 +372,110 @@ else:
 
 # -------------------------------------------------------------------------------
 
+if superpixel_generation:
+    start_time = time.time()
+
+    # Call the custom SLIC function
+    num_superpixels = 500
+    labels, cluster_centers = custom_slic(resized_volume, num_superpixels)
+
+    print("SLIC segmentation complete.")
+    print("Superpixel generation time:", time.time() - start_time)
+
+    print("Number of superpixels:", len(cluster_centers))
+    print("Range of labels:", np.min(labels), np.max(labels))
+
+    # Save the labels
+    np.save('../../xray_volume_labels.npy', labels)
+
+    print("Labels saved.")
+
+    quit()
+
+else:
+
+    # Load the labels
+    labels = np.load('../../xray_volume_labels.npy')
+
+    print("Labels loaded.")
+
+    print("Number of superpixels:", len(np.unique(labels)))
+    print("Range of labels:", np.min(labels), np.max(labels))
+
+# -------------------------------------------------------------------------------
+
 # Plot a single slice of the 3D volume with custom colors
 
 # Select the slice to visualize
 slice_idx = 130
 
-# Convert the values in this slice to uint8 without using img_as_ubyte
 input_slice = input_volume[slice_idx, :, :]
 
+# Drop last segment as it is zero value voxels
+
+# Get the labels for the selected slice
+slice_labels = labels[slice_idx, :, :]
+
 # Create a figure
-fig = plt.figure(figsize=(10, 10))
-plt.imshow(input_slice)
+# fig = plt.figure(figsize=(10, 10))
+# plt.imshow(input_slice)
+# plt.axis('off')
+# plt.title('Custom SLIC segmentation')
+# # plt.show()
+
+plt.figure(figsize=(12, 5))
+
+# Visualize the Original image 
+plt.subplot(1, 2, 1)
+plt.imshow(input_slice)  
+plt.title('Original Image')
 plt.axis('off')
-plt.title('Custom SLIC segmentation')
+
+# 3. Visualize the superpixel-boundary marked image
+plt.subplot(1, 2, 2)
+plt.imshow(mark_boundaries(input_slice, slice_labels))
+plt.title('Superpixel Boundaries')
+plt.axis('off')
+
+# Set an overall title for the figure
+plt.suptitle(f'Volume Slice {slice_idx}')
+
+plt.tight_layout()
 plt.show()
+
+quit()
+
+# -------------------------------------------------------------------------------
+
+# import pyvista as pv
+
+# # Assume 'volume' is (X, Y, Z, 3)
+# grid = pv.ImageData(dimensions=input_volume.shape[:3])
+# grid.point_data["colors"] = input_volume.reshape(-1, 3) / 255.0  # Normalize RGB
+
+# plotter = pv.Plotter()
+
+# # opacity_values = np.linspace(0, 1, 256)  # Gradually increase opacity
+# # opacity_values[:50] = 0  # Make very dark pixels fully transparent
+
+# # plotter.add_mesh(grid, scalars="colors", rgb=True, opacity=opacity_values)
+
+# plotter.add_mesh(grid, scalars="colors", rgb=True, opacity="sigmoid")
+
+# def clip_volume(value):
+#     print(value)
+
+#     """Update the volume to only show from the selected X value onward."""
+#     camera_position = plotter.camera_position  # Store current camera view
+#     grid_clipped = grid.clip_box(bounds=(value, input_volume.shape[0], 0, input_volume.shape[1], 0, input_volume.shape[2]))
+    
+#     plotter.clear()  # Clear previous plot
+#     plotter.add_mesh(grid_clipped, scalars="colors", rgb=True, opacity="sigmoid")  # Re-add clipped volume
+#     plotter.camera_position = camera_position  # Restore view
+
+# # ✅ Add the slider **only once**
+# plotter.add_slider_widget(clip_volume, [0, input_volume.shape[0]], title="X-Axis Clip")
+
+# plotter.show()
 
 # -------------------------------------------------------------------------------
