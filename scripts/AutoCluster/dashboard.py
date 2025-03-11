@@ -656,6 +656,7 @@ radviz_colormap = True
 
 # Superpixel Segmentation Configuration
 drop_zero_value = True
+use_image_cropping = True
 
 # -------------------------------------------------------------------------------
 
@@ -688,11 +689,18 @@ for x in range(volume.shape[0]):
     # Loop though each pixel in the image and assign custom colors
     for i in range(resized_image.shape[0]):
         for j in range(resized_image.shape[1]):
-            # If all channels are 0, assign black color
-            if np.all(resized_image[i][j] == 0):
-                input_image[i][j] = [0, 0, 0]
+            if use_image_cropping:
+                # If all channels are 0, assign black color
+                if np.all(resized_image[i][j] == 0):
+                    input_image[i][j] = [0, 0, 0]
+                else:
+                    input_image[i][j] = getColorfromRatio(resized_image[i][j])
             else:
-                input_image[i][j] = getColorfromRatio(resized_image[i][j])
+                # If all channels are 0, assign black color
+                if np.all(image[i][j] == 0):
+                    input_image[i][j] = [0, 0, 0]
+                else:
+                    input_image[i][j] = getColorfromRatio(image[i][j])
 
     # -------------------------------------------------------------------------------
 
@@ -705,7 +713,10 @@ for x in range(volume.shape[0]):
     # Apply SLIC segmentation on the transformed image (now shape is (256, 256, 3))
     # segments = segmentation.slic(alr_image, n_segments=400, compactness=10, sigma=1)
 
-    segments, cluster_centers = custom_slic(resized_image, 450)
+    if use_image_cropping:
+        segments, cluster_centers = custom_slic(resized_image, 450)
+    else:
+        segments, cluster_centers = custom_slic(image, 450)
 
     # print(segments.shape)
     # print(cluster_centers.shape)
@@ -733,9 +744,9 @@ for x in range(volume.shape[0]):
     plt.suptitle(f'Volume Slice {x}')
 
     plt.tight_layout()
-    # plt.show()
+    plt.show()
 
-    # quit()
+    quit()
 
     # -------------------------------------------------------------------------------
 
