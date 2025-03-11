@@ -281,22 +281,37 @@ volume = np.load('../../xray_volume.npy')
 # -------------------------------------------------------------------------------
 
 color_assignment = False
+superpixel_generation = False
 
 # -------------------------------------------------------------------------------
 
-start_time = time.time()
+if superpixel_generation:
+    start_time = time.time()
 
-# Call the custom SLIC function
-num_superpixels = 500
-labels, cluster_centers = custom_slic(volume, num_superpixels)
+    # Call the custom SLIC function
+    num_superpixels = 500
+    labels, cluster_centers = custom_slic(volume, num_superpixels)
 
-print("SLIC segmentation complete.")
-print("Superpixel generation time:", time.time() - start_time)
+    print("SLIC segmentation complete.")
+    print("Superpixel generation time:", time.time() - start_time)
 
-print("Number of superpixels:", len(cluster_centers))
-print("Range of labels:", np.min(labels), np.max(labels))
+    print("Number of superpixels:", len(cluster_centers))
+    print("Range of labels:", np.min(labels), np.max(labels))
 
-quit()
+    # Save the labels
+    np.save('../../xray_volume_labels.npy', labels)
+
+    print("Labels saved.")
+
+else:
+
+    # Load the labels
+    labels = np.load('../../xray_volume_labels.npy')
+
+    print("Labels loaded.")
+
+    print("Number of superpixels:", len(np.unique(labels)))
+    print("Range of labels:", np.min(labels), np.max(labels))
 
 # -------------------------------------------------------------------------------
 
