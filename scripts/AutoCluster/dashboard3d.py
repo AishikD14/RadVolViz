@@ -22,7 +22,7 @@ from sklearn.mixture import GaussianMixture
 import time
 from numba import njit
 from scipy.spatial import cKDTree
-from mayavi import mlab
+# from mayavi import mlab
 from scipy.ndimage import zoom
 
 # Ignore warnings
