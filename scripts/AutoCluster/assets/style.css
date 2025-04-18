@@ -82,13 +82,13 @@ body{
 #cluster-vector-space-visualization{
     display: none;
 }
-.reset-button-container{
+.reset-button-container, .trame-button-container{
     display: flex;
     justify-content: center;
     margin-top: 10px;
     margin-bottom: 10px;
 }
-#reset-button{
+#reset-button, #trame-button{
     background-color: #F0AD4E ;
     font-weight: bold;
     font-size: 16px;

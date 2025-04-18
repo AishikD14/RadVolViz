@@ -30,6 +30,7 @@ import torch.optim as optim
 import pickle
 from dash_extensions.enrich import DashProxy, MultiplexerTransform
 from scipy.spatial import cKDTree
+import urllib.parse
 
 # Ignore warnings
 warnings.filterwarnings("ignore")
@@ -1328,7 +1329,7 @@ app.layout = html.Div([
                         options=[
                             {'label': 'Drop zero-value pixels', 'value': 'enable'}
                         ],
-                        value=['enable']
+                        value=[]
                     ),
 
                     # -------------------------------------------------------------------------------
@@ -1426,13 +1427,34 @@ app.layout = html.Div([
 
                     # -------------------------------------------------------------------------------
 
+                    # Add trame button
+                    html.Div(
+                        children=[
+                            html.Button('Visualize in 3D', id='trame-button', n_clicks=0),
+                        ],
+                        className='trame-button-container'
+                    ),
+
+                    # -------------------------------------------------------------------------------
+
+                    # Add break
+                    html.Br(),
+
+                    # Add break
+                    html.Br(),
+
+                    # Add break
+                    html.Br(),
+
+                    # -------------------------------------------------------------------------------
+
                     # Add reset button
                     html.Div(
                         children=[
                             html.Button('Reset Dashboard', id='reset-button', n_clicks=0),
                         ],
                         className='reset-button-container'
-                    )
+                    ),
                 
                 ],
                 className="control-panel"
@@ -1581,7 +1603,11 @@ app.layout = html.Div([
                         ],
                         className="bottom-half-display"
                     ),
+                    
+                    # -------------------------------------------------------------------------------
 
+                    # Container for embedded 3D content
+                    html.Div(id='content-div'),  
                 ],
                 className="display-panel"
             ),
@@ -1602,6 +1628,9 @@ app.layout = html.Div([
     dcc.Store(id='cluster-data'),
     dcc.Store(id='cluster-number', data=5),
     dcc.Store(id='class-tracker'),
+
+    # Hidden div to open up app using url query string
+    dcc.Location(id="url", refresh=False),
 ])
 
 # -------------------------------------------------------------------------------
@@ -1818,6 +1847,9 @@ def update_superpixel_plot(jsonified_slice_data, vector_click_data1, vector_clic
                 return superpixel_fig, dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
     elif ctx_id == 'visualization-radio' or ctx_id == 'clustering-checkbox' or ctx_id == 'autoencoder-checkbox' or ctx_id == 'elbow-plot' or ctx_id == 'clustering-radio':
+        if jsonified_vector_data is None:
+            return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
+        
         vector_data = json.loads(jsonified_vector_data)
         # filters = vector_data['filters']
 
@@ -2246,6 +2278,27 @@ def reset_dashboard(n_clicks):
         return "x", 130, 5, "PC", "Elbow", "kmeans", [], []
 
 # -------------------------------------------------------------------------------
+# Visualize 3D volume inside Dash app
+@app.callback(
+    Output('content-div', 'children'),
+    Input('trame-button', 'n_clicks'),
+    prevent_initial_call=True
+)
+def embed_page(n_clicks):
+    print("--------------------------------")
+    print("Visualizing in 3D...")
+    print("--------------------------------")
+
+    return html.Iframe(
+        src='http://localhost:8080?timestamp={'+str(time.time())+'}',
+        style={
+            'width': '100%',
+            'height': '600px',
+            'border': 'none'
+        }
+    )
+
+# -------------------------------------------------------------------------------
 
 # Clientside callback to trigger JavaScript
 app.clientside_callback(
@@ -2256,6 +2309,23 @@ app.clientside_callback(
 )
 
 # -------------------------------------------------------------------------------
+# Function to open up 2D view from 3D view with query parameters
+@app.callback(
+    [Output('axis-radio', 'value'), Output('slice-slider', 'value')],
+    Input("url", "search")  # This is the query string part (e.g., ?axis=x&index=3)
+)
+def display_query_params(search):
+    if search:
+        params = urllib.parse.parse_qs(search.lstrip('?'))
+        axis = params.get("axis", ["z"])[0]
+        index = params.get("index", ["0"])[0]
+        data = params.get("data", [""])[0]
+        print(f"Axis: {axis}, Index: {index}, Data: {data}")
+        return axis, int(index)
+    
+    return dash.no_update, dash.no_update
+
+# --------------------------------------------------------------------------------
 
 # Run the app
 if __name__ == '__main__':

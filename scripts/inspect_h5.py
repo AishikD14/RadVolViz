@@ -3,17 +3,25 @@
 import h5py
 import numpy as np
 
-file_path = '../Gd_Ce_Fe_Co.h5'  # Update this path to your local file
+# file_path = '../Gd_Ce_Fe_Co.h5'  # Update this path to your local file
+file_path = '../thigh_sarcoma.h5' # Update this path to your local file
 
 with h5py.File(file_path, 'r') as hdf:
     # Access the datasets
-    ce_data = hdf['Ce'][:]
-    co_data = hdf['Co'][:]
-    fe_data = hdf['Fe'][:]
-    gd_data = hdf['Gd'][:]
+    # ce_data = hdf['Ce'][:]
+    # co_data = hdf['Co'][:]
+    # fe_data = hdf['Fe'][:]
+    # gd_data = hdf['Gd'][:]
+
+    ce_data = hdf['CT'][:]
+    co_data = hdf['MRI-T1'][:]
+    fe_data = hdf['MRI-T2'][:]
+    gd_data = hdf['PET'][:]
+
+x_dim, y_dim, z_dim = ce_data.shape
 
 # Create a new array to hold the multivariate data
-combined_data = np.zeros((200, 200, 200, 4), dtype=np.float64)
+combined_data = np.zeros((x_dim, y_dim, z_dim, 4), dtype=np.float64)
 
 # Populate the new array with the values from each dataset
 combined_data[..., 0] = ce_data
@@ -25,7 +33,8 @@ combined_data[..., 3] = gd_data
 print(combined_data.shape)  # Should print (200, 200, 200, 4)
 print(combined_data[0, 0, 0])  # Sample point: should print a 4-element array
 
-np.save('../xray_volume.npy', combined_data)
+# np.save('../xray_volume.npy', combined_data)
+np.save('../thigh_sarcoma_volume.npy', combined_data)
 
 # --------------------------------------------------------------------------------------------
 
