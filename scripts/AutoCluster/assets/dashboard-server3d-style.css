@@ -1,0 +1,119 @@
+body{
+    background-color: #1b263b;
+    color: white;
+}
+#dashboard-server3d .control-panel{
+    width: 15%;
+    display: inline-block;
+    border: 2px solid black;
+    padding-left: 10px;
+}
+#dashboard-server3d .display-panel{
+    width: 85%;
+    border: 2px solid black;
+}
+/* #dashboard-server3d .top-half-display{ */
+    /* border-bottom: 2px solid black; */
+    /* padding-bottom: 10px; */
+    /* display: flex; */
+/* } */
+#dashboard-server3d .bottom-half-display{
+    /* border-top: 2px solid black; */
+    padding-left: 10px;
+}
+#dashboard-server3d .original-slice, .superpixel-segmentation, .final-segmented-slice{
+    width: 33%;
+    display: inline-block;
+    text-align: center;
+}
+#dashboard-server3d #vector-space-visualization, #cluster-vector-space-visualization{
+    width: 61%;
+    display: inline-block;
+    text-align: center;
+}
+#dashboard-server3d .elbow-plot{
+    width: 38%;
+    display: inline-block;
+    text-align: center;
+    border-left: 2px solid black;
+}
+#dashboard-server3d #supervoxel-slider, #superpixel-input{
+    margin-top: 10px;
+}
+#dashboard-server3d  #supervoxel-slider .rc-slider-mark-text, #superpixel-input .rc-slider-mark-text{
+    font-size: 14px;
+    color: white;
+}
+#dashboard-server3d  #slice-plot .svg-container .main-svg:first-child{
+    background: none !important;
+}
+#dashboard-server3d #superpixel-plot .svg-container .main-svg:first-child{
+    background: none !important;
+}
+#dashboard-server3d #superpixel-plot .svg-container .main-svg:first-child .bglayer .bg{
+    fill-opacity: 0 !important;
+}
+#dashboard-server3d #final-plot .svg-container .main-svg:first-child{
+    background: none !important;
+}
+#dashboard-server3d #vector-plot .svg-container .main-svg:first-child{
+    background: none !important;
+}
+#dashboard-server3d #cluster-vector-plot .svg-container .main-svg:first-child{
+    background: none !important;
+}
+#dashboard-server3d #elbow-plot .svg-container .main-svg:first-child{
+    background: none !important;
+}
+#dashboard-server3d #elbow-plot{
+    padding-left: 10px;
+}
+#dashboard-server3d .final-segmented-slice{
+    display: flex;
+    flex-direction: column;
+}
+#dashboard-server3d #final-segmented-slice-text{
+    color: white;
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+#dashboard-server3d #cluster-vector-space-visualization{
+    display: none;
+}
+#dashboard-server3d .reset-button-container, .trame-button-container{
+    display: flex;
+    justify-content: center;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+#dashboard-server3d #reset-button, #trame-button{
+    background-color: #F0AD4E ;
+    font-weight: bold;
+    font-size: 16px;
+    color: black;
+    height: 40px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, box-shadow 0.2s ease;
+}
+/* Hover effect */
+#dashboard-server3d #reset-button:hover {
+    background-color: #C62828; /* Darker red on hover */
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2);
+}
+#dashboard-server3d #selected-slice-output{
+    font-size: 15px;
+    margin-top: 10px;
+}
+#dashboard-server3d #vector-plot .parcoords .axis-title, #cluster-vector-plot .parcoords .axis-title{
+    font-size: 13px !important;
+}
+
+/* ---------------------------------------------------------------- */
+
+#dashboard-server3d #volume-dropdown{
+    color: black;
+    margin-top: 10px;
+    margin-right: 10px;
+}

@@ -1247,391 +1247,392 @@ def setup_model(input_dimension, dropzero_checkbox):
 app = DashProxy(__name__, transforms=[MultiplexerTransform()])  # Helps to generate the same output from multiple callbacks
 
 # Layout of the app
-app.layout = html.Div([
-    # html.H1(children='Dashboard'),
+app.layout = html.Div(
+    id="dashboard-server",
+    children = [
+        html.Div(
+            children=[
+                # Control Panel
+                html.Div(
+                    children=[
+                        html.H2(children='Control Panel'),
 
-    html.Div(
-        children=[
-            # Control Panel
-            html.Div(
-                children=[
-                    html.H2(children='Control Panel'),
+                        # Radio Button for selection of axis for slicing
+                        html.Label('Select axis for slicing volume:'),
+                        dcc.RadioItems(
+                            id='axis-radio',
+                            options=[
+                                {'label': 'X Axis', 'value': 'x'},
+                                {'label': 'Y Axis', 'value': 'y'},
+                                {'label': 'Z Axis', 'value': 'z'}
+                            ],
+                            value = 'x'
+                        ),
 
-                    # Radio Button for selection of axis for slicing
-                    html.Label('Select axis for slicing volume:'),
-                    dcc.RadioItems(
-                        id='axis-radio',
-                        options=[
-                            {'label': 'X Axis', 'value': 'x'},
-                            {'label': 'Y Axis', 'value': 'y'},
-                            {'label': 'Z Axis', 'value': 'z'}
-                        ],
-                        value = 'x'
-                    ),
+                        # -------------------------------------------------------------------------------
 
-                    # -------------------------------------------------------------------------------
+                        # Add break
+                        html.Br(),
 
-                    # Add break
-                    html.Br(),
+                        # -------------------------------------------------------------------------------
 
-                    # -------------------------------------------------------------------------------
+                        # Slider for selecting slice
+                        html.Label('Select slice to visualize:'),
+                        dcc.Slider(
+                            id='slice-slider',
+                            # min=1,
+                            # max=volume.shape[0],
+                            min=45,
+                            max=160,
+                            step=1,
+                            value=130,
+                            # marks={1: str(1), volume.shape[0]: str(volume.shape[0])}
+                            marks={
+                                45: {'label': str(45)},
+                                160: {'label': str(160)}
+                            },
+                            tooltip={"placement": "bottom", "always_visible": True}
+                        ),
 
-                    # Slider for selecting slice
-                    html.Label('Select slice to visualize:'),
-                    dcc.Slider(
-                        id='slice-slider',
-                        # min=1,
-                        # max=volume.shape[0],
-                        min=45,
-                        max=160,
-                        step=1,
-                        value=130,
-                        # marks={1: str(1), volume.shape[0]: str(volume.shape[0])}
-                        marks={
-                            45: {'label': str(45)},
-                            160: {'label': str(160)}
-                        },
-                        tooltip={"placement": "bottom", "always_visible": True}
-                    ),
+                        # -------------------------------------------------------------------------------
 
-                    # -------------------------------------------------------------------------------
+                        # Add break
+                        html.Br(),
 
-                    # Add break
-                    html.Br(),
+                        # -------------------------------------------------------------------------------
 
-                    # -------------------------------------------------------------------------------
+                        # Slider for selecting superpixel count
+                        html.Label('Select number of superpixels:'),
+                        dcc.Slider(
+                            id='superpixel-input',
+                            min=100,
+                            max=600,
+                            step=1,
+                            value=450,
+                            marks={
+                                100: {'label': str(100)},
+                                600: {'label': str(600)}
+                            },
+                            tooltip={"placement": "bottom", "always_visible": True}
+                        ),
 
-                    # Slider for selecting superpixel count
-                    html.Label('Select number of superpixels:'),
-                    dcc.Slider(
-                        id='superpixel-input',
-                        min=100,
-                        max=600,
-                        step=1,
-                        value=450,
-                        marks={
-                            100: {'label': str(100)},
-                            600: {'label': str(600)}
-                        },
-                        tooltip={"placement": "bottom", "always_visible": True}
-                    ),
+                        # -------------------------------------------------------------------------------
 
-                    # -------------------------------------------------------------------------------
+                        # Add break
+                        html.Br(),
 
-                    # Add break
-                    html.Br(),
+                        # -------------------------------------------------------------------------------
 
-                    # -------------------------------------------------------------------------------
+                        # Checkbox to enable/disable zero-value pixels dropping
+                        dcc.Checklist(
+                            id='dropzero-checkbox',
+                            options=[
+                                {'label': 'Drop zero-value pixels', 'value': 'enable'}
+                            ],
+                            value=[]
+                        ),
 
-                    # Checkbox to enable/disable zero-value pixels dropping
-                    dcc.Checklist(
-                        id='dropzero-checkbox',
-                        options=[
-                            {'label': 'Drop zero-value pixels', 'value': 'enable'}
-                        ],
-                        value=[]
-                    ),
+                        # -------------------------------------------------------------------------------
 
-                    # -------------------------------------------------------------------------------
+                        # Add break
+                        html.Br(),
 
-                    # Add break
-                    html.Br(),
+                        # -------------------------------------------------------------------------------
 
-                    # -------------------------------------------------------------------------------
+                        # Radio Button for selection Visualization Technique
+                        html.Label('Select Visualization Technique:'),
+                        dcc.RadioItems(
+                            id='visualization-radio',
+                            options=[
+                                {'label': 'PCA', 'value': 'pca'},
+                                {'label': 't-SNE', 'value': 'tsne'},
+                                {'label': 'Parallel Coordinates', 'value': 'PC'}
+                            ],
+                            value='PC'
+                        ),
 
-                    # Radio Button for selection Visualization Technique
-                    html.Label('Select Visualization Technique:'),
-                    dcc.RadioItems(
-                        id='visualization-radio',
-                        options=[
-                            {'label': 'PCA', 'value': 'pca'},
-                            {'label': 't-SNE', 'value': 'tsne'},
-                            {'label': 'Parallel Coordinates', 'value': 'PC'}
-                        ],
-                        value='PC'
-                    ),
+                        # -------------------------------------------------------------------------------
 
-                    # -------------------------------------------------------------------------------
+                        # Add break
+                        html.Br(),
+                        
+                        # -------------------------------------------------------------------------------
 
-                    # Add break
-                    html.Br(),
+                        # Radio Button for selection Clustering Technique
+                        html.Label('Select Clustering Technique:'),
+                        dcc.RadioItems(
+                            id='clustering-radio',
+                            options=[
+                                {'label': 'KMeans', 'value': 'kmeans'},
+                                {'label': 'GMM', 'value': 'gmm'}
+                            ],
+                            value='kmeans'
+                        ),
+
+                        # -------------------------------------------------------------------------------
+
+                        # Add break
+                        html.Br(),
+
+                        # -------------------------------------------------------------------------------
+
+                        # Checkbox to enable/disable clustering
+                        dcc.Checklist(
+                            id='clustering-checkbox',
+                            options=[
+                                {'label': 'Enable Clustering', 'value': 'enable'}
+                            ],
+                            value=[]
+                        ),
+
+                        # -------------------------------------------------------------------------------
+
+                        # Add break
+                        html.Br(),
+
+                        # -------------------------------------------------------------------------------
+
+                        # Checkbox to enable/disable Autoencoder feature extraction
+                        dcc.Checklist(
+                            id='autoencoder-checkbox',
+                            options=[
+                                {'label': 'Enable Autoencoder', 'value': 'enable'}
+                            ],
+                            value=[]
+                        ),
+
+                        # -------------------------------------------------------------------------------
+
+                        # Add break
+                        html.Br(),
+
+                        # -------------------------------------------------------------------------------
+
+                        # Radio Button for viewing Cluster Statistics
+                        html.Label('View Cluster Statistics:'),
+                        dcc.RadioItems(
+                            id='cluster-stats-radio',
+                            options=[
+                                {'label': 'Elbow Plot', 'value': 'Elbow'},
+                                {'label': 'Silhouette Score', 'value': 'Silhouette'},
+                                {'label': 'Davies-Bouldin Index', 'value': 'DBI'}
+                            ],
+                            value='Elbow'
+                        ),
+
+                        # -------------------------------------------------------------------------------
+
+                        # Add break
+                        html.Br(),
+
+                        # -------------------------------------------------------------------------------
+
+                        # Add trame button
+                        html.Div(
+                            children=[
+                                html.Button('Visualize in 3D', id='trame-button', n_clicks=0),
+                            ],
+                            className='trame-button-container'
+                        ),
+
+                        # -------------------------------------------------------------------------------
+
+                        # Add break
+                        html.Br(),
+
+                        # Add break
+                        html.Br(),
+
+                        # Add break
+                        html.Br(),
+
+                        # -------------------------------------------------------------------------------
+
+                        # Add reset button
+                        html.Div(
+                            children=[
+                                html.Button('Reset Dashboard', id='reset-button', n_clicks=0),
+                            ],
+                            className='reset-button-container'
+                        ),
                     
-                    # -------------------------------------------------------------------------------
+                    ],
+                    className="control-panel"
+                ),
 
-                    # Radio Button for selection Clustering Technique
-                    html.Label('Select Clustering Technique:'),
-                    dcc.RadioItems(
-                        id='clustering-radio',
-                        options=[
-                            {'label': 'KMeans', 'value': 'kmeans'},
-                            {'label': 'GMM', 'value': 'gmm'}
-                        ],
-                        value='kmeans'
-                    ),
+                # -------------------------------------------------------------------------------
 
-                    # -------------------------------------------------------------------------------
+                # Display Panel
+                html.Div(
+                    children=[
 
-                    # Add break
-                    html.Br(),
+                        # Top Half Display
+                        html.Div(
+                            children=[
 
-                    # -------------------------------------------------------------------------------
+                                # Original Slice
+                                html.Div(
+                                    children=[
+                                        html.H3(children='Original Slice'),
+                                        dcc.Loading(
+                                            id="loading-spinner1",  # Wrapper to show loading spinner
+                                            type="circle",  # Choose the spinner type (circle, dot, default)
+                                            children=[
+                                                dcc.Graph(
+                                                    id="slice-plot",
+                                                    className="slice-plot-class",    
+                                                )  # Graph component wrapped in the loading spinner
+                                            ]
+                                        ),
+                                    ],
+                                    className="original-slice"
+                                ),
 
-                    # Checkbox to enable/disable clustering
-                    dcc.Checklist(
-                        id='clustering-checkbox',
-                        options=[
-                            {'label': 'Enable Clustering', 'value': 'enable'}
-                        ],
-                        value=[]
-                    ),
+                                # -------------------------------------------------------------------------------
 
-                    # -------------------------------------------------------------------------------
+                                # Superpixel Segmentation
+                                html.Div(
+                                    children=[
+                                        html.H3(children='Superpixel Segmentation'),
+                                        dcc.Loading(
+                                            id="loading-spinner2",  # Wrapper to show loading spinner
+                                            type="circle",  # Choose the spinner type (circle, dot, default)
+                                            children=[
+                                                dcc.Graph(
+                                                    id="superpixel-plot",
+                                                    className="superpixel-plot-class",
+                                                    clear_on_unhover=True
+                                                )
+                                            ]
+                                        ),
+                                    ],
+                                    className="superpixel-segmentation"
+                                ),
 
-                    # Add break
-                    html.Br(),
+                                # -------------------------------------------------------------------------------
 
-                    # -------------------------------------------------------------------------------
+                                # Final Segmented Slice
+                                html.Div(
+                                    children=[
+                                        html.H3(children='Final Segmented Slice'),
+                                        html.Div(
+                                            "Enable clustering to view final segmented slice",
+                                            id="final-segmented-slice-text"
+                                        ),
+                                        html.Div(
+                                            children=[
+                                                dcc.Graph(
+                                                    id='final-plot',
+                                                    className="final-plot-class",
+                                                ),
+                                            ],
+                                        ),
+                                    ],
+                                    className="final-segmented-slice"
+                                ),
 
-                    # Checkbox to enable/disable Autoencoder feature extraction
-                    dcc.Checklist(
-                        id='autoencoder-checkbox',
-                        options=[
-                            {'label': 'Enable Autoencoder', 'value': 'enable'}
-                        ],
-                        value=[]
-                    ),
+                            ],
+                            className="top-half-display"
+                        ),
 
-                    # -------------------------------------------------------------------------------
+                        # -------------------------------------------------------------------------------
 
-                    # Add break
-                    html.Br(),
+                        # Bottom Half Display
+                        html.Div(
+                            children=[
 
-                    # -------------------------------------------------------------------------------
+                                # Vector Space Visualization
+                                html.Div(
+                                    children=[
+                                        html.H3(children='Vector Space Visualization'),
+                                        dcc.Loading(
+                                            id="loading-spinner3",  # Wrapper to show loading spinner
+                                            type="circle",  # Choose the spinner type (circle, dot, default)
+                                            children=[
+                                                dcc.Graph(
+                                                    id="vector-plot",
+                                                    className="vector-plot-class",
+                                                    clear_on_unhover=True
+                                                ),  # Graph component wrapped in the loading spinner
+                                            ]
+                                        ),
+                                    ],
+                                    id="vector-space-visualization"
+                                ),
 
-                    # Radio Button for viewing Cluster Statistics
-                    html.Label('View Cluster Statistics:'),
-                    dcc.RadioItems(
-                        id='cluster-stats-radio',
-                        options=[
-                            {'label': 'Elbow Plot', 'value': 'Elbow'},
-                            {'label': 'Silhouette Score', 'value': 'Silhouette'},
-                            {'label': 'Davies-Bouldin Index', 'value': 'DBI'}
-                        ],
-                        value='Elbow'
-                    ),
+                                # -------------------------------------------------------------------------------
 
-                    # -------------------------------------------------------------------------------
+                                # Vector Space Visualization with Clustering
+                                html.Div(
+                                    children=[
+                                        html.H3(children='Clustered Vector Space Visualization'),
+                                        dcc.Loading(
+                                            id="loading-spinner4",  # Wrapper to show loading spinner
+                                            type="circle",  # Choose the spinner type (circle, dot, default)
+                                            children=[
+                                                dcc.Graph(
+                                                    id="cluster-vector-plot",
+                                                    className="cluster-vector-plot-class",
+                                                    clear_on_unhover=True
+                                                )  # Graph component wrapped in the loading spinner
+                                            ]
+                                        ),
+                                    ],
+                                    id="cluster-vector-space-visualization"
+                                ),
 
-                    # Add break
-                    html.Br(),
+                                # -------------------------------------------------------------------------------
 
-                    # -------------------------------------------------------------------------------
+                                # Cluster Stats Plot for Clustering
+                                html.Div(
+                                    children=[
+                                        html.H3(id="cluster-stats-label", children='Elbow Plot for Clustering'),
+                                        dcc.Loading(
+                                            id="loading-spinner5",  # Wrapper to show loading spinner
+                                            type="circle",  # Choose the spinner type (circle, dot, default)
+                                            children=[
+                                                dcc.Graph(
+                                                    id="elbow-plot",
+                                                    className="elbow-plot-class",
+                                                )  # Graph component wrapped in the loading spinner
+                                            ]
+                                        ),
+                                    ],
+                                    className="elbow-plot"
+                                ),
+                            ],
+                            className="bottom-half-display"
+                        ),
+                        
+                        # -------------------------------------------------------------------------------
 
-                    # Add trame button
-                    html.Div(
-                        children=[
-                            html.Button('Visualize in 3D', id='trame-button', n_clicks=0),
-                        ],
-                        className='trame-button-container'
-                    ),
+                        # Container for embedded 3D content
+                        html.Div(id='content-div'),  
+                    ],
+                    className="display-panel"
+                ),
 
-                    # -------------------------------------------------------------------------------
+            ], 
+            style={'display': 'flex'}
+        ),
 
-                    # Add break
-                    html.Br(),
+        # Dummy Div to store intermediate data
+        html.Div(id='dummy', style={'display': 'none'}),
 
-                    # Add break
-                    html.Br(),
+        # -------------------------------------------------------------------------------
 
-                    # Add break
-                    html.Br(),
+        # Hidden store to hold intermediate data
+        dcc.Store(id='slice-data'),
+        dcc.Store(id='superpixel-data'),
+        dcc.Store(id='vector-data'),
+        dcc.Store(id='cluster-data'),
+        dcc.Store(id='cluster-number', data=5),
+        dcc.Store(id='class-tracker'),
 
-                    # -------------------------------------------------------------------------------
-
-                    # Add reset button
-                    html.Div(
-                        children=[
-                            html.Button('Reset Dashboard', id='reset-button', n_clicks=0),
-                        ],
-                        className='reset-button-container'
-                    ),
-                
-                ],
-                className="control-panel"
-            ),
-
-            # -------------------------------------------------------------------------------
-
-            # Display Panel
-            html.Div(
-                children=[
-
-                    # Top Half Display
-                    html.Div(
-                        children=[
-
-                            # Original Slice
-                            html.Div(
-                                children=[
-                                    html.H3(children='Original Slice'),
-                                    dcc.Loading(
-                                        id="loading-spinner1",  # Wrapper to show loading spinner
-                                        type="circle",  # Choose the spinner type (circle, dot, default)
-                                        children=[
-                                            dcc.Graph(
-                                                id="slice-plot",
-                                                className="slice-plot-class",    
-                                            )  # Graph component wrapped in the loading spinner
-                                        ]
-                                    ),
-                                ],
-                                className="original-slice"
-                            ),
-
-                            # -------------------------------------------------------------------------------
-
-                            # Superpixel Segmentation
-                            html.Div(
-                                children=[
-                                    html.H3(children='Superpixel Segmentation'),
-                                    dcc.Loading(
-                                        id="loading-spinner2",  # Wrapper to show loading spinner
-                                        type="circle",  # Choose the spinner type (circle, dot, default)
-                                        children=[
-                                            dcc.Graph(
-                                                id="superpixel-plot",
-                                                className="superpixel-plot-class",
-                                                clear_on_unhover=True
-                                            )
-                                        ]
-                                    ),
-                                ],
-                                className="superpixel-segmentation"
-                            ),
-
-                            # -------------------------------------------------------------------------------
-
-                            # Final Segmented Slice
-                            html.Div(
-                                children=[
-                                    html.H3(children='Final Segmented Slice'),
-                                    html.Div(
-                                        "Enable clustering to view final segmented slice",
-                                        id="final-segmented-slice-text"
-                                    ),
-                                    html.Div(
-                                        children=[
-                                            dcc.Graph(
-                                                id='final-plot',
-                                                className="final-plot-class",
-                                            ),
-                                        ],
-                                    ),
-                                ],
-                                className="final-segmented-slice"
-                            ),
-
-                        ],
-                        className="top-half-display"
-                    ),
-
-                    # -------------------------------------------------------------------------------
-
-                    # Bottom Half Display
-                    html.Div(
-                        children=[
-
-                            # Vector Space Visualization
-                            html.Div(
-                                children=[
-                                    html.H3(children='Vector Space Visualization'),
-                                    dcc.Loading(
-                                        id="loading-spinner3",  # Wrapper to show loading spinner
-                                        type="circle",  # Choose the spinner type (circle, dot, default)
-                                        children=[
-                                            dcc.Graph(
-                                                id="vector-plot",
-                                                className="vector-plot-class",
-                                                clear_on_unhover=True
-                                            ),  # Graph component wrapped in the loading spinner
-                                        ]
-                                    ),
-                                ],
-                                id="vector-space-visualization"
-                            ),
-
-                            # -------------------------------------------------------------------------------
-
-                            # Vector Space Visualization with Clustering
-                            html.Div(
-                                children=[
-                                    html.H3(children='Clustered Vector Space Visualization'),
-                                    dcc.Loading(
-                                        id="loading-spinner4",  # Wrapper to show loading spinner
-                                        type="circle",  # Choose the spinner type (circle, dot, default)
-                                        children=[
-                                            dcc.Graph(
-                                                id="cluster-vector-plot",
-                                                className="cluster-vector-plot-class",
-                                                clear_on_unhover=True
-                                            )  # Graph component wrapped in the loading spinner
-                                        ]
-                                    ),
-                                ],
-                                id="cluster-vector-space-visualization"
-                            ),
-
-                            # -------------------------------------------------------------------------------
-
-                            # Cluster Stats Plot for Clustering
-                            html.Div(
-                                children=[
-                                    html.H3(id="cluster-stats-label", children='Elbow Plot for Clustering'),
-                                    dcc.Loading(
-                                        id="loading-spinner5",  # Wrapper to show loading spinner
-                                        type="circle",  # Choose the spinner type (circle, dot, default)
-                                        children=[
-                                            dcc.Graph(
-                                                id="elbow-plot",
-                                                className="elbow-plot-class",
-                                            )  # Graph component wrapped in the loading spinner
-                                        ]
-                                    ),
-                                ],
-                                className="elbow-plot"
-                            ),
-                        ],
-                        className="bottom-half-display"
-                    ),
-                    
-                    # -------------------------------------------------------------------------------
-
-                    # Container for embedded 3D content
-                    html.Div(id='content-div'),  
-                ],
-                className="display-panel"
-            ),
-
-        ], 
-        style={'display': 'flex'}
-    ),
-
-    # Dummy Div to store intermediate data
-    html.Div(id='dummy', style={'display': 'none'}),
-
-    # -------------------------------------------------------------------------------
-
-    # Hidden store to hold intermediate data
-    dcc.Store(id='slice-data'),
-    dcc.Store(id='superpixel-data'),
-    dcc.Store(id='vector-data'),
-    dcc.Store(id='cluster-data'),
-    dcc.Store(id='cluster-number', data=5),
-    dcc.Store(id='class-tracker'),
-
-    # Hidden div to open up app using url query string
-    dcc.Location(id="url", refresh=False),
-])
+        # Hidden div to open up app using url query string
+        dcc.Location(id="url", refresh=False),
+    ]
+)
 
 # -------------------------------------------------------------------------------
 

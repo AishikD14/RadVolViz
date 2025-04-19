@@ -2,93 +2,93 @@ body{
     background-color: #1b263b;
     color: white;
 }
-.control-panel{
+#dashboard-server .control-panel{
     width: 15%;
     display: inline-block;
     border: 2px solid black;
     padding-left: 10px;
 }
-.display-panel{
+#dashboard-server .display-panel{
     width: 85%;
     border: 2px solid black;
 }
-.top-half-display{
+#dashboard-server .top-half-display{
     border-bottom: 2px solid black;
     padding-bottom: 10px;
     display: flex;
 }
-.bottom-half-display{
+#dashboard-server .bottom-half-display{
     border-top: 2px solid black;
     padding-left: 10px;
 }
-.original-slice, .superpixel-segmentation, .final-segmented-slice{
+#dashboard-server .original-slice, .superpixel-segmentation, .final-segmented-slice{
     width: 33%;
     display: inline-block;
     text-align: center;
 }
-#vector-space-visualization, #cluster-vector-space-visualization{
+#dashboard-server #vector-space-visualization, #cluster-vector-space-visualization{
     width: 61%;
     display: inline-block;
     text-align: center;
 }
-.elbow-plot{
+#dashboard-server .elbow-plot{
     width: 38%;
     display: inline-block;
     text-align: center;
     border-left: 2px solid black;
 }
-#slice-slider, #superpixel-input{
+#dashboard-server #slice-slider, #superpixel-input{
     margin-top: 10px;
 }
-#slice-slider .rc-slider-mark-text, #superpixel-input .rc-slider-mark-text{
+#dashboard-server  #slice-slider .rc-slider-mark-text, #superpixel-input .rc-slider-mark-text{
     font-size: 14px;
     color: white;
 }
-#slice-plot .svg-container .main-svg:first-child{
+#dashboard-server  #slice-plot .svg-container .main-svg:first-child{
     background: none !important;
 }
-#superpixel-plot .svg-container .main-svg:first-child{
+#dashboard-server #superpixel-plot .svg-container .main-svg:first-child{
     background: none !important;
 }
-#superpixel-plot .svg-container .main-svg:first-child .bglayer .bg{
+#dashboard-server #superpixel-plot .svg-container .main-svg:first-child .bglayer .bg{
     fill-opacity: 0 !important;
 }
-#final-plot .svg-container .main-svg:first-child{
+#dashboard-server #final-plot .svg-container .main-svg:first-child{
     background: none !important;
 }
-#vector-plot .svg-container .main-svg:first-child{
+#dashboard-server #vector-plot .svg-container .main-svg:first-child{
     background: none !important;
 }
-#cluster-vector-plot .svg-container .main-svg:first-child{
+#dashboard-server #cluster-vector-plot .svg-container .main-svg:first-child{
     background: none !important;
 }
-#elbow-plot .svg-container .main-svg:first-child{
+#dashboard-server #elbow-plot .svg-container .main-svg:first-child{
     background: none !important;
 }
-#elbow-plot{
+#dashboard-server #elbow-plot{
     padding-left: 10px;
 }
-.final-segmented-slice{
+#dashboard-server .final-segmented-slice{
     display: flex;
     flex-direction: column;
 }
-#final-segmented-slice-text{
+#dashboard-server #final-segmented-slice-text{
     color: white;
     flex-grow: 1;
     display: flex;
     align-items: center;
     justify-content: center;
 }
-#cluster-vector-space-visualization{
+#dashboard-server #cluster-vector-space-visualization{
     display: none;
 }
-.reset-button-container, .trame-button-container{
+#dashboard-server .reset-button-container, .trame-button-container{
     display: flex;
     justify-content: center;
     margin-top: 10px;
     margin-bottom: 10px;
 }
-#reset-button, #trame-button{
+#dashboard-server #reset-button, #trame-button{
     background-color: #F0AD4E ;
     font-weight: bold;
     font-size: 16px;
@@ -98,14 +98,14 @@ body{
     transition: background-color 0.3s ease, box-shadow 0.2s ease;
 }
 /* Hover effect */
-#reset-button:hover {
+#dashboard-server #reset-button:hover {
     background-color: #C62828; /* Darker red on hover */
     box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2);
 }
-#selected-slice-output{
+#dashboard-server #selected-slice-output{
     font-size: 15px;
     margin-top: 10px;
 }
-#vector-plot .parcoords .axis-title, #cluster-vector-plot .parcoords .axis-title{
+#dashboard-server #vector-plot .parcoords .axis-title, #cluster-vector-plot .parcoords .axis-title{
     font-size: 13px !important;
 }
