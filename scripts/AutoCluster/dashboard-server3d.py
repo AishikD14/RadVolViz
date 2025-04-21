@@ -32,9 +32,44 @@ from dash_extensions.enrich import DashProxy, MultiplexerTransform
 from scipy.spatial import cKDTree
 import urllib.parse
 import os
+import h5py
+from scipy import ndimage
+import numba
 
 # Ignore warnings
 warnings.filterwarnings("ignore")
+
+# -------------------------------------------------------------------------------
+
+@numba.njit(cache=True, nogil=True)
+def _remove_padding_uniform(data: np.ndarray) -> np.ndarray:
+    num_channels = data.shape[-1]
+    zero_data = np.isclose(data, 0).sum(axis=3) == num_channels
+
+    # This is the number to crop
+    n = 0
+    indices = np.array([n, -n - 1])
+    while (
+        zero_data[indices].all()
+        & zero_data[:, indices].all()
+        & zero_data[:, :, indices].all()
+    ):
+        n += 1
+        indices = np.array([n, -n - 1])
+
+    if n != 0:
+        data = data[n : -n - 1, n : -n - 1, n : -n - 1]
+
+    return data
+
+@numba.njit(cache=True, nogil=True)
+def _normalize_data(data: np.ndarray, new_min: float = 0, new_max: float = 1):
+    max_val = data.max()
+    min_val = data.min()
+
+    return (new_max - new_min) * (data.astype(np.float64) - min_val) / (
+        max_val - min_val
+    ) + new_min
 
 # -------------------------------------------------------------------------------
 
@@ -393,13 +428,74 @@ app.layout = html.Div(
     Input('volume-dropdown', 'value')
 )
 def load_volume_data(volume_name):
-    # Load the volume data based on the selected volume name
-    volume = np.load(f'../../data/volume_labels_{volume_name}.npy')
+    # Load the segment data based on the selected volume name
+    segments = np.load(f'../../data/volume_labels_{volume_name}.npy')
+
+    # Load the volume data
+    volume_path = f'../../data/{volume_name}.h5'
+
+    header = []
+    data = []
+
+    with h5py.File(volume_path, 'r') as f:
+        for key in f:
+            header.append(key)
+            data.append(f[key][()])
+
+    data = np.stack(data, axis=3)
+
+    if volume_name == "thigh_sarcoma":
+        header[0], header[1] = header[1], header[0]
+        data[:, :, :, [0, 1]] = data[:, :, :, [1, 0]]
+
+    print(header)
+    print("Data shape on load ", data.shape)
+
+    nan_replacement = 0
+
+    data[np.isnan(data)] = float(nan_replacement)
+
+    data = _remove_padding_uniform(data)
+    print("Data shape after padding removal ", data.shape)
+
+    data_shape = data.shape[:-1]
+    num_channels = data.shape[-1]
+
+    raw_unpadded_flattened_data = data.reshape(
+        np.prod(data_shape), num_channels
+    )
+
+    print(f"Number of channels: {num_channels}")
+    print(f"Raw unpadded flattened data shape: {raw_unpadded_flattened_data.shape}")
+
+    normalize_channels = False
+
+    if normalize_channels:
+        # Normalize each channel to be between 0 and 1
+        for i in range(data.shape[-1]):
+            data[:, :, :, i] = _normalize_data(data[:, :, :, i])
+    else:
+        data = _normalize_data(data)
+
+    print("Data shape after normalization ", data.shape)
+
+    unique_segments = np.unique(segments)
+    num_segments = unique_segments.size
+    num_channels = data.shape[-1]
+
+    # Preallocate result array
+    segment_vectors = np.zeros((num_segments, num_channels), dtype=data.dtype)
+
+    # Compute mean per channel per segment
+    for c in range(num_channels):
+        segment_vectors[:, c] = ndimage.mean(data[..., c], labels=segments, index=unique_segments)
+
+    print("Segment vector shape ", segment_vectors.shape)
 
     print("--------------------------------")
     print(f"Volume data loaded for {volume_name}.")
 
-    return volume.tolist()  # Convert to list for JSON serialization
+    return json.dumps({'segments': segments.tolist()})  # Convert to list for JSON serialization
 
 # -------------------------------------------------------------------------------
 
@@ -409,10 +505,14 @@ def load_volume_data(volume_name):
     Input('volume-dropdown', 'value')
 )
 def embed_page(volume_name):
+    # url = 'http://localhost:8080/index.html?dataset='+volume_name+'&timestamp={'+str(time.time())+'}'
+    url = 'http://localhost:8080/index.html?dataset='+volume_name
+
+    if volume_name == "thigh_sarcoma":
+        url = url + '&normalize_channels=True'
 
     return html.Iframe(
-        # src='http://localhost:8080?timestamp={'+str(time.time())+'}',
-        src='http://localhost:8080/index.html?dataset='+volume_name,
+        src= url,
         style={
             'width': '100%',
             'height': '520px',
