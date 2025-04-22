@@ -974,22 +974,90 @@ def update_cluster_stats_plot(jsonified_vector_data, clustering, click_data, clu
 
 # Visualize 3D volume inside Dash app
 @app.callback(
-    Output('content-div', 'children'),
-    [Input('volume-dropdown', 'value'), Input('supervoxel-slider', 'value'), Input('filter-sv-checkbox', 'value'), Input('normalize-channels-checkbox', 'value')]
+    [Output('content-div', 'children'), Output('vector-data', 'data')],
+    [Input('volume-dropdown', 'value'), Input('supervoxel-slider', 'value'), Input('filter-sv-checkbox', 'value'), Input('normalize-channels-checkbox', 'value'), Input('vector-plot', 'restyleData'), Input('cluster-vector-plot', 'restyleData'), Input('visualization-radio', 'value'), Input('cluster-number', 'data')],
+    [State('superpixel-data', 'data'), State('vector-data', 'data')]
 )
-def embed_page(volume_name, supervoxel, filter_sv, normalize_channels):
+def embed_page(volume_name, supervoxel, filter_sv, normalize_channels, restyle_data1, restyle_data2, visualization, cluster_number_data, jsonified_superpixel_data, jsonified_vector_data):
     print("----------------------------------------------------")
     print("Generating 3D visualization")
+
+    if ctx.triggered_id is not None:
+        ctx_id = ctx.triggered_id.split('.')[0]
+
+        if ctx_id == 'vector-plot' or ctx_id == 'cluster-vector-plot':
+            if visualization == "PC":
+                if restyle_data1 is not None or restyle_data2 is not None:
+                    if restyle_data1 is not None and ctx_id == 'vector-plot':
+                        restyle_data = restyle_data1
+                    elif restyle_data2 is not None and ctx_id == 'cluster-vector-plot':
+                        restyle_data = restyle_data2
+
+                    for key, val in restyle_data[0].items():
+                        if 'constraintrange' in key:
+                            print(restyle_data)
+
+                            vector_data = json.loads(jsonified_vector_data)
+                            superpixel_data = json.loads(jsonified_superpixel_data)
+
+                            segments = np.array(superpixel_data['segments'])
+
+                            # Retrieve DataFrame
+                            df_original = pd.read_json(vector_data["dataframe"], orient="split")
+                            updated_filters = vector_data["filters"].copy()
+
+                            # Extract dimension index and label
+                            dimension_index = int(key.split('[')[1].split(']')[0])
+                            dimension_label = df_original.columns[dimension_index]
+
+                            if val is None or val == []:  # If filter is removed, delete it
+                                updated_filters.pop(dimension_label, None)
+                            else:
+                                updated_filters[dimension_label] = val[0]
+
+                            print(updated_filters)
+
+                            # Filter the DataFrame based on the updated filters
+                            filtered_df  = df_original.copy()
+
+                            print("Applying filters...")
+
+                            # Apply all active filters
+                            for column_name, filter_ranges in updated_filters.items():
+                                print("Filter ranges", filter_ranges)
+
+                                multiple_filter = False
+
+                                if isinstance(filter_ranges[0], list):
+                                    multiple_filter = True
+
+                                if multiple_filter:
+                                    # Take into account multiple filters for the same column
+                                    mask = np.zeros(len(filtered_df), dtype=bool)
+                                    for filter in filter_ranges:
+                                        mask |= (filtered_df[column_name] >= filter[0]) & (filtered_df[column_name] <= filter[1])
+                                        
+                                else:
+                                    mask = (filtered_df[column_name] >= filter_ranges[0]) & (filtered_df[column_name] <= filter_ranges[1])
+                                    
+                                filtered_df = filtered_df[mask]
+
+                            # Extract the segment IDs
+                            segment_ids = filtered_df['Segment ID'].tolist()
+
+                            # Create vector_data JSON
+                            vector_data["filters"] = updated_filters
 
     print("Volume name: ", volume_name)
     print("Supervoxel: ", supervoxel)
     print("Filter supervoxel: ", filter_sv)
     print("Normalize channels: ", normalize_channels)
+    print("Cluster number: ", cluster_number_data)
 
     print("----------------------------------------------------")
 
     # url = 'http://localhost:8080/index.html?dataset='+volume_name+'&timestamp={'+str(time.time())+'}'
-    url = 'http://localhost:8080/index.html?dataset='+volume_name
+    url = 'http://localhost:8080/index.html?dataset='+volume_name+'&cluster_count='+str(cluster_number_data)
 
     if 'enable' in normalize_channels:
         url = url + '&normalize_channels=True'
@@ -997,9 +1065,7 @@ def embed_page(volume_name, supervoxel, filter_sv, normalize_channels):
     if 'enable' in filter_sv:
         url = url + '&selected_supervoxel='+str(supervoxel)
 
-    # url = 'https://google.com/'
-
-    return html.Iframe(
+    iframe = html.Iframe(
         src= url,
         style={
             'width': '100%',
@@ -1007,6 +1073,12 @@ def embed_page(volume_name, supervoxel, filter_sv, normalize_channels):
             'border': 'none'
         }
     )
+
+    if jsonified_vector_data is None:
+        return iframe, dash.no_update
+    else:
+        return iframe, dash.no_update
+        # return iframe, json.dumps(vector_data)
 
 # -------------------------------------------------------------------------------
 
