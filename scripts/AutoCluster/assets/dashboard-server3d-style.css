@@ -37,6 +37,9 @@ body{
     text-align: center;
     border-left: 2px solid black;
 }
+#dashboard-server3d #slider-container{
+    display: none;
+}
 #dashboard-server3d #supervoxel-slider, #superpixel-input{
     margin-top: 10px;
 }

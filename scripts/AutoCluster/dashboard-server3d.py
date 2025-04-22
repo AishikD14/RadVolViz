@@ -122,38 +122,13 @@ app.layout = html.Div(
 
                         # -------------------------------------------------------------------------------
 
-                        html.Br(),
-
-                        # -------------------------------------------------------------------------------
-
-                        # Slider for selecting slice
-                        html.Label('Select supervoxel to visualize:'),
-                        html.Br(),
-                        dcc.Slider(
-                            id='supervoxel-slider',
-                            # min=1,
-                            # max=volume.shape[0],
-                            min=0,
-                            max=160,
-                            step=1,
-                            value=130,
-                            # marks={1: str(1), volume.shape[0]: str(volume.shape[0])}
-                            marks={
-                                0: {'label': str(0)},
-                                160: {'label': str(160)}
-                            },
-                            tooltip={"placement": "bottom", "always_visible": True}
-                        ),
-
-                        # -------------------------------------------------------------------------------
-
                         # Add break
                         html.Br(),
 
                         # -------------------------------------------------------------------------------
 
                         # Slider for selecting superpixel count
-                        html.Label('Select number of superpixels:'),
+                        html.Label('Select number of supervoxels:'),
                         dcc.Slider(
                             id='superpixel-input',
                             min=300,
@@ -165,6 +140,46 @@ app.layout = html.Div(
                                 700: {'label': str(700)}
                             },
                             tooltip={"placement": "bottom", "always_visible": True}
+                        ),
+
+                        # -------------------------------------------------------------------------------
+
+                        # Add break
+                        html.Br(),
+
+                        # -------------------------------------------------------------------------------
+
+                        # Checkbox to enable/disable filtering supervoxels
+                        dcc.Checklist(
+                            id='filter-sv-checkbox',
+                            options=[
+                                {'label': 'Filter Supervoxels', 'value': 'enable'}
+                            ],
+                            value=[]
+                        ),
+
+                        # -------------------------------------------------------------------------------
+
+                        # Slider for selecting slice
+                        html.Div(
+                            id="slider-container",
+                            children=[
+                                html.Br(),
+                                html.Label('Select supervoxel to visualize:'),
+                                html.Br(),
+                                dcc.Slider(
+                                    id='supervoxel-slider',
+                                    min=0,
+                                    max=339,
+                                    step=1,
+                                    value=130,
+                                    marks={
+                                        0: {'label': str(0)},
+                                        339: {'label': str(339)}
+                                    },
+                                    tooltip={"placement": "bottom"}
+                                ),  
+                            ],
                         ),
 
                         # -------------------------------------------------------------------------------
@@ -243,13 +258,13 @@ app.layout = html.Div(
 
                         # -------------------------------------------------------------------------------
 
-                        # Checkbox to enable/disable zero-value pixels dropping
+                        # Checkbox to enable/disable normalization of channels
                         dcc.Checklist(
                             id='normalize-channels-checkbox',
                             options=[
                                 {'label': 'Normalize Channels', 'value': 'enable'}
                             ],
-                            value=[]
+                            value=['enable']
                         ),
 
                         # -------------------------------------------------------------------------------
@@ -259,7 +274,7 @@ app.layout = html.Div(
 
                         # -------------------------------------------------------------------------------
 
-                        # Checkbox to enable/disable zero-value pixels dropping
+                        # Checkbox to enable/disable supervoxel visualization
                         dcc.Checklist(
                             id='use-supervoxel-checkbox',
                             options=[
@@ -410,12 +425,6 @@ app.layout = html.Div(
         # -------------------------------------------------------------------------------
 
         # Hidden store to hold intermediate data
-        dcc.Store(id='slice-data'),
-        dcc.Store(id='superpixel-data'),
-        dcc.Store(id='vector-data'),
-        dcc.Store(id='cluster-data'),
-        dcc.Store(id='cluster-number', data=5),
-        dcc.Store(id='class-tracker'),
         dcc.Store(id='volume-data'),
     ]
 )
@@ -424,10 +433,16 @@ app.layout = html.Div(
 
 # Callback to populate the dropdown on page load
 @app.callback(
-    Output('volume-data', 'data'),
-    Input('volume-dropdown', 'value')
+    [Output('volume-data', 'data'), Output('supervoxel-slider', 'max'), Output('supervoxel-slider', 'marks')],
+    Input('volume-dropdown', 'value'),
+    State('normalize-channels-checkbox', 'value'),
 )
-def load_volume_data(volume_name):
+def load_volume_data(volume_name, normalize_channels):
+    print("---------------------------------------------------")
+    print("Loading volume data")
+
+    start_time = time.time()
+
     # Load the segment data based on the selected volume name
     segments = np.load(f'../../data/volume_labels_{volume_name}.npy')
 
@@ -456,19 +471,8 @@ def load_volume_data(volume_name):
     data[np.isnan(data)] = float(nan_replacement)
 
     data = _remove_padding_uniform(data)
-    print("Data shape after padding removal ", data.shape)
 
-    data_shape = data.shape[:-1]
     num_channels = data.shape[-1]
-
-    raw_unpadded_flattened_data = data.reshape(
-        np.prod(data_shape), num_channels
-    )
-
-    print(f"Number of channels: {num_channels}")
-    print(f"Raw unpadded flattened data shape: {raw_unpadded_flattened_data.shape}")
-
-    normalize_channels = False
 
     if normalize_channels:
         # Normalize each channel to be between 0 and 1
@@ -476,8 +480,6 @@ def load_volume_data(volume_name):
             data[:, :, :, i] = _normalize_data(data[:, :, :, i])
     else:
         data = _normalize_data(data)
-
-    print("Data shape after normalization ", data.shape)
 
     unique_segments = np.unique(segments)
     num_segments = unique_segments.size
@@ -492,24 +494,103 @@ def load_volume_data(volume_name):
 
     print("Segment vector shape ", segment_vectors.shape)
 
-    print("--------------------------------")
-    print(f"Volume data loaded for {volume_name}.")
+    min_val  = 0
+    max_val  = segment_vectors.shape[0]-1
 
-    return json.dumps({'segments': segments.tolist()})  # Convert to list for JSON serialization
+    marks = {
+        min_val: {'label': str(min_val)},
+        max_val: {'label': str(max_val)}
+    }
+
+    segments = segments.tolist()
+    data = data.tolist()
+
+    print('Load volume data completed in:', time.time() - start_time)
+
+    return json.dumps({'segments': segments, 'volume': data}), max_val, marks
+
+# -------------------------------------------------------------------------------
+
+# Update the volume-data when normalize-channels-checkbox is changed
+# @app.callback(
+#     [Output('volume-data', 'data')],
+#     [Input('normalize-channels-checkbox', 'value')],
+#     [State('volume-data', 'data')],
+#     prevent_initial_call=True
+# )
+# def update_volume_data(normalize_channels, jsonified_volume_data):
+#     print("---------------------------------------------------")
+#     print("Updating volume data")
+
+#     start_time = time.time()
+
+#     if jsonified_volume_data is None:
+#         print("No volume data found")
+#         return dash.no_update
+
+#     if 'enable' in normalize_channels:
+#         normalize_channels = True
+#     else:
+#         normalize_channels = False
+
+#     volume_data = json.loads(jsonified_volume_data)
+
+#     # Convert stored lists back to numpy arrays
+#     segments = np.array(volume_data['segments'])
+#     data = np.array(volume_data['volume'])
+
+#     print("In between")
+
+#     if normalize_channels:
+#         # Normalize each channel to be between 0 and 1
+#         for i in range(data.shape[-1]):
+#             data[:, :, :, i] = _normalize_data(data[:, :, :, i])
+#     else:
+#         data = _normalize_data(data)
+
+#     unique_segments = np.unique(segments)
+#     num_segments = unique_segments.size
+#     num_channels = data.shape[-1]
+
+#     # Preallocate result array
+#     segment_vectors = np.zeros((num_segments, num_channels), dtype=data.dtype)
+
+#     # Compute mean per channel per segment
+#     for c in range(num_channels):
+#         segment_vectors[:, c] = ndimage.mean(data[..., c], labels=segments, index=unique_segments)
+
+#     print('Update volume data completed in:', time.time() - start_time)
+
+#     return json.dumps({'segments': segments.tolist(), 'volume': data.tolist()})
 
 # -------------------------------------------------------------------------------
 
 # Visualize 3D volume inside Dash app
 @app.callback(
     Output('content-div', 'children'),
-    Input('volume-dropdown', 'value')
+    [Input('volume-dropdown', 'value'), Input('supervoxel-slider', 'value'), Input('filter-sv-checkbox', 'value'), Input('normalize-channels-checkbox', 'value')]
 )
-def embed_page(volume_name):
+def embed_page(volume_name, supervoxel, filter_sv, normalize_channels):
+    print("----------------------------------------------------")
+    print("Generating 3D visualization")
+
+    print("Volume name: ", volume_name)
+    print("Supervoxel: ", supervoxel)
+    print("Filter supervoxel: ", filter_sv)
+    print("Normalize channels: ", normalize_channels)
+
+    print("----------------------------------------------------")
+
     # url = 'http://localhost:8080/index.html?dataset='+volume_name+'&timestamp={'+str(time.time())+'}'
     url = 'http://localhost:8080/index.html?dataset='+volume_name
 
-    if volume_name == "thigh_sarcoma":
+    if 'enable' in normalize_channels:
         url = url + '&normalize_channels=True'
+
+    if 'enable' in filter_sv:
+        url = url + '&selected_supervoxel='+str(supervoxel)
+
+    # url = 'https://google.com/'
 
     return html.Iframe(
         src= url,
@@ -522,7 +603,24 @@ def embed_page(volume_name):
 
 # -------------------------------------------------------------------------------
 
+# Callback to show the supervoxel slider based on the filter checkbox
+@app.callback(
+    Output('slider-container', 'style'),
+    Input('filter-sv-checkbox', 'value'),
+    prevent_initial_call=True
+)
+def show_supervoxel_slider(filter_sv):
+    print("----------------------------------------------------")
+    print("Inside show_supervoxel_slider")
+
+    if filter_sv:
+        return {'display': 'block'}
+    else:
+        return {'display': 'none'}
+
+# -------------------------------------------------------------------------------
+
 # Run the app
 if __name__ == '__main__':
     # app.run_server(debug=True, use_reloader=True)
-    app.run(dev_tools_hot_reload=True, debug=True)
+    app.run(dev_tools_hot_reload=False, debug=True)
