@@ -82,7 +82,10 @@ body{
     align-items: center;
     justify-content: center;
 }
-#dashboard-server3d #cluster-vector-space-visualization{
+/* #dashboard-server3d #cluster-vector-space-visualization{
+    display: none;
+} */
+#dashboard-server3d #vector-space-visualization{
     display: none;
 }
 #dashboard-server3d .reset-button-container, .trame-button-container{
