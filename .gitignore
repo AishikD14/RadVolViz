@@ -11,3 +11,5 @@ labeled_volume2.npy
 *.json
 *.npy
 *.pyc
+__pycache__/
+bnlenv
