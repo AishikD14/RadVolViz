@@ -1291,7 +1291,8 @@ app.layout = html.Div(
                                 45: {'label': str(45)},
                                 160: {'label': str(160)}
                             },
-                            tooltip={"placement": "bottom", "always_visible": True}
+                            tooltip={"placement": "bottom", "always_visible": True},
+                            allow_direct_input=False,
                         ),
 
                         # -------------------------------------------------------------------------------
@@ -1313,7 +1314,8 @@ app.layout = html.Div(
                                 100: {'label': str(100)},
                                 600: {'label': str(600)}
                             },
-                            tooltip={"placement": "bottom", "always_visible": True}
+                            tooltip={"placement": "bottom", "always_visible": True},
+                            allow_direct_input=False
                         ),
 
                         # -------------------------------------------------------------------------------
