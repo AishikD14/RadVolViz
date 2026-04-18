@@ -8,6 +8,18 @@ body{
     border: 2px solid black;
     padding-left: 10px;
 }
+#dashboard-server .control-panel .dash-options-list-option, #dashboard-server .control-panel .dash-slider-mark{
+    color: white;
+}
+#dashboard-server .control-panel .dash-slider-track{
+    background-color: white;
+}
+#dashboard-server .control-panel .dash-slider-wrapper{
+    padding-right: 15px;
+}
+#dashboard-server .control-panel .dash-slider-tooltip{
+    background-color: unset;
+}
 #dashboard-server .display-panel{
     width: 85%;
     border: 2px solid black;
