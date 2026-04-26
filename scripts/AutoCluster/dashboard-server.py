@@ -1285,7 +1285,7 @@ app.layout = html.Div(
                             min=45,
                             max=160,
                             step=1,
-                            value=130,
+                            value=75,
                             # marks={1: str(1), volume.shape[0]: str(volume.shape[0])}
                             marks={
                                 45: {'label': str(45)},
@@ -1331,7 +1331,7 @@ app.layout = html.Div(
                             options=[
                                 {'label': 'Drop zero-value pixels', 'value': 'enable'}
                             ],
-                            value=[]
+                            value=['enable']
                         ),
 
                         # -------------------------------------------------------------------------------
@@ -1434,7 +1434,8 @@ app.layout = html.Div(
                             children=[
                                 html.Button('Visualize in 3D', id='trame-button', n_clicks=0),
                             ],
-                            className='trame-button-container'
+                            className='trame-button-container',
+                            style={'display': 'none'}
                         ),
 
                         # -------------------------------------------------------------------------------
@@ -2285,15 +2286,23 @@ def reset_dashboard(n_clicks):
 @app.callback(
     Output('content-div', 'children'),
     Input('trame-button', 'n_clicks'),
+    [State('axis-radio', 'value'), State('slice-slider', 'value')],
     prevent_initial_call=True
 )
-def embed_page(n_clicks):
+def embed_page(n_clicks, slice_axis, selected_slice):
     print("--------------------------------")
     print("Visualizing in 3D...")
+    print(f"Slice axis: {slice_axis}, Selected slice: {selected_slice}")
     print("--------------------------------")
 
+    query_params = urllib.parse.urlencode({
+        'timestamp': time.time(),
+        'slice_axis': slice_axis,
+        'selected_slice': selected_slice,
+    })
+
     return html.Iframe(
-        src='http://localhost:8080?timestamp={'+str(time.time())+'}',
+        src=f'http://localhost:8080?{query_params}',
         style={
             'width': '100%',
             'height': '600px',
