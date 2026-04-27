@@ -8,26 +8,26 @@ file_path = '../thigh_sarcoma.h5' # Update this path to your local file
 
 with h5py.File(file_path, 'r') as hdf:
     # Access the datasets
-    # ce_data = hdf['Ce'][:]
-    # co_data = hdf['Co'][:]
-    # fe_data = hdf['Fe'][:]
-    # gd_data = hdf['Gd'][:]
+    # one_data = hdf['Ce'][:]
+    # two_data = hdf['Co'][:]
+    # three_data = hdf['Fe'][:]
+    # four_data = hdf['Gd'][:]
 
-    ce_data = hdf['CT'][:]
-    co_data = hdf['MRI-T1'][:]
-    fe_data = hdf['MRI-T2'][:]
-    gd_data = hdf['PET'][:]
+    one_data = hdf['CT'][:]
+    two_data = hdf['MRI-T1'][:]
+    three_data = hdf['MRI-T2'][:]
+    four_data = hdf['PET'][:]
 
-x_dim, y_dim, z_dim = ce_data.shape
+x_dim, y_dim, z_dim = one_data.shape
 
 # Create a new array to hold the multivariate data
 combined_data = np.zeros((x_dim, y_dim, z_dim, 4), dtype=np.float64)
 
 # Populate the new array with the values from each dataset
-combined_data[..., 0] = ce_data
-combined_data[..., 1] = co_data
-combined_data[..., 2] = fe_data
-combined_data[..., 3] = gd_data
+combined_data[..., 0] = one_data
+combined_data[..., 1] = two_data
+combined_data[..., 2] = three_data
+combined_data[..., 3] = four_data
 
 # Check the shape of the combined array and a sample point
 print(combined_data.shape)  # Should print (200, 200, 200, 4)
