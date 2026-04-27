@@ -408,7 +408,8 @@ def custom_slic(data, num_superpixels, spatial_weight=5, max_iter=20):
 torch.manual_seed(0)
 
 # Load volume data
-volume = np.load('../../xray_volume.npy')
+# volume = np.load('../../xray_volume.npy')
+volume = np.load('../../thigh_sarcoma_volume.npy')
 
 # -------------------------------------------------------------------------------
 
