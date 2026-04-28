@@ -421,7 +421,7 @@ def compute_superpixel_features(image_4ch, superpixels, drop_zero_pixels):
 # -------------------------------------------------------------------------------
 
 # Load volume data
-volume = np.load('../../xray_volume.npy')
+volume = np.load('../../data/CeCoFeGd/volume.npy')
 
 drop_zero_pixels = True
 

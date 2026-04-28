@@ -455,7 +455,7 @@ def cluster_autoencoded_features(model, data_tensor, n_clusters=5):
 # -------------------------------------------------------------------------------
 
 # Load volume data
-volume = np.load('../../xray_volume.npy')
+volume = np.load('../../data/CeCoFeGd/volume.npy')
 
 skip_training = True
 
