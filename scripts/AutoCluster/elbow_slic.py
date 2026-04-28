@@ -421,7 +421,7 @@ def calculate_variance(image, segments):
 # -------------------------------------------------------------------------------
 
 # Load volume data
-volume = np.load('../../xray_volume.npy')
+volume = np.load('../../data/CeCoFeGd/volume.npy')
 
 drop_zero_pixels = True
 
