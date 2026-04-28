@@ -454,8 +454,11 @@ def cluster_autoencoded_features(model, data_tensor, n_clusters=5):
 
 # -------------------------------------------------------------------------------
 
+# dataset_name = "CeCoFeGd"
+dataset_name = "thigh_sarcoma"
+
 # Load volume data
-volume = np.load('../../data/CeCoFeGd/volume.npy')
+volume = np.load(f'../../data/{dataset_name}/volume.npy')
 
 skip_training = True
 
@@ -467,9 +470,9 @@ if not skip_training:
 
     # CSV file path containing the superpixel features
     if drop_zero_pixels:
-        csv_file_path = 'superpixel_features_mean_nozero.csv'
+        csv_file_path = f'../../data/{dataset_name}/superpixel_features_mean_nozero.csv'
     else:
-        csv_file_path = 'superpixel_features_mean.csv'
+        csv_file_path = f'../../data/{dataset_name}/superpixel_features_mean.csv'
 
     # Load the superpixel features from the CSV file
     superpixel_features = pd.read_csv(csv_file_path)
@@ -488,10 +491,10 @@ if not skip_training:
 
     # Save the scaler
     if drop_zero_pixels:
-        with open("scaler_autoencoder_mean_nozero.pkl", "wb") as f:
+        with open(f"../../data/{dataset_name}/scaler_autoencoder_mean_nozero.pkl", "wb") as f:
             pickle.dump(scaler, f)
     else:
-        with open("scaler_autoencoder_mean.pkl", "wb") as f:
+        with open(f"../../data/{dataset_name}/scaler_autoencoder_mean.pkl", "wb") as f:
             pickle.dump(scaler, f)
 
     # Convert to PyTorch tensor
@@ -542,9 +545,9 @@ if not skip_training:
 
     # Save the model
     if drop_zero_pixels:
-        torch.save(autoencoder.state_dict(), 'autoencoder_mean_nozero.pth')
+        torch.save(autoencoder.state_dict(), f'../../data/{dataset_name}/autoencoder_mean_nozero.pth')
     else:
-        torch.save(autoencoder.state_dict(), 'autoencoder_mean.pth')
+        torch.save(autoencoder.state_dict(), f'../../data/{dataset_name}/autoencoder_mean.pth')
 
 else:
     input_dim = 8

@@ -420,8 +420,11 @@ def compute_superpixel_features(image_4ch, superpixels, drop_zero_pixels):
 
 # -------------------------------------------------------------------------------
 
+# dataset_name = "CeCoFeGd"
+dataset_name = "thigh_sarcoma"
+
 # Load volume data
-volume = np.load('../../data/CeCoFeGd/volume.npy')
+volume = np.load(f'../../data/{dataset_name}/volume.npy')
 
 drop_zero_pixels = True
 
@@ -429,9 +432,9 @@ drop_zero_pixels = True
 
 # CSV file path to store the superpixel features
 if drop_zero_pixels:
-    csv_file_path = 'superpixel_features_mean_nozero.csv'
+    csv_file_path = f'../../data/{dataset_name}/superpixel_features_mean_nozero.csv'
 else:
-    csv_file_path = 'superpixel_features_mean.csv'
+    csv_file_path = f'../../data/{dataset_name}/superpixel_features_mean.csv'
 
 # Create a new CSV file and write the header
 with open(csv_file_path, 'w') as f:
