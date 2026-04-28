@@ -322,75 +322,39 @@
 		{
 			vec4 colorSlice1, colorSlice2;
 			vec2 texCoordSlice1, texCoordSlice2;
-
 			float zSliceNumber1, zSliceNumber2, zDifference;
-			float volumeDepth = 256.0;
-			float volumeHeight = 256.0;
-			float volumeWidth = 256.0;
 
-			if (brushMode == 2.0) 
-			{
-				// If using THREE.DataTexture, directly sample the 2D texture with 3D coordinates
-				//zSliceNumber1 = floor(texCoord.z * (volumeDepth - 1.0));  // Adjust for DataTexture depth
-		
-				// Sample from the DataTexture
-				//colorSlice1 = texture2D(volumeTex, vec2(texCoord.x, (zSliceNumber1 + texCoord.y) / volumeHeight));
+			//The z coordinate determines which Z slice we have to look for.
+			//Z slice number goes from 0 to 255, floor is used to get the integer value, effectively identifying which slice to sample.
+			zSliceNumber1 = floor(texCoord.z  * 255.0);
 
-				//vec2 uv = vec2((texCoord.x + zSliceNumber1 * volumeWidth) / (volumeWidth * volumeDepth), texCoord.y / volumeHeight);
-				//colorSlice1 = texture2D(volumeTex, uv);
+			//As we use trilinear we go the next Z slice.
+			zSliceNumber2 = min(zSliceNumber1 + 1.0, 255.0);
+	
+			//The Z slices are stored in a matrix of 16x16 of Z slices.
+			//The original UV coordinates have to be rescaled by the tile numbers in each row and column.
+			//This scaling adjusts the UV coordinates to fit within a single tile in the mosaic.
+			texCoord.xy /= 16.0;
 
-				//return colorSlice1;
+			texCoordSlice1 = texCoordSlice2 = texCoord.xy;
+	
+			//Add an offset to the original UV coordinates depending on the row and column number.
+			texCoordSlice1.x += (mod(zSliceNumber1, 16.0 ) / 16.0);
+			texCoordSlice1.y += floor((255.0 - zSliceNumber1) / 16.0) / 16.0;
+	
+			texCoordSlice2.x += (mod(zSliceNumber2, 16.0 ) / 16.0);
+			texCoordSlice2.y += floor((255.0 - zSliceNumber2) / 16.0) / 16.0;
+	
+			//Get the opacity value from the 2D texture.
+			//Bilinear filtering is done at each texture2D by default.
+			colorSlice1 = texture2D( cubeTex, texCoordSlice1 );
+			colorSlice2 = texture2D( cubeTex, texCoordSlice2 );
 
-				// Compute the grid position for the Z-slice
-				float zSliceNumber = texCoord.z * float(volumeDepth - 1.0); // Get Z-slice index as float
-				int gridSize = 16; // Number of Z-slices in each row/column
-				float gridX = fract(zSliceNumber / float(gridSize)); // Equivalent to zSliceNumber % gridSize
-				float gridY = floor(zSliceNumber / float(gridSize)); // Equivalent to zSliceNumber / gridSize
+			//How distant is zSlice1 to ZSlice2. Used to interpolate between one Z slice and the other.
+			zDifference = mod(texCoord.z * 255.0, 1.0);
 
-
-				// Compute the texture coordinates for the current voxel
-				vec2 sliceUV = vec2(texCoord.x + gridX / float(gridSize), texCoord.y + gridY / float(gridSize));
-
-				// Sample the 2D texture
-				vec4 colorSlice = texture2D(volumeTex, sliceUV);
-
-				return colorSlice;
-			} 
-			else 
-			{
-				//The z coordinate determines which Z slice we have to look for.
-				//Z slice number goes from 0 to 255, floor is used to get the integer value, effectively identifying which slice to sample.
-				zSliceNumber1 = floor(texCoord.z  * 255.0);
-
-				//As we use trilinear we go the next Z slice.
-				zSliceNumber2 = min(zSliceNumber1 + 1.0, 255.0);
-		
-				//The Z slices are stored in a matrix of 16x16 of Z slices.
-				//The original UV coordinates have to be rescaled by the tile numbers in each row and column.
-				//This scaling adjusts the UV coordinates to fit within a single tile in the mosaic.
-				texCoord.xy /= 16.0;
-
-				texCoordSlice1 = texCoordSlice2 = texCoord.xy;
-		
-				//Add an offset to the original UV coordinates depending on the row and column number.
-				texCoordSlice1.x += (mod(zSliceNumber1, 16.0 ) / 16.0);
-				texCoordSlice1.y += floor((255.0 - zSliceNumber1) / 16.0) / 16.0;
-		
-				texCoordSlice2.x += (mod(zSliceNumber2, 16.0 ) / 16.0);
-				texCoordSlice2.y += floor((255.0 - zSliceNumber2) / 16.0) / 16.0;
-		
-				//Get the opacity value from the 2D texture.
-				//Bilinear filtering is done at each texture2D by default.
-				colorSlice1 = texture2D( cubeTex, texCoordSlice1 );
-				colorSlice2 = texture2D( cubeTex, texCoordSlice2 );
-
-				//How distant is zSlice1 to ZSlice2. Used to interpolate between one Z slice and the other.
-				zDifference = mod(texCoord.z * 255.0, 1.0);
-
-				//Finally interpolate between the two intermediate colors of each Z slice.
-				return mix(colorSlice1, colorSlice2, zDifference) ;
-			}
-
+			//Finally interpolate between the two intermediate colors of each Z slice.
+			return mix(colorSlice1, colorSlice2, zDifference) ;
 			
 		}
 
@@ -400,72 +364,62 @@
 			vec2 texCoordSlice1, texCoordSlice2;
 
 			float zSliceNumber1, zSliceNumber2, zDifference;
+
+			//The z coordinate determines which Z slice we have to look for.
+			//Z slice number goes from 0 to 255, floor is used to get the integer value, effectively identifying which slice to sample.
+			zSliceNumber1 = floor(texCoord.z  * 255.0);
+
+			//As we use trilinear we go the next Z slice.
+			zSliceNumber2 = min(zSliceNumber1 + 1.0, 255.0);
+	
+			//The Z slices are stored in a matrix of 16x16 of Z slices.
+			//The original UV coordinates have to be rescaled by the tile numbers in each row and column.
+			//This scaling adjusts the UV coordinates to fit within a single tile in the mosaic.
+			texCoord.xy /= 16.0;
+
+			texCoordSlice1 = texCoordSlice2 = texCoord.xy;
+	
+			//Add an offset to the original UV coordinates depending on the row and column number.
+			texCoordSlice1.x += (mod(zSliceNumber1, 16.0 ) / 16.0);
+			texCoordSlice1.y += floor((255.0 - zSliceNumber1) / 16.0) / 16.0;
+	
+			texCoordSlice2.x += (mod(zSliceNumber2, 16.0 ) / 16.0);
+			texCoordSlice2.y += floor((255.0 - zSliceNumber2) / 16.0) / 16.0;
+	
+			//Get the opacity value from the 2D texture.
+			//Bilinear filtering is done at each texture2D by default.
+			colorSlice3 = texture2D( cubeTex2, texCoordSlice1 );
+			colorSlice4 = texture2D( cubeTex2, texCoordSlice2 );
+
+			//How distant is zSlice1 to ZSlice2. Used to interpolate between one Z slice and the other.
+			zDifference = mod(texCoord.z * 255.0, 1.0);
+
+			//Finally interpolate between the two intermediate colors of each Z slice.
+			return mix(colorSlice3, colorSlice4, zDifference) ;
+		}
+
+		vec4 sampleAs3DTexture3( vec3 texCoord )
+		{
+			vec3 currentPosition = texCoord;
+
 			float volumeDepth = 256.0;
 			float volumeHeight = 256.0;
 			float volumeWidth = 256.0;
 
-			if (brushMode == 2.0) 
-			{
-				// If using THREE.DataTexture, directly sample the 2D texture with 3D coordinates
-				//zSliceNumber1 = floor(texCoord.z * (volumeDepth - 1.0));  // Adjust for DataTexture depth
-		
-				// Sample from the DataTexture
-				//colorSlice3 = texture2D(volumeTex, vec2(texCoord.x, (zSliceNumber1 + texCoord.y) / volumeHeight));
+			// Compute the grid position for the Z-slice
+			float zSliceNumber = texCoord.z * float(volumeDepth - 1.0); // Get Z-slice index as float
+			int gridSize = 16; // Number of Z-slices in each row/column
+			float gridX = fract(zSliceNumber / float(gridSize)); // Equivalent to zSliceNumber % gridSize
+			float gridY = floor(zSliceNumber / float(gridSize)); // Equivalent to zSliceNumber / gridSize
 
-				//vec2 uv = vec2((texCoord.x + zSliceNumber1 * volumeWidth) / (volumeWidth * volumeDepth), texCoord.y / volumeHeight);
-				//colorSlice3 = texture2D(volumeTex, uv);
+			// Compute the texture coordinates for the current voxel
+			vec2 sliceUV = vec2(texCoord.x + gridX / float(gridSize), texCoord.y + gridY / float(gridSize));
 
-				//return colorSlice3;
+			// Sample the 2D texture
+			vec4 colorSlice = texture2D(volumeTex, sliceUV);
 
-				// Compute the grid position for the Z-slice
-				float zSliceNumber = texCoord.z * float(volumeDepth - 1.0); // Get Z-slice index as float
-				int gridSize = 16; // Number of Z-slices in each row/column
-				float gridX = fract(zSliceNumber / float(gridSize)); // Equivalent to zSliceNumber % gridSize
-				float gridY = floor(zSliceNumber / float(gridSize)); // Equivalent to zSliceNumber / gridSize
-
-
-				// Compute the texture coordinates for the current voxel
-				vec2 sliceUV = vec2(texCoord.x + gridX / float(gridSize), texCoord.y + gridY / float(gridSize));
-
-				// Sample the 2D texture
-				vec4 colorSlice = texture2D(volumeTex, sliceUV);
-
-				return colorSlice;
-			} 
-			else 
-			{
-				//The z coordinate determines which Z slice we have to look for.
-				//Z slice number goes from 0 to 255, floor is used to get the integer value, effectively identifying which slice to sample.
-				zSliceNumber1 = floor(texCoord.z  * 255.0);
-
-				//As we use trilinear we go the next Z slice.
-				zSliceNumber2 = min(zSliceNumber1 + 1.0, 255.0);
-		
-				//The Z slices are stored in a matrix of 16x16 of Z slices.
-				//The original UV coordinates have to be rescaled by the tile numbers in each row and column.
-				//This scaling adjusts the UV coordinates to fit within a single tile in the mosaic.
-				texCoord.xy /= 16.0;
-
-				texCoordSlice1 = texCoordSlice2 = texCoord.xy;
-		
-				//Add an offset to the original UV coordinates depending on the row and column number.
-				texCoordSlice1.x += (mod(zSliceNumber1, 16.0 ) / 16.0);
-				texCoordSlice1.y += floor((255.0 - zSliceNumber1) / 16.0) / 16.0;
-		
-				texCoordSlice2.x += (mod(zSliceNumber2, 16.0 ) / 16.0);
-				texCoordSlice2.y += floor((255.0 - zSliceNumber2) / 16.0) / 16.0;
-		
-				//Get the opacity value from the 2D texture.
-				//Bilinear filtering is done at each texture2D by default.
-				colorSlice3 = texture2D( cubeTex2, texCoordSlice1 );
-				colorSlice4 = texture2D( cubeTex2, texCoordSlice2 );
-
-				//How distant is zSlice1 to ZSlice2. Used to interpolate between one Z slice and the other.
-				zDifference = mod(texCoord.z * 255.0, 1.0);
-
-				//Finally interpolate between the two intermediate colors of each Z slice.
-				return mix(colorSlice3, colorSlice4, zDifference) ;
-			}
+			return colorSlice;
+			
 		}
 
       	float HueToRgb(float p, float q, float t)
@@ -866,6 +820,62 @@
 			HSL2IN.p = l;
 
 			return HslToRgb(HSL2IN);
+		}
+
+		float GETASAMPLE(vec4 colorSample2)
+		{
+			float alphaValue;
+
+			// Define tolerance for comparison to account for floating-point precision issues
+			float epsilon = 0.001;
+
+			// Normalized clusterId values
+			float cluster0 = 0.0;
+			float cluster1 = 1.0 / 255.0;
+			float cluster2 = 2.0 / 255.0;
+			float cluster3 = 3.0 / 255.0;
+			float cluster4 = 4.0 / 255.0;
+			float cluster5 = 5.0 / 255.0;
+			float clusterOutlier = 50.0 / 255.0;
+
+			// Sample the red channel from the texture
+			float redValue = colorSample2.r;
+			//gl_FragColor = vec4(redValue, 0.0, 0.0, 1.0);  // Output redValue for debugging
+
+
+			// If polygon is of 4 sides and region segmentation is enabled
+			if (polySide == 5.0 && brushMode == 2.0)
+			{
+				// Need to assign color to a voxel based on the region it belongs to
+				alphaValue = 0.5;
+
+				if (clusterMarkingComplete == 1.0)
+				{
+					if (abs(redValue - cluster0) < epsilon){
+						alphaValue = 0.2;
+					}
+					else if (abs(redValue - cluster1) < epsilon){
+						alphaValue = 1.0;
+					}
+					else if (abs(redValue - cluster2) < epsilon){
+						alphaValue = 1.0;
+					}
+					else if (abs(redValue - cluster3) < epsilon){
+						alphaValue = 1.0;
+					}
+					else if (abs(redValue - cluster4) < epsilon){
+						alphaValue = 1.0;
+					}
+					else if (abs(redValue - cluster5) < epsilon){
+						alphaValue = 1.0;
+					}
+					else if (abs(redValue - clusterOutlier) < epsilon){
+						alphaValue = 0.0;
+					}
+				}
+			}
+
+            return alphaValue;
 		}
 
 		vec3 GBCtoHCL (vec4 colorSample, vec4 colorSample2, float rotateVar3D, float radialValue, float lensMode)
@@ -1694,7 +1704,7 @@
 			float clusterOutlier = 50.0 / 255.0;
 
 			// Sample the red channel from the texture
-			float redValue = colorSample.r;
+			float redValue = colorSample2.r;
 			//gl_FragColor = vec4(redValue, 0.0, 0.0, 1.0);  // Output redValue for debugging
 
 
@@ -2063,6 +2073,7 @@
 			float alphaSample;
 			float alphaSampleJ;
 			float accumulatedRGB;
+			float aSample;
 			vec3 HCL2Sample = vec3(0.0);
 			vec3 devSample = vec3(0.0);
 			vec3 meanSample = vec3(0.0);
@@ -2074,13 +2085,30 @@
 			//Perform the ray marching iterations for calculating mean
 			for(int i = 0; i < MAX_STEPS; i++)
 			{
-				//Get the voxel intensity value from the 3D texture.
-				colorSample = sampleAs3DTexture( currentPosition );
-				colorSample2 = sampleAs3DTexture2( currentPosition );
+				if (brushMode == 2.0)
+				{
+					//Get the voxel intensity value from the 3D texture.
+					colorSample = sampleAs3DTexture( currentPosition );
+					colorSample2 = sampleAs3DTexture3( currentPosition );
+				}
+				else
+				{
+					//Get the voxel intensity value from the 3D texture.
+					colorSample = sampleAs3DTexture( currentPosition );
+					colorSample2 = sampleAs3DTexture2( currentPosition );
+				}
 
 				if (modeGBC == 1.0)
 				{
-					HCL2Sample = GBCtoHCL( colorSample, colorSample2, rotateVar3D, radialValue, lensMode);
+					if (brushMode == 2.0)
+					{
+						HCL2Sample = GBCtoHCL( colorSample, colorSample2, rotateVar3D, radialValue, lensMode);
+						aSample = GETASAMPLE(colorSample2);
+					}
+					else
+					{
+						HCL2Sample = GBCtoHCL( colorSample, colorSample2, rotateVar3D, radialValue, lensMode);
+					}
 				}
 
 				else if (modeGBC == 2.0) 
@@ -2114,6 +2142,11 @@
 					colorSample.r = HCL2Sample.r;
 					colorSample.g = HCL2Sample.g;
 					colorSample.b = HCL2Sample.b;
+
+					if (brushMode == 2.0)
+					{
+						colorSample.a = aSample;
+					}
 				}
 				else 
 				{
