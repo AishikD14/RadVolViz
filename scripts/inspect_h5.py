@@ -3,20 +3,22 @@
 import h5py
 import numpy as np
 
-# file_path = '../Gd_Ce_Fe_Co.h5'  # Update this path to your local file
-file_path = '../thigh_sarcoma.h5' # Update this path to your local file
+# file_path = '../data/CeCoFeGd/CeCoFeGd.h5'  # Update this path to your local file
+file_path = '../data/thigh_sarcoma/thigh_sarcoma.h5' # Update this path to your local file
 
 with h5py.File(file_path, 'r') as hdf:
     # Access the datasets
-    # one_data = hdf['Ce'][:]
-    # two_data = hdf['Co'][:]
-    # three_data = hdf['Fe'][:]
-    # four_data = hdf['Gd'][:]
-
-    one_data = hdf['CT'][:]
-    two_data = hdf['MRI-T1'][:]
-    three_data = hdf['MRI-T2'][:]
-    four_data = hdf['PET'][:]
+    if file_path.endswith('CeCoFeGd.h5'):
+        one_data = hdf['Ce'][:]
+        two_data = hdf['Co'][:]
+        three_data = hdf['Fe'][:]
+        four_data = hdf['Gd'][:]
+        
+    elif file_path.endswith('thigh_sarcoma.h5'):
+        one_data = hdf['CT'][:]
+        two_data = hdf['MRI-T1'][:]
+        three_data = hdf['MRI-T2'][:]
+        four_data = hdf['PET'][:]
 
 x_dim, y_dim, z_dim = one_data.shape
 
@@ -33,8 +35,8 @@ combined_data[..., 3] = four_data
 print(combined_data.shape)  # Should print (200, 200, 200, 4)
 print(combined_data[0, 0, 0])  # Sample point: should print a 4-element array
 
-# np.save('../xray_volume.npy', combined_data)
-np.save('../thigh_sarcoma_volume.npy', combined_data)
+# np.save('../data/CeCoFeGd/volume.npy', combined_data)
+np.save('../data/thigh_sarcoma/volume.npy', combined_data)
 
 # --------------------------------------------------------------------------------------------
 
@@ -43,7 +45,7 @@ np.save('../thigh_sarcoma_volume.npy', combined_data)
 # import numpy as np
 
 # # Assuming the 3D array is named 'volume'
-# volume = np.load("../xray_volume.npy")  # Example array
+# volume = np.load("../CeCoFeGd_volume.npy")  # Example array
 
 # # Find coordinates where at least one element in the 4-element vector is not equal to 0
 # non_zero_coords = np.argwhere(np.any(volume != 0, axis=-1))
