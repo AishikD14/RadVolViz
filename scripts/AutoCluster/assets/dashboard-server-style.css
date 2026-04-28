@@ -94,13 +94,16 @@ body{
 #dashboard-server #cluster-vector-space-visualization{
     display: none;
 }
-#dashboard-server .reset-button-container, .trame-button-container{
+#dashboard-server .reset-button-container, .trame-button-container, .clear-selection-button-container{
     display: flex;
     justify-content: center;
     margin-top: 10px;
     margin-bottom: 10px;
 }
-#dashboard-server #reset-button, #trame-button{
+.clear-selection-button-container{
+    margin-bottom: 0;
+}
+#dashboard-server #reset-button, #trame-button, #clear-selection-button{
     background-color: #F0AD4E ;
     font-weight: bold;
     font-size: 16px;
@@ -110,7 +113,7 @@ body{
     transition: background-color 0.3s ease, box-shadow 0.2s ease;
 }
 /* Hover effect */
-#dashboard-server #reset-button:hover {
+#dashboard-server #reset-button:hover, #clear-selection-button:hover {
     background-color: #C62828; /* Darker red on hover */
     box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2);
 }

@@ -473,7 +473,7 @@ if dataset == "thigh_sarcoma":
     )
 
     if len(pet_bin_edges) > 0:
-        first_pet_bin_count = max(1, int(np.ceil((len(pet_bin_edges) - 1) * 0.10)))
+        first_pet_bin_count = max(1, int(np.ceil((len(pet_bin_edges) - 1) * 0.05)))
         pet_cutoff = pet_bin_edges[first_pet_bin_count]
         nonzero_voxel_mask = ~np.all(np.isclose(volume, 0), axis=3)
         first_pet_histogram_mask = (
@@ -614,6 +614,54 @@ def create_superpixels(resized_image, input_image, num_superpixels,dropzero_chec
     # Return the figure
     return fig, segments, boundary_image, trace_info
 
+def create_superpixel_display_figure(image, segment_coords, segment_ids):
+    scatter_trace = {
+        'x': [coord[1] for coord in segment_coords],
+        'y': [coord[0] for coord in segment_coords],
+        'mode': 'markers',
+        'marker': {'color': 'rgba(0, 0, 0, 0)', 'size': 1},
+        'text': [seg_id for seg_id in segment_ids],
+        'hovertemplate': '<b>%{text}</b><extra></extra>',
+    }
+
+    fig = px.imshow(image)
+    fig.add_traces([scatter_trace])
+    fig.update_layout(
+        margin=dict(l=0, r=0, b=0, t=0),
+        xaxis=dict(visible=False),
+        yaxis=dict(visible=False),
+        coloraxis_showscale=False
+    )
+
+    return fig
+
+def get_segment_id_from_vector_point(point, is_cluster_plot):
+    customdata = point.get('customdata')
+
+    if isinstance(customdata, (list, tuple, np.ndarray)):
+        if is_cluster_plot and len(customdata) > 1:
+            return int(customdata[1])
+        if len(customdata) > 0:
+            return int(customdata[0])
+    elif customdata is not None:
+        return int(customdata)
+
+    if not is_cluster_plot and 'marker.color' in point:
+        return int(point['marker.color'])
+
+    return int(point['pointNumber'])
+
+def get_segment_ids_from_vector_selection(selection_data, click_data, is_cluster_plot, triggered_prop):
+    if triggered_prop == 'selectedData':
+        points = [] if selection_data is None else selection_data.get('points', [])
+    else:
+        points = [] if click_data is None else click_data.get('points', [])
+
+    return [
+        get_segment_id_from_vector_point(point, is_cluster_plot)
+        for point in points
+    ]
+
 # Function to create PCA plot
 def create_pca_plot(segment_vectors, segmentColorDict, hovered_segment_id, encoded_features, autoencoder_checkbox):
     if 'enable' in autoencoder_checkbox:
@@ -650,6 +698,7 @@ def create_pca_plot(segment_vectors, segmentColorDict, hovered_segment_id, encod
         x='PCA Dimension 1',
         y='PCA Dimension 2',
         hover_data=['Segment ID'],
+        custom_data=['Segment ID'],
     )
 
     fig.update_traces(marker=dict(color=segment_labels, colorscale=color_scale))
@@ -677,7 +726,7 @@ def create_pca_plot(segment_vectors, segmentColorDict, hovered_segment_id, encod
         }
     )
     
-    fig.update_layout(clickmode='event')
+    fig.update_layout(clickmode='event+select', dragmode='lasso')
 
     # if hovered_segment_id is not None:
     #     # Highlight the corresponding segment in the PCA plot
@@ -740,7 +789,8 @@ def create_tsne_plot(segment_vectors, segmentColorDict, hovered_segment_id, enco
         df_tsne,
         x='t-SNE Dimension 1',
         y='t-SNE Dimension 2',
-        hover_data=['Segment ID']
+        hover_data=['Segment ID'],
+        custom_data=['Segment ID']
     )
 
     fig.update_traces(marker=dict(color=segment_labels, colorscale=color_scale))
@@ -768,7 +818,7 @@ def create_tsne_plot(segment_vectors, segmentColorDict, hovered_segment_id, enco
         }
     )
 
-    fig.update_layout(clickmode='event')
+    fig.update_layout(clickmode='event+select', dragmode='lasso')
 
     # if hovered_segment_id is not None:
     #     # Highlight the corresponding segment in the t-SNE plot
@@ -1134,6 +1184,7 @@ def create_cluster_vector_plot(segment_vectors, cluster_labels, visualization, h
             color='Cluster ID',
             category_orders={"Cluster ID": ["0", "1", "2", "3", "4"]},
             hover_data=['Cluster ID', 'Segment ID'],
+            custom_data=['Cluster ID', 'Segment ID'],
             labels={"Cluster ID": "Cluster ID"},
             color_discrete_sequence=tab10_colors
         )
@@ -1146,6 +1197,7 @@ def create_cluster_vector_plot(segment_vectors, cluster_labels, visualization, h
             color='Cluster ID',
             category_orders={"Cluster ID": ["0", "1", "2", "3", "4"]},
             hover_data=['Cluster ID', 'Segment ID'],
+            custom_data=['Cluster ID', 'Segment ID'],
             labels={"Cluster ID": "Cluster ID"},
             color_discrete_sequence=tab10_colors
         )
@@ -1205,7 +1257,7 @@ def create_cluster_vector_plot(segment_vectors, cluster_labels, visualization, h
             }
         )
 
-        fig.update_layout(clickmode='event+select')
+        fig.update_layout(clickmode='event+select', dragmode='lasso')
 
         if hovered_segment_id is not None:
 
@@ -1453,6 +1505,13 @@ app.layout = html.Div(
                             value='PC'
                         ),
 
+                        html.Div(
+                            children=[
+                                html.Button('Clear Selection', id='clear-selection-button', n_clicks=0),
+                            ],
+                            className='clear-selection-button-container'
+                        ),
+
                         # -------------------------------------------------------------------------------
 
                         # Add break
@@ -1544,10 +1603,10 @@ app.layout = html.Div(
                         html.Br(),
 
                         # Add break
-                        html.Br(),
+                        # html.Br(),
 
-                        # Add break
-                        html.Br(),
+                        # # Add break
+                        # html.Br(),
 
                         # -------------------------------------------------------------------------------
 
@@ -1759,15 +1818,42 @@ def update_slice_plot(axis, slice_num):
 # Callback for Superpixel Plot
 @app.callback(
     [Output('superpixel-plot', 'figure'), Output('superpixel-data', 'data'), Output('clustering-checkbox', 'value'), Output('class-tracker', 'data'), Output('vector-data', 'data')],
-    [Input('slice-data', 'data'), Input('vector-plot', 'clickData'), Input('cluster-vector-plot', 'clickData'), Input('superpixel-input', 'value'), Input('dropzero-checkbox', 'value'), Input('vector-plot', 'restyleData'), Input('cluster-vector-plot', 'restyleData'), Input('visualization-radio', 'value'), Input('clustering-checkbox', 'value'), Input('autoencoder-checkbox', 'value'), Input('elbow-plot', 'clickData'), Input('clustering-radio', 'value')],
+    [Input('slice-data', 'data'), Input('vector-plot', 'clickData'), Input('cluster-vector-plot', 'clickData'), Input('vector-plot', 'selectedData'), Input('cluster-vector-plot', 'selectedData'), Input('superpixel-input', 'value'), Input('dropzero-checkbox', 'value'), Input('vector-plot', 'restyleData'), Input('cluster-vector-plot', 'restyleData'), Input('visualization-radio', 'value'), Input('clear-selection-button', 'n_clicks'), Input('clustering-checkbox', 'value'), Input('autoencoder-checkbox', 'value'), Input('elbow-plot', 'clickData'), Input('clustering-radio', 'value')],
     [State('superpixel-data', 'data'), State('vector-data', 'data')]
 )
-def update_superpixel_plot(jsonified_slice_data, vector_click_data1, vector_click_data2, num_superpixels, dropzero_checkbox, restyle_data1, restyle_data2, visualization, clustering_checkbox, autoencoder_checkbox, click_data, clustering, jsonified_superpixel_data, jsonified_vector_data):
+def update_superpixel_plot(jsonified_slice_data, vector_click_data1, vector_click_data2, vector_selected_data1, vector_selected_data2, num_superpixels, dropzero_checkbox, restyle_data1, restyle_data2, visualization, clear_selection_clicks, clustering_checkbox, autoencoder_checkbox, click_data, clustering, jsonified_superpixel_data, jsonified_vector_data):
     print("--------------------------------")
     print("Updating superpixel plot...")
     start_time = time.time()
     
     ctx_id = ctx.triggered_id.split('.')[0]
+    triggered_prop = ctx.triggered[0]['prop_id'].split('.')[-1] if ctx.triggered else None
+
+    if ctx_id == 'clear-selection-button':
+        if jsonified_superpixel_data is None:
+            return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
+
+        superpixel_data = json.loads(jsonified_superpixel_data)
+        boundary_image = np.array(superpixel_data['image'])
+        segment_coords = superpixel_data['trace_info']['segment_coords']
+        segment_ids = superpixel_data['trace_info']['segment_ids']
+        segment_ids = [np.int32(num) for num in segment_ids]
+
+        superpixel_fig = create_superpixel_display_figure(
+            boundary_image,
+            segment_coords,
+            segment_ids
+        )
+
+        vector_data_update = dash.no_update
+        if jsonified_vector_data is not None:
+            vector_data = json.loads(jsonified_vector_data)
+            vector_data["filters"] = {}
+            vector_data_update = json.dumps(vector_data)
+
+        print('Superpixel plot ready in:', time.time() - start_time)
+
+        return superpixel_fig, dash.no_update, dash.no_update, dash.no_update, vector_data_update
 
     if ctx_id == 'vector-plot' or ctx_id == 'cluster-vector-plot':
 
@@ -1867,88 +1953,38 @@ def update_superpixel_plot(jsonified_slice_data, vector_click_data1, vector_clic
 
                         return superpixel_fig, dash.no_update, dash.no_update, dash.no_update, json.dumps(vector_data)
 
-        if vector_click_data1 is None and vector_click_data2 is None:
-            if jsonified_superpixel_data is not None:
-                superpixel_data = json.loads(jsonified_superpixel_data)
+        if triggered_prop not in ('clickData', 'selectedData'):
+            return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
-                segments = np.array(superpixel_data['segments'])
-                boundary_image = np.array(superpixel_data['image'])
-                segment_coords = superpixel_data['trace_info']['segment_coords']
-                segment_ids = superpixel_data['trace_info']['segment_ids']
-                segment_ids = [np.int32(num) for num in segment_ids]
+        if jsonified_superpixel_data is not None:
+            is_cluster_plot = ctx_id == 'cluster-vector-plot'
+            selected_segment_ids = get_segment_ids_from_vector_selection(
+                vector_selected_data2 if is_cluster_plot else vector_selected_data1,
+                vector_click_data2 if is_cluster_plot else vector_click_data1,
+                is_cluster_plot,
+                triggered_prop
+            )
 
-                # Create a Plotly scatter plot for segment IDs at each pixel location
-                scatter_trace = {
-                    'x': [coord[1] for coord in segment_coords],  # x-coordinates (columns)
-                    'y': [coord[0] for coord in segment_coords],  # y-coordinates (rows)
-                    'mode': 'markers',
-                    'marker': {'color': 'rgba(0, 0, 0, 0)', 'size': 1},  # Invisible markers
-                    'text': [seg_id for seg_id in segment_ids],  # Text for hover
-                    'hovertemplate': '<b>%{text}</b><extra></extra>',  # Custom hover template to show the segment ID
-                }
+            superpixel_data = json.loads(jsonified_superpixel_data)
 
-                # Create a plotly figure
-                superpixel_fig = px.imshow(boundary_image)
+            segments = np.array(superpixel_data['segments'])
+            highlighted_image = np.array(superpixel_data['image'])
+            segment_coords = superpixel_data['trace_info']['segment_coords']
+            segment_ids = superpixel_data['trace_info']['segment_ids']
+            segment_ids = [np.int32(num) for num in segment_ids]
 
-                # Add the scatter trace to the figure
-                superpixel_fig.add_traces([scatter_trace])
+            if selected_segment_ids:
+                highlighted_image[~np.isin(segments, selected_segment_ids)] *= 0.3
 
-                # Update the layout of the figure
-                superpixel_fig.update_layout(
-                    margin=dict(l=0, r=0, b=0, t=0),
-                    xaxis=dict(visible=False),
-                    yaxis=dict(visible=False),
-                    coloraxis_showscale=False
-                )
+            superpixel_fig = create_superpixel_display_figure(
+                highlighted_image,
+                segment_coords,
+                segment_ids
+            )
 
-                print('Superpixel plot ready in:', time.time() - start_time)
+            print('Superpixel plot ready in:', time.time() - start_time)
 
-                return superpixel_fig, dash.no_update, dash.no_update, dash.no_update, dash.no_update
-        
-        else:
-            if ctx_id == 'vector-plot':
-                clicked_segment_id = vector_click_data1['points'][0]['marker.color']
-            elif ctx_id == 'cluster-vector-plot':
-                clicked_segment_id = vector_click_data2['points'][0]['customdata'][1]
-
-            if jsonified_superpixel_data is not None:
-                superpixel_data = json.loads(jsonified_superpixel_data)
-
-                segments = np.array(superpixel_data['segments'])
-                highlighted_image = np.array(superpixel_data['image'])
-                segment_coords = superpixel_data['trace_info']['segment_coords']
-                segment_IDs = superpixel_data['trace_info']['segment_ids']
-                segment_IDs = [np.int32(num) for num in segment_IDs]
-
-                highlighted_image[segments != clicked_segment_id] *= 0.3  # Dim non-selected segments
-
-                # Create a new figure with highlighted segment
-                superpixel_fig = px.imshow(highlighted_image)
-
-                # Create a Plotly scatter plot for segment IDs at each pixel location
-                scatter_trace = {
-                    'x': [coord[1] for coord in segment_coords],  # x-coordinates (columns)
-                    'y': [coord[0] for coord in segment_coords],  # y-coordinates (rows)
-                    'mode': 'markers',
-                    'marker': {'color': 'rgba(0, 0, 0, 0)', 'size': 1},  # Invisible markers
-                    'text': [seg_id for seg_id in segment_IDs],  # Text for hover
-                    'hovertemplate': '<b>%{text}</b><extra></extra>',  # Custom hover template to show the segment ID
-                }
-
-                # Add the scatter trace to the figure
-                superpixel_fig.add_traces([scatter_trace])
-
-                # Update the layout of the figure
-                superpixel_fig.update_layout(
-                    margin=dict(l=0, r=0, b=0, t=0),
-                    xaxis=dict(visible=False),
-                    yaxis=dict(visible=False),
-                    coloraxis_showscale=False
-                )
-
-                print('Superpixel plot ready in:', time.time() - start_time)
-
-                return superpixel_fig, dash.no_update, dash.no_update, dash.no_update, dash.no_update
+            return superpixel_fig, dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
     elif ctx_id == 'visualization-radio' or ctx_id == 'clustering-checkbox' or ctx_id == 'autoencoder-checkbox' or ctx_id == 'elbow-plot' or ctx_id == 'clustering-radio':
         if jsonified_vector_data is None:
@@ -2042,10 +2078,10 @@ def update_superpixel_plot(jsonified_slice_data, vector_click_data1, vector_clic
 # Callback for Vector Space Visualization Plot
 @app.callback(
     [Output('vector-plot', 'figure'), Output('vector-data', 'data'), Output('class-tracker', 'data')],
-    [Input('slice-data', 'data'), Input('superpixel-data', 'data'), Input('visualization-radio', 'value'), Input('clustering-checkbox', 'value'), Input('autoencoder-checkbox', 'value')],
+    [Input('slice-data', 'data'), Input('superpixel-data', 'data'), Input('visualization-radio', 'value'), Input('clustering-checkbox', 'value'), Input('autoencoder-checkbox', 'value'), Input('clear-selection-button', 'n_clicks')],
     [State('vector-data', 'data'), State('dropzero-checkbox', 'value')]
 )
-def update_vector_plot(jsonified_slice_data, jsonified_superpixel_data, visualization, checkbox_value, autoencoder_checkbox, jsonified_vector_data, dropzero_checkbox):
+def update_vector_plot(jsonified_slice_data, jsonified_superpixel_data, visualization, checkbox_value, autoencoder_checkbox, clear_selection_clicks, jsonified_vector_data, dropzero_checkbox):
     if checkbox_value == ['enable']:
         return dash.no_update, dash.no_update, dash.no_update
     
@@ -2116,6 +2152,13 @@ def update_vector_plot(jsonified_slice_data, jsonified_superpixel_data, visualiz
 
     elif visualization == 'PC':
         vector_space_fig, df = create_parallel_coordinates_plot(segment_vectors, segmentColorDict, None, encoded_features, autoencoder_checkbox)
+
+    if ctx.triggered_id == 'clear-selection-button':
+        vector_space_fig.update_layout(
+            uirevision=f"clear-selection-{clear_selection_clicks}",
+            selectionrevision=f"clear-selection-{clear_selection_clicks}",
+            editrevision=f"clear-selection-{clear_selection_clicks}"
+        )
     
     print('Vector plot ready in:', time.time() - start_time)
 
@@ -2227,11 +2270,11 @@ def perform_clustering(clustering, cluster_number, autoencoder_checkbox, cluster
 # Callback for updating vector plot with clustering
 @app.callback(
     [Output('cluster-vector-plot', 'figure'), Output('class-tracker', 'data'), Output('vector-data', 'data')],
-    [Input('cluster-data', 'data'), Input('visualization-radio', 'value'), Input('clustering-checkbox', 'value'), Input('autoencoder-checkbox', 'value'), Input('superpixel-data', 'data')],
+    [Input('cluster-data', 'data'), Input('visualization-radio', 'value'), Input('clustering-checkbox', 'value'), Input('autoencoder-checkbox', 'value'), Input('superpixel-data', 'data'), Input('clear-selection-button', 'n_clicks')],
     [State('vector-data', 'data')], 
     prevent_initial_call=True
 )
-def update_cluster_vector_plot(jsonified_cluster_data, visualization, checkbox_value, autoencoder_checkbox, jsonified_superpixel_data, jsonified_vector_data):
+def update_cluster_vector_plot(jsonified_cluster_data, visualization, checkbox_value, autoencoder_checkbox, jsonified_superpixel_data, clear_selection_clicks, jsonified_vector_data):
     if checkbox_value == []:
         return dash.no_update, dash.no_update, dash.no_update
     
@@ -2253,6 +2296,13 @@ def update_cluster_vector_plot(jsonified_cluster_data, visualization, checkbox_v
 
     cluster_vector_plot_fig, df = create_cluster_vector_plot(segment_vectors, cluster_labels, visualization, None, encoded_features, autoencoder_checkbox)
 
+    if ctx.triggered_id == 'clear-selection-button':
+        cluster_vector_plot_fig.update_layout(
+            uirevision=f"clear-selection-{clear_selection_clicks}",
+            selectionrevision=f"clear-selection-{clear_selection_clicks}",
+            editrevision=f"clear-selection-{clear_selection_clicks}"
+        )
+
     print('Cluster vector plot ready in:', time.time() - start_time)
 
     # Create vector_data JSON
@@ -2266,11 +2316,11 @@ def update_cluster_vector_plot(jsonified_cluster_data, visualization, checkbox_v
 # Callback for Final Segmented Slice
 @app.callback(
     [Output('final-plot', 'figure'), Output('class-tracker', 'data')],
-    [Input('cluster-data', 'data'), Input('slice-data', 'data'), Input('superpixel-data', 'data'), Input('cluster-vector-plot', 'restyleData'), Input('visualization-radio', 'value')],
+    [Input('cluster-data', 'data'), Input('slice-data', 'data'), Input('superpixel-data', 'data'), Input('cluster-vector-plot', 'restyleData'), Input('cluster-vector-plot', 'clickData'), Input('cluster-vector-plot', 'selectedData'), Input('visualization-radio', 'value'), Input('clear-selection-button', 'n_clicks')],
     [State('class-tracker', 'data'), State('vector-data', 'data'), State('clustering-checkbox', 'value')],
     prevent_initial_call=True
 )
-def update_final_plot(jsonified_cluster_data, jsonified_slice_data, jsonified_superpixel_data, restyle_data, visualization, class_tracker, jsonified_vector_data, clustering_checkbox):
+def update_final_plot(jsonified_cluster_data, jsonified_slice_data, jsonified_superpixel_data, restyle_data, click_data, selected_data, visualization, clear_selection_clicks, class_tracker, jsonified_vector_data, clustering_checkbox):
     if jsonified_cluster_data is None or jsonified_slice_data is None or jsonified_superpixel_data is None:
         return dash.no_update, dash.no_update
 
@@ -2301,6 +2351,14 @@ def update_final_plot(jsonified_cluster_data, jsonified_slice_data, jsonified_su
     # -------------------------------------------------------------------------------
 
     ctx_id = ctx.triggered_id.split('.')[0]
+    triggered_prop = ctx.triggered[0]['prop_id'].split('.')[-1] if ctx.triggered else None
+
+    if ctx_id == 'clear-selection-button':
+        final_fig = create_final_image(cluster_labels, cluster_color_dict, resized_image, segments, [], {})
+
+        print('Final segmented slice ready in:', time.time() - start_time)
+
+        return final_fig, dash.no_update
 
     if ctx_id == 'cluster-vector-plot' and visualization == 'PC':
         if restyle_data is not None:
@@ -2357,6 +2415,32 @@ def update_final_plot(jsonified_cluster_data, jsonified_slice_data, jsonified_su
 
                     return final_fig, dash.no_update
 
+        return dash.no_update, dash.no_update
+
+    elif ctx_id == 'cluster-vector-plot' and visualization in ('pca', 'tsne') and triggered_prop in ('clickData', 'selectedData'):
+        segmentCordDict = vector_data["segmentCordDict"]
+        segmentCordDict = {np.int32(key): np.array(value) for key, value in segmentCordDict.items()}
+
+        selected_segment_ids = get_segment_ids_from_vector_selection(
+            selected_data,
+            click_data,
+            True,
+            triggered_prop
+        )
+
+        final_fig = create_final_image(
+            cluster_labels,
+            cluster_color_dict,
+            resized_image,
+            segments,
+            selected_segment_ids,
+            segmentCordDict if selected_segment_ids else {}
+        )
+
+        print('Final segmented slice ready in:', time.time() - start_time)
+
+        return final_fig, dash.no_update
+
     else:
 
         final_fig = create_final_image(cluster_labels, cluster_color_dict, resized_image, segments, [], {})
@@ -2380,6 +2464,20 @@ def update_final_plot(jsonified_cluster_data, jsonified_slice_data, jsonified_su
 def reset_dashboard(n_clicks):
     if n_clicks > 0:
         return "x", 130, 5, "PC", "Elbow", "kmeans", [], []
+
+# -------------------------------------------------------------------------------
+
+# Callback for clearing vector plot selections
+@app.callback(
+    [Output('vector-plot', 'selectedData'), Output('cluster-vector-plot', 'selectedData'), Output('vector-plot', 'clickData'), Output('cluster-vector-plot', 'clickData')],
+    [Input('clear-selection-button', 'n_clicks')],
+    prevent_initial_call=True
+)
+def clear_vector_plot_selection(n_clicks):
+    if n_clicks > 0:
+        return None, None, None, None
+
+    return dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
 # -------------------------------------------------------------------------------
 # Visualize 3D volume inside Dash app
