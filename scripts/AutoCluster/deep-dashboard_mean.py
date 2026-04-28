@@ -460,7 +460,7 @@ dataset_name = "thigh_sarcoma"
 # Load volume data
 volume = np.load(f'../../data/{dataset_name}/volume.npy')
 
-skip_training = True
+skip_training = False
 
 drop_zero_pixels = True
 
@@ -548,6 +548,8 @@ if not skip_training:
         torch.save(autoencoder.state_dict(), f'../../data/{dataset_name}/autoencoder_mean_nozero.pth')
     else:
         torch.save(autoencoder.state_dict(), f'../../data/{dataset_name}/autoencoder_mean.pth')
+
+    quit()
 
 else:
     input_dim = 8

@@ -418,6 +418,30 @@ def compute_superpixel_features(image_4ch, superpixels, drop_zero_pixels):
 
     return features  # Shape: (num_superpixels, 8)
 
+def create_channel_histogram(flattened_data, channel_index, bins=200, use_log_histogram=True):
+    # Histogram always uses the full spectrum of nonzero voxels.
+    nonzero_indices = ~np.all(np.isclose(flattened_data, 0), axis=1)
+    nonzero_data = flattened_data[nonzero_indices]
+
+    if nonzero_data.size == 0:
+        return [], np.array([])
+
+    histogram_array = nonzero_data[:, channel_index]
+    hist_count, bin_edges = np.histogram(histogram_array, bins=bins)
+    hist_count = hist_count.astype(float)
+
+    zero_counts = np.isclose(hist_count, 0)
+    if use_log_histogram:
+        hist_count[~zero_counts] = np.log10(hist_count[~zero_counts])
+
+    max_count = hist_count.max()
+    if np.isclose(max_count, 0):
+        hist = [0 for _ in hist_count]
+    else:
+        hist = [int(v / max_count * 100) for v in hist_count.tolist()]
+
+    return hist, bin_edges
+
 # -------------------------------------------------------------------------------
 
 # dataset_name = "CeCoFeGd"
@@ -425,6 +449,56 @@ dataset_name = "thigh_sarcoma"
 
 # Load volume data
 volume = np.load(f'../../data/{dataset_name}/volume.npy')
+
+if dataset_name == "thigh_sarcoma":
+    # Switch 1st and 2nd channels for better visualization
+    volume = volume[:, :, :, [1, 0, 2, 3]]
+    channel_names = ["MRI-T1", "CT", "MRI-T2", "PET"]
+
+    # Normalize each channel to [0, 1] range
+    for i in range(volume.shape[3]):
+        channel = volume[:, :, :, i]
+
+        max_val = channel.max()
+        min_val = channel.min()
+
+        volume[:, :, :, i] = (
+            (1 - 0) * (channel.astype(np.float64) - min_val)
+            / (max_val - min_val)
+        ) + 0
+
+    # Keep only voxels whose PET value falls in the first 5% of PET histogram bins.
+    pet_channel_index = channel_names.index("PET")
+    pet_histogram, pet_bin_edges = create_channel_histogram(
+        volume.reshape(-1, volume.shape[-1]),
+        pet_channel_index,
+        bins=200,
+        use_log_histogram=True
+    )
+
+    if len(pet_bin_edges) > 0:
+        first_pet_bin_count = max(1, int(np.ceil((len(pet_bin_edges) - 1) * 0.05)))
+        pet_cutoff = pet_bin_edges[first_pet_bin_count]
+        nonzero_voxel_mask = ~np.all(np.isclose(volume, 0), axis=3)
+        first_pet_histogram_mask = (
+            nonzero_voxel_mask
+            & (volume[:, :, :, pet_channel_index] >= pet_bin_edges[0])
+            & (volume[:, :, :, pet_channel_index] <= pet_cutoff)
+        )
+        volume[~first_pet_histogram_mask] = 0
+
+    # Rescale channel values to [0, 1] range after filtering
+    for i in range(volume.shape[3]):
+        channel = volume[:, :, :, i]
+
+        max_val = channel.max()
+        min_val = channel.min()
+
+        if max_val > min_val:  # Avoid division by zero
+            volume[:, :, :, i] = (
+                (1 - 0) * (channel.astype(np.float64) - min_val)
+                / (max_val - min_val)
+            ) + 0
 
 drop_zero_pixels = True
 
@@ -445,11 +519,17 @@ f.close()
 # -------------------------------------------------------------------------------
 
 print("Starting the process...")
-print("Total slices to process:", 160 - 45)
+if dataset_name == "CeCoFeGd":
+    print("Total slices to process:", 160 - 45)
+elif dataset_name == "thigh_sarcoma":
+    print("Total slices to process:", volume.shape[0])
 print("---------------------------------")
 
 # Loop over each x-axis slice in the volume
-for x in range(45, 160):
+
+# for x in range(45, 160): # Process slices from 45 to 159 (inclusive) for CeCoFeGd dataset
+for x in range(volume.shape[0]): # Process all slices in the volume for thigh_sarcoma dataset
+
     image = volume[x, :, :]
 
     # -------------------------------------------------------------------------------
@@ -457,9 +537,12 @@ for x in range(45, 160):
     # -------------------------------------------------------------------------------
 
     # Define a zoom factor (increase this value to zoom in more)
-    zoom_factor = 1.4
+    if dataset_name == "CeCoFeGd":
+        zoom_factor = 1.4
+        resized_image = cropImage(image, zoom_factor)
 
-    resized_image = cropImage(image, zoom_factor)
+    elif dataset_name == "thigh_sarcoma":
+        resized_image = image  # No zooming for thigh_sarcoma dataset
 
     # -------------------------------------------------------------------------------
 
