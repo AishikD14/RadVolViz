@@ -224,7 +224,7 @@ if isimage:
 else:
 
     # Load volume data
-    volume = np.load('../../xray_volume.npy')
+    volume = np.load('../../data/CeCoFeGd/volume.npy')
 
     # Loop over each x-axis slice
     slice_allowed = [90, 100, 130, 150]
