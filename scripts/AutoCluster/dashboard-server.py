@@ -448,64 +448,97 @@ data_dict = {
 
 # --------------------------------------------------------------------------------
 
-# Load volume data
-# dataset = "CeCoFeGd"
-dataset = "thigh_sarcoma"
+def resolve_dataset_name(data_value):
+    if data_value is None:
+        return None
 
-volume = np.load(data_dict[dataset]["volume_path"])
-channel_names = data_dict[dataset]["channel_names"]
+    decoded_value = urllib.parse.unquote_plus(str(data_value)).strip()
+    if decoded_value == "":
+        return None
 
-# --------------------------------------------------------------------------------
+    if decoded_value in data_dict:
+        return decoded_value
 
-if dataset == "thigh_sarcoma":
-    # Switch 1st and 2nd channels for better visualization
-    volume = volume[:, :, :, [1, 0, 2, 3]]
-    channel_names = ["MRI-T1", "CT", "MRI-T2", "PET"]
+    return None
 
-    # Normalize each channel to [0, 1] range
-    for i in range(volume.shape[3]):
-        channel = volume[:, :, :, i]
+def load_dataset(dataset_name):
+    global dataset, volume, channel_names
 
-        max_val = channel.max()
-        min_val = channel.min()
+    if dataset_name not in data_dict:
+        raise ValueError(f"Unknown dataset: {dataset_name}")
 
-        volume[:, :, :, i] = (
-            (1 - 0) * (channel.astype(np.float64) - min_val)
-            / (max_val - min_val)
-        ) + 0
+    loaded_volume = np.load(data_dict[dataset_name]["volume_path"])
+    loaded_channel_names = list(data_dict[dataset_name]["channel_names"])
 
-    # Keep only voxels whose PET value falls in the first 10% of PET histogram bins.
-    pet_channel_index = channel_names.index("PET")
-    pet_histogram, pet_bin_edges = create_channel_histogram(
-        volume.reshape(-1, volume.shape[-1]),
-        pet_channel_index,
-        bins=200,
-        use_log_histogram=True
-    )
+    if dataset_name == "thigh_sarcoma":
+        # Switch 1st and 2nd channels for better visualization
+        loaded_volume = loaded_volume[:, :, :, [1, 0, 2, 3]]
+        loaded_channel_names = ["MRI-T1", "CT", "MRI-T2", "PET"]
 
-    if len(pet_bin_edges) > 0:
-        first_pet_bin_count = max(1, int(np.ceil((len(pet_bin_edges) - 1) * 0.05)))
-        pet_cutoff = pet_bin_edges[first_pet_bin_count]
-        nonzero_voxel_mask = ~np.all(np.isclose(volume, 0), axis=3)
-        first_pet_histogram_mask = (
-            nonzero_voxel_mask
-            & (volume[:, :, :, pet_channel_index] >= pet_bin_edges[0])
-            & (volume[:, :, :, pet_channel_index] <= pet_cutoff)
-        )
-        volume[~first_pet_histogram_mask] = 0
+        # Normalize each channel to [0, 1] range
+        for i in range(loaded_volume.shape[3]):
+            channel = loaded_volume[:, :, :, i]
 
-    # Rescale channel values to [0, 1] range after filtering
-    for i in range(volume.shape[3]):
-        channel = volume[:, :, :, i]
+            max_val = channel.max()
+            min_val = channel.min()
 
-        max_val = channel.max()
-        min_val = channel.min()
-
-        if max_val > min_val:  # Avoid division by zero
-            volume[:, :, :, i] = (
+            loaded_volume[:, :, :, i] = (
                 (1 - 0) * (channel.astype(np.float64) - min_val)
                 / (max_val - min_val)
             ) + 0
+
+        # Keep only voxels whose PET value falls in the first 5% of PET histogram bins.
+        pet_channel_index = loaded_channel_names.index("PET")
+        pet_histogram, pet_bin_edges = create_channel_histogram(
+            loaded_volume.reshape(-1, loaded_volume.shape[-1]),
+            pet_channel_index,
+            bins=200,
+            use_log_histogram=True
+        )
+
+        if len(pet_bin_edges) > 0:
+            first_pet_bin_count = max(1, int(np.ceil((len(pet_bin_edges) - 1) * 0.05)))
+            pet_cutoff = pet_bin_edges[first_pet_bin_count]
+            nonzero_voxel_mask = ~np.all(np.isclose(loaded_volume, 0), axis=3)
+            first_pet_histogram_mask = (
+                nonzero_voxel_mask
+                & (loaded_volume[:, :, :, pet_channel_index] >= pet_bin_edges[0])
+                & (loaded_volume[:, :, :, pet_channel_index] <= pet_cutoff)
+            )
+            loaded_volume[~first_pet_histogram_mask] = 0
+
+        # Rescale channel values to [0, 1] range after filtering
+        for i in range(loaded_volume.shape[3]):
+            channel = loaded_volume[:, :, :, i]
+
+            max_val = channel.max()
+            min_val = channel.min()
+
+            if max_val > min_val:  # Avoid division by zero
+                loaded_volume[:, :, :, i] = (
+                    (1 - 0) * (channel.astype(np.float64) - min_val)
+                    / (max_val - min_val)
+                ) + 0
+
+    dataset = dataset_name
+    volume = loaded_volume
+    channel_names = loaded_channel_names
+
+def get_slice_slider_max(axis):
+    if axis == "x":
+        return volume.shape[0] - 1
+    if axis == "y":
+        return volume.shape[1] - 1
+    return volume.shape[2] - 1
+
+def get_slice_slider_marks(max_slice):
+    return {0: str(0), max_slice: str(max_slice)}
+
+# Load volume data
+dataset = None
+volume = None
+channel_names = []
+load_dataset("thigh_sarcoma")
 
 # -------------------------------------------------------------------------------
 
@@ -644,6 +677,17 @@ def create_superpixel_display_figure(image, segment_coords, segment_ids):
         coloraxis_showscale=False
     )
 
+    return fig
+
+def create_empty_figure():
+    fig = go.Figure()
+    fig.update_layout(
+        margin=dict(l=0, r=0, b=0, t=0),
+        xaxis=dict(visible=False),
+        yaxis=dict(visible=False),
+        plot_bgcolor='#222831',
+        paper_bgcolor='#222831'
+    )
     return fig
 
 def get_segment_id_from_vector_point(point, is_cluster_plot):
@@ -1443,13 +1487,13 @@ app.layout = html.Div(
                         html.Label('Select slice to visualize:'),
                         dcc.Slider(
                             id='slice-slider',
-                            min=1,
-                            max=volume.shape[0],
+                            min=0,
+                            max=get_slice_slider_max('x'),
                             # min=45,
                             # max=160,
                             step=1,
                             value=75,
-                            marks={1: str(1), volume.shape[0]: str(volume.shape[0])},
+                            marks=get_slice_slider_marks(get_slice_slider_max('x')),
                             # marks={
                             #     45: {'label': str(45)},
                             #     160: {'label': str(160)}
@@ -1791,6 +1835,10 @@ app.layout = html.Div(
 
         # Dummy Div to store intermediate data
         html.Div(id='dummy', style={'display': 'none'}),
+        dcc.ConfirmDialog(
+            id='dataset-alert',
+            message='Dataset not recognized'
+        ),
 
         # -------------------------------------------------------------------------------
 
@@ -1799,6 +1847,7 @@ app.layout = html.Div(
         dcc.Store(id='superpixel-data'),
         dcc.Store(id='vector-data'),
         dcc.Store(id='cluster-data'),
+        dcc.Store(id='dataset-store', data=dataset),
         dcc.Store(id='cluster-number', data=5),
         dcc.Store(id='class-tracker'),
 
@@ -1812,9 +1861,19 @@ app.layout = html.Div(
 # Callback for Slice Plot
 @app.callback(
     [Output('slice-plot', 'figure'), Output('slice-data', 'data'), Output('class-tracker', 'data')],
-    [Input('axis-radio', 'value'), Input('slice-slider', 'value')]
+    [Input('axis-radio', 'value'), Input('slice-slider', 'value'), Input('dataset-store', 'data')],
+    State("url", "search")
 )
-def update_slice_plot(axis, slice_num):
+def update_slice_plot(axis, slice_num, dataset_store, url_search):
+    if url_search:
+        params = urllib.parse.parse_qs(url_search.lstrip('?'))
+        data = params.get("data", params.get("dataset", [""]))[0]
+        if data != "" and resolve_dataset_name(data) is None:
+            return create_empty_figure(), None, ".slice-plot-class"
+
+    if dataset_store is None:
+        return create_empty_figure(), None, ".slice-plot-class"
+
     print("------------------------------------------------------------------------------------------------------------")
     print("Updating slice plot...")
     start_time = time.time()
@@ -1833,6 +1892,9 @@ def update_slice_plot(axis, slice_num):
     [State('superpixel-data', 'data'), State('vector-data', 'data')]
 )
 def update_superpixel_plot(jsonified_slice_data, vector_click_data1, vector_click_data2, vector_selected_data1, vector_selected_data2, num_superpixels, dropzero_checkbox, restyle_data1, restyle_data2, visualization, clear_selection_clicks, clustering_checkbox, autoencoder_checkbox, click_data, clustering, jsonified_superpixel_data, jsonified_vector_data):
+    if jsonified_slice_data is None:
+        return create_empty_figure(), None, [], ".superpixel-plot-class", None
+
     print("--------------------------------")
     print("Updating superpixel plot...")
     start_time = time.time()
@@ -2095,6 +2157,9 @@ def update_superpixel_plot(jsonified_slice_data, vector_click_data1, vector_clic
 def update_vector_plot(jsonified_slice_data, jsonified_superpixel_data, visualization, checkbox_value, autoencoder_checkbox, clear_selection_clicks, jsonified_vector_data, dropzero_checkbox):
     if checkbox_value == ['enable']:
         return dash.no_update, dash.no_update, dash.no_update
+
+    if jsonified_slice_data is None or jsonified_superpixel_data is None:
+        return create_empty_figure(), None, ".vector-plot-class"
     
     print("--------------------------------")
     print("Updating vector plot...")
@@ -2189,6 +2254,9 @@ def update_vector_plot(jsonified_slice_data, jsonified_superpixel_data, visualiz
     prevent_initial_call=True
 )
 def update_cluster_stats_plot(jsonified_vector_data, clustering, click_data, cluster_stats, autoencoder_checkbox, cluster_number_data, jsonified_superpixel_data):
+    if jsonified_vector_data is None or jsonified_superpixel_data is None:
+        return create_empty_figure(), dash.no_update, dash.no_update, dash.no_update
+
     ctx_id = ctx.triggered_id.split('.')[0]
 
     print("--------------------------------")
@@ -2290,7 +2358,7 @@ def update_cluster_vector_plot(jsonified_cluster_data, visualization, checkbox_v
         return dash.no_update, dash.no_update, dash.no_update
     
     if jsonified_vector_data is None or jsonified_cluster_data is None or jsonified_superpixel_data is None:
-        return dash.no_update, dash.no_update, dash.no_update
+        return create_empty_figure(), ".cluster-vector-plot-class", dash.no_update
     
     print("--------------------------------")
     print("Updating cluster vector plot...")
@@ -2333,7 +2401,7 @@ def update_cluster_vector_plot(jsonified_cluster_data, visualization, checkbox_v
 )
 def update_final_plot(jsonified_cluster_data, jsonified_slice_data, jsonified_superpixel_data, restyle_data, click_data, selected_data, visualization, clear_selection_clicks, class_tracker, jsonified_vector_data, clustering_checkbox):
     if jsonified_cluster_data is None or jsonified_slice_data is None or jsonified_superpixel_data is None:
-        return dash.no_update, dash.no_update
+        return create_empty_figure(), dash.no_update
 
     if 'enable' not in clustering_checkbox:
         return dash.no_update, dash.no_update
@@ -2532,19 +2600,38 @@ app.clientside_callback(
 # -------------------------------------------------------------------------------
 # Function to open up 2D view from 3D view with query parameters
 @app.callback(
-    [Output('axis-radio', 'value'), Output('slice-slider', 'value')],
+    [Output('axis-radio', 'value'), Output('slice-slider', 'value'), Output('slice-slider', 'max'), Output('slice-slider', 'marks'), Output('dataset-store', 'data'), Output('dataset-alert', 'displayed')],
     Input("url", "search")  # This is the query string part (e.g., ?axis=x&index=3)
 )
 def display_query_params(search):
     if search:
         params = urllib.parse.parse_qs(search.lstrip('?'))
-        axis = params.get("axis", ["z"])[0]
-        index = params.get("index", ["0"])[0]
-        data = params.get("data", [""])[0]
-        print(f"Axis: {axis}, Index: {index}, Data: {data}")
-        return axis, int(index)
+        axis = params.get("axis", params.get("slice_axis", ["z"]))[0]
+        index = params.get("index", params.get("selected_slice", ["0"]))[0]
+        data = params.get("data", params.get("dataset", [""]))[0]
+        requested_dataset = resolve_dataset_name(data)
+        show_dataset_alert = False
+
+        if requested_dataset is not None and requested_dataset != dataset:
+            load_dataset(requested_dataset)
+            print(f"Loaded dataset from query string: {requested_dataset}")
+        elif requested_dataset is None and data != "":
+            print(f"Unknown dataset from query string ignored: {data}")
+            show_dataset_alert = True
+            return dash.no_update, dash.no_update, dash.no_update, dash.no_update, None, show_dataset_alert
+
+        max_slice = get_slice_slider_max(axis)
+        try:
+            requested_slice_index = int(index)
+        except (TypeError, ValueError):
+            requested_slice_index = 0
+        slice_index = max(0, min(requested_slice_index, max_slice))
+        marks = get_slice_slider_marks(max_slice)
+
+        print(f"Axis: {axis}, Index: {slice_index}, Data: {data}, Dataset: {dataset}")
+        return axis, slice_index, max_slice, marks, dataset, show_dataset_alert
     
-    return dash.no_update, dash.no_update
+    return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, False
 
 # --------------------------------------------------------------------------------
 
