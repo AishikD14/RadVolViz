@@ -435,14 +435,25 @@ def create_channel_histogram(flattened_data, channel_index, bins=200, use_log_hi
 
 # --------------------------------------------------------------------------------
 
+data_dict = {
+    "CeCoFeGd": {
+        "volume_path": '../../xray_volume.npy',
+        "channel_names": ["Ce", "Co", "Fe", "Gd"]
+    },
+    "thigh_sarcoma": {
+        "volume_path": '../../thigh_sarcoma_volume.npy',
+        "channel_names": ["CT", "MRI-T1", "MRI-T2", "PET"]
+    }
+}
+
+# --------------------------------------------------------------------------------
+
 # Load volume data
 # dataset = "CeCoFeGd"
-# volume = np.load('../../xray_volume.npy')
-# channel_names = ["Ce", "Co", "Fe", "Gd"]
-
 dataset = "thigh_sarcoma"
-volume = np.load('../../thigh_sarcoma_volume.npy')
-channel_names = ["CT", "MRI-T1", "MRI-T2", "PET"]
+
+volume = np.load(data_dict[dataset]["volume_path"])
+channel_names = data_dict[dataset]["channel_names"]
 
 # --------------------------------------------------------------------------------
 
