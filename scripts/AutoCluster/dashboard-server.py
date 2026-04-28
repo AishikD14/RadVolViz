@@ -407,9 +407,43 @@ def custom_slic(data, num_superpixels, spatial_weight=5, max_iter=20):
 # Set seed for reproducibility
 torch.manual_seed(0)
 
+# --------------------------------------------------------------------------------
+
 # Load volume data
-# volume = np.load('../../xray_volume.npy')
-volume = np.load('../../thigh_sarcoma_volume.npy')
+dataset = "CeCoFeGd"
+volume = np.load('../../xray_volume.npy')
+channel_names = ["Ce", "Co", "Fe", "Gd"]
+
+# dataset = "thigh_sarcoma"
+# volume = np.load('../../thigh_sarcoma_volume.npy')
+# channel_names = ["CT", "MRI-T1", "MRI-T2", "PET"]
+
+# --------------------------------------------------------------------------------
+
+if dataset == "thigh_sarcoma":
+    # Switch 1st and 2nd channels for better visualization
+    volume = volume[:, :, :, [1, 0, 2, 3]]
+    channel_names = ["MRI-T1", "CT", "MRI-T2", "PET"]
+
+    # Normalize each channel to [0, 1] range
+    for i in range(volume.shape[3]):
+        channel = volume[:, :, :, i]
+
+        max_val = channel.max()
+        min_val = channel.min()
+
+        volume[:, :, :, i] = (
+            (1 - 0) * (channel.astype(np.float64) - min_val)
+            / (max_val - min_val)
+        ) + 0
+
+# -------------------------------------------------------------------------------
+
+def get_feature_column_names(feature_count):
+    if len(channel_names) == feature_count:
+        return channel_names
+
+    return [f'Feature Dimension {i+1}' for i in range(feature_count)]
 
 # -------------------------------------------------------------------------------
 
@@ -705,10 +739,11 @@ def create_parallel_coordinates_plot(segment_vectors, segmentColorDict, hovered_
         df_parallel = pd.DataFrame(segment_vectors, columns=[f'Latent Dimension {i+1}' for i in range(latent_dim)])
 
     else:
-        feature_array = ['Ce', 'Co', 'Fe', 'Gd']
-
         # Create a DataFrame for easier plotting
-        df_parallel = pd.DataFrame(segment_vectors, columns=[i for i in feature_array])
+        df_parallel = pd.DataFrame(
+            segment_vectors,
+            columns=get_feature_column_names(segment_vectors.shape[1])
+        )
 
     # Add Segment ID column
     df_parallel['Segment ID'] = np.arange(len(segment_vectors))
@@ -1007,7 +1042,10 @@ def create_cluster_vector_plot(segment_vectors, cluster_labels, visualization, h
         # else:
         #     df = pd.DataFrame(reduced_data, columns=['Ce', 'Co', 'Fe', 'Gd'])
 
-        df = pd.DataFrame(reduced_data, columns=['Ce', 'Co', 'Fe', 'Gd'])
+        df = pd.DataFrame(
+            reduced_data,
+            columns=get_feature_column_names(reduced_data.shape[1])
+        )
 
     df['Cluster ID'] = cluster_labels
     # Convert Cluster ID to a string to ensure it's treated as categorical
@@ -1281,17 +1319,17 @@ app.layout = html.Div(
                         html.Label('Select slice to visualize:'),
                         dcc.Slider(
                             id='slice-slider',
-                            # min=1,
-                            # max=volume.shape[0],
-                            min=45,
-                            max=160,
+                            min=1,
+                            max=volume.shape[0],
+                            # min=45,
+                            # max=160,
                             step=1,
                             value=75,
-                            # marks={1: str(1), volume.shape[0]: str(volume.shape[0])}
-                            marks={
-                                45: {'label': str(45)},
-                                160: {'label': str(160)}
-                            },
+                            marks={1: str(1), volume.shape[0]: str(volume.shape[0])},
+                            # marks={
+                            #     45: {'label': str(45)},
+                            #     160: {'label': str(160)}
+                            # },
                             tooltip={"placement": "bottom", "always_visible": True},
                             allow_direct_input=False,
                         ),
