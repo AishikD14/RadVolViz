@@ -525,10 +525,9 @@ def create_original_slice(axis, slice_num):
     # Define a zoom factor (increase this value to zoom in more)
     if dataset == "CeCoFeGd":
         zoom_factor = 1.4  # Adjust this value as needed for better visualization
+        resized_image = cropImage(image, zoom_factor)
     else:
-        zoom_factor = 1 # No zoom for thigh sarcoma dataset to preserve details
-
-    resized_image = cropImage(image, zoom_factor)
+        resized_image = image
 
     # -------------------------------------------------------------------------------
 
