@@ -409,32 +409,6 @@ torch.manual_seed(0)
 
 # --------------------------------------------------------------------------------
 
-def create_channel_histogram(flattened_data, channel_index, bins=200, use_log_histogram=True):
-    # Histogram always uses the full spectrum of nonzero voxels.
-    nonzero_indices = ~np.all(np.isclose(flattened_data, 0), axis=1)
-    nonzero_data = flattened_data[nonzero_indices]
-
-    if nonzero_data.size == 0:
-        return [], np.array([])
-
-    histogram_array = nonzero_data[:, channel_index]
-    hist_count, bin_edges = np.histogram(histogram_array, bins=bins)
-    hist_count = hist_count.astype(float)
-
-    zero_counts = np.isclose(hist_count, 0)
-    if use_log_histogram:
-        hist_count[~zero_counts] = np.log10(hist_count[~zero_counts])
-
-    max_count = hist_count.max()
-    if np.isclose(max_count, 0):
-        hist = [0 for _ in hist_count]
-    else:
-        hist = [int(v / max_count * 100) for v in hist_count.tolist()]
-
-    return hist, bin_edges
-
-# --------------------------------------------------------------------------------
-
 data_dict = {
     "CeCoFeGd": {
         "volume_path": '../../data/CeCoFeGd/volume.npy',
@@ -534,19 +508,43 @@ def get_slice_slider_max(axis):
 def get_slice_slider_marks(max_slice):
     return {0: str(0), max_slice: str(max_slice)}
 
-# Load volume data
-dataset = None
-volume = None
-channel_names = []
-load_dataset("thigh_sarcoma")
+def create_channel_histogram(flattened_data, channel_index, bins=200, use_log_histogram=True):
+    # Histogram always uses the full spectrum of nonzero voxels.
+    nonzero_indices = ~np.all(np.isclose(flattened_data, 0), axis=1)
+    nonzero_data = flattened_data[nonzero_indices]
 
-# -------------------------------------------------------------------------------
+    if nonzero_data.size == 0:
+        return [], np.array([])
+
+    histogram_array = nonzero_data[:, channel_index]
+    hist_count, bin_edges = np.histogram(histogram_array, bins=bins)
+    hist_count = hist_count.astype(float)
+
+    zero_counts = np.isclose(hist_count, 0)
+    if use_log_histogram:
+        hist_count[~zero_counts] = np.log10(hist_count[~zero_counts])
+
+    max_count = hist_count.max()
+    if np.isclose(max_count, 0):
+        hist = [0 for _ in hist_count]
+    else:
+        hist = [int(v / max_count * 100) for v in hist_count.tolist()]
+
+    return hist, bin_edges
 
 def get_feature_column_names(feature_count):
     if len(channel_names) == feature_count:
         return channel_names
 
     return [f'Feature Dimension {i+1}' for i in range(feature_count)]
+
+# -------------------------------------------------------------------------------
+
+# Load volume data
+dataset = None
+volume = None
+channel_names = []
+load_dataset("thigh_sarcoma")
 
 # -------------------------------------------------------------------------------
 
@@ -1439,9 +1437,9 @@ def setup_model(input_dimension, dropzero_checkbox):
     model = Autoencoder(input_dim, latent_dim)
 
     if 'enable' in dropzero_checkbox:
-        model.load_state_dict(torch.load('autoencoder_mean_nozero.pth', map_location=torch.device('cuda' if torch.cuda.is_available() else 'cpu')))
+        model.load_state_dict(torch.load(f'../../data/{dataset}/autoencoder_mean_nozero.pth', map_location=torch.device('cuda' if torch.cuda.is_available() else 'cpu')))
     else:
-        model.load_state_dict(torch.load('autoencoder_mean.pth', map_location=torch.device('cuda' if torch.cuda.is_available() else 'cpu')))
+        model.load_state_dict(torch.load(f'../../data/{dataset}/autoencoder_mean.pth', map_location=torch.device('cuda' if torch.cuda.is_available() else 'cpu')))
         
     model.eval()
 
@@ -2122,10 +2120,10 @@ def update_superpixel_plot(jsonified_slice_data, vector_click_data1, vector_clic
 
         # Load the scaler
         if 'enable' in dropzero_checkbox:
-            with open("scaler_autoencoder_mean_nozero.pkl", "rb") as f:
+            with open(f"../../data/{dataset}/scaler_autoencoder_mean_nozero.pkl", "rb") as f:
                 loaded_scaler = pickle.load(f)
         else:
-            with open("scaler_autoencoder_mean.pkl", "rb") as f:
+            with open(f"../../data/{dataset}/scaler_autoencoder_mean.pkl", "rb") as f:
                 loaded_scaler = pickle.load(f)
 
         # Normalize the data
