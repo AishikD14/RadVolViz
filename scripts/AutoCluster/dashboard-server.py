@@ -471,7 +471,7 @@ def load_dataset(dataset_name):
         )
 
         if len(pet_bin_edges) > 0:
-            first_pet_bin_count = max(1, int(np.ceil((len(pet_bin_edges) - 1) * 0.05)))
+            first_pet_bin_count = max(1, int(np.ceil((len(pet_bin_edges) - 1) * 0.06)))
             pet_cutoff = pet_bin_edges[first_pet_bin_count]
             nonzero_voxel_mask = ~np.all(np.isclose(loaded_volume, 0), axis=3)
             first_pet_histogram_mask = (
@@ -544,7 +544,7 @@ def get_feature_column_names(feature_count):
 dataset = None
 volume = None
 channel_names = []
-load_dataset("thigh_sarcoma")
+load_dataset("thigh_sarcoma")  # Load default dataset on startup
 
 # -------------------------------------------------------------------------------
 
@@ -1054,7 +1054,7 @@ def create_cluster_stats_plot(segment_vectors, clustering, cluster_number, clust
         )
 
         # Color the line
-        fig.update_traces(line=dict(color='#00adb5'))
+        fig.update_traces(line=dict(color='#00adb5', width=4))
 
         fig.update_layout(clickmode='event')
 
@@ -1134,7 +1134,7 @@ def create_cluster_stats_plot(segment_vectors, clustering, cluster_number, clust
         )
 
         # Color the line
-        fig.update_traces(line=dict(color='#00adb5'))
+        fig.update_traces(line=dict(color='#00adb5', width=4))
 
         fig.update_layout(clickmode='event')
 
