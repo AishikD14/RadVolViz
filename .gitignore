@@ -7,3 +7,5 @@ node_modules/
 *.tif
 __pycache__/
 bnlenv
+Rikathi_synthetic_data/
+phase2
