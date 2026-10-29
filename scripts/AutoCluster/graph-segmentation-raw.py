@@ -14,7 +14,7 @@ import matplotlib.colors as mcolors
 import warnings
 import matplotlib.patheffects as patheffects
 import cv2
-from sklearn.metrics.pairwise import cosine_distances
+from scipy.spatial.distance import cdist
 
 # Ignore warnings
 warnings.filterwarnings("ignore")
@@ -318,6 +318,36 @@ def getColorfromRatio(ratio):
 
     return (np.array(color)[:3] * 255).astype(int)
 
+# Zoom in on the center of the image
+def cropImage(image, zoom_factor):
+    # Calculate new dimensions for cropping
+    width, height = image.shape[:2]
+    center_x, center_y = width // 2, height // 2
+
+    # Calculate new dimensions for cropping
+    crop_width = int(width / zoom_factor)
+    crop_height = int(height / zoom_factor)
+
+    # Define crop box around the center
+    left = center_x - crop_width // 2
+    right = center_x + crop_width // 2
+    top = center_y - crop_height // 2
+    bottom = center_y + crop_height // 2
+
+    # Ensure that the crop box is within bounds of the original image
+    left = max(left, 0)
+    right = min(right, width)
+    top = max(top, 0)
+    bottom = min(bottom, height)
+
+    # Crop the image using numpy slicing
+    cropped_image = image[top:bottom, left:right]
+
+    # Resize the cropped image back to the original size
+    resized_image = cv2.resize(cropped_image, (width, height), interpolation=cv2.INTER_LINEAR)
+
+    return resized_image
+
 # Function to apply additive log-ratio (ALR) transformation
 def alr_transform(image):
     # Avoid division by zero by adding a small constant (epsilon)
@@ -328,27 +358,81 @@ def alr_transform(image):
     alr_image = np.log((image[..., :-1] + epsilon) / (reference_channel[..., np.newaxis] + epsilon))
     return alr_image
 
-# Custom SLIC function with cosine distance metric
-def custom_slic(image, n_segments=100, compactness=10, sigma=1):
-    # Get initial superpixels using standard SLIC
-    segments = segmentation.slic(image, n_segments=n_segments, compactness=compactness, sigma=sigma, start_label=0)
-    
-    # Iterate over each segment and refine based on cosine distance between pixels in each segment
-    refined_segments = np.zeros_like(segments)
-    
-    for seg_val in np.unique(segments):
-        mask = segments == seg_val
-        
-        # Extract pixels belonging to this segment
-        segment_pixels = image[mask]
-        
-        # Compute pairwise cosine distances within this segment
-        distances = cosine_distances(segment_pixels)
-        
-        # Cluster pixels based on cosine distances (for simplicity, we keep it as one segment here)
-        refined_segments[mask] = seg_val
-    
-    return refined_segments
+# Custom SLIC implementation for 4-channel data
+def slic_4channel(image, n_segments=100, compactness=10, max_iter=10):
+    """
+    Custom SLIC implementation for 4-channel data.
+
+    Parameters:
+        image (numpy.ndarray): Input image with shape (H, W, 4) for 4 channels.
+        n_segments (int): Number of superpixels to generate.
+        compactness (float): Balances color similarity and spatial proximity.
+        max_iter (int): Maximum number of iterations.
+
+    Returns:
+        numpy.ndarray: Labels for each pixel indicating the superpixel assignment.
+    """
+    # Ensure the image is in float format
+    image = img_as_float(image)
+    h, w, c = image.shape
+    if c != 4:
+        raise ValueError("Input image must have 4 channels.")
+
+    # Initialize grid spacing based on desired number of segments
+    step = int(np.sqrt(h * w / n_segments))
+    grid_x, grid_y = np.meshgrid(
+        np.arange(step // 2, w, step), 
+        np.arange(step // 2, h, step)
+    )
+    centers = np.stack([grid_y.ravel(), grid_x.ravel()], axis=-1)
+
+    # Initialize cluster centers in the feature space: [R, G, B, A, x, y]
+    centers = np.hstack([
+        image[centers[:, 0], centers[:, 1]], 
+        centers
+    ])
+
+    # Initialize labels and distances
+    labels = -np.ones((h, w), dtype=np.int32)
+    distances = np.full((h, w), np.inf)
+
+    # Iterate to refine clusters
+    for _ in range(max_iter):
+        for i, center in enumerate(centers):
+            y_min = max(int(center[4] - step), 0)
+            y_max = min(int(center[4] + step), h)
+            x_min = max(int(center[5] - step), 0)
+            x_max = min(int(center[5] + step), w)
+
+            region = image[y_min:y_max, x_min:x_max]
+            coords_y, coords_x = np.meshgrid(
+                np.arange(y_min, y_max), 
+                np.arange(x_min, x_max), 
+                indexing='ij'
+            )
+            coords = np.stack([coords_y.ravel(), coords_x.ravel()], axis=-1)
+
+            # Compute distance in combined feature space
+            color_dist = cdist(region.reshape(-1, 4), center[:4][None])
+            spatial_dist = cdist(coords.astype(float), center[4:][None])
+            distance = color_dist + (compactness / step) * spatial_dist
+
+            # Update labels and distances
+            distance_reshaped = distance.reshape(y_max - y_min, x_max - x_min)
+            mask = distance_reshaped < distances[y_min:y_max, x_min:x_max]
+            distances[y_min:y_max, x_min:x_max][mask] = distance_reshaped[mask]
+            labels[y_min:y_max, x_min:x_max][mask] = i
+
+        # Update cluster centers
+        for i in range(len(centers)):
+            mask = labels == i
+            if not np.any(mask):
+                continue
+            centers[i][:4] = image[mask].mean(axis=0)
+            coords_yx = np.argwhere(mask)
+            centers[i][4:] = coords_yx.mean(axis=0)
+
+    return labels
 
 # -------------------------------------------------------------------------------
 
@@ -431,40 +515,6 @@ print(voxels.shape)
 
 # -------------------------------------------------------------------------------
 
-# embedMode = 1
-# rotateVar = 0.0
-
-# # Get coordinate from metal ratios
-# if embedMode == 1:
-#     ss = GBC(voxels, rotateVar)
-
-# row = len(ss)
-# col = len(ss[0])
-
-# # Get all data except the last 4 rows
-# newarr = []
-# for i in range(row - 4):
-#     newarr.append([])
-#     for j in range(col):
-#         newarr[i].append(ss[i][j])
-
-# vararr = []
-# for i, j in zip(range(row - 4, row), range(4)):
-#     vararr.append([ss[i][0], ss[i][1], 0, 0, 0, 0])
-
-# newarr = np.array(newarr)
-# vararr = np.array(vararr)
-
-# Generate the 2D histogram
-# hist, xedges, yedges = generate_histogram(newarr, bins=6, range_x=(-1, 1), range_y=(-1, 1))
-
-# Draw the scatter points based on the histogram
-# draw(hist, newarr, xedges, yedges, vararr, ss)
-
-# quit()
-
-# -------------------------------------------------------------------------------
-
 # Loop over each x-axis slice
 slice_allowed = [90, 100, 130, 150, 170]
 slice_allowed = [130]
@@ -479,34 +529,10 @@ for x in range(volume.shape[0]):
     # Zoom in on the center of the image
     # -------------------------------------------------------------------------------
 
-    # Determine the center of the image
-    height, width = image.shape[:2]
-    center_x, center_y = width // 2, height // 2
-
     # Define a zoom factor (increase this value to zoom in more)
     zoom_factor = 1.85
 
-    # Calculate new dimensions for cropping
-    crop_width = int(width / zoom_factor)
-    crop_height = int(height / zoom_factor)
-
-    # Define crop box around the center
-    left = center_x - crop_width // 2
-    right = center_x + crop_width // 2
-    top = center_y - crop_height // 2
-    bottom = center_y + crop_height // 2
-
-    # Ensure that the crop box is within bounds of the original image
-    left = max(left, 0)
-    right = min(right, width)
-    top = max(top, 0)
-    bottom = min(bottom, height)
-
-    # Crop the image using numpy slicing
-    cropped_image = image[top:bottom, left:right]
-
-    # Resize the cropped image back to the original size
-    resized_image = cv2.resize(cropped_image, (width, height), interpolation=cv2.INTER_LINEAR)
+    resized_image = cropImage(image, zoom_factor)
 
     # -------------------------------------------------------------------------------
 
@@ -533,14 +559,14 @@ for x in range(volume.shape[0]):
     alr_image = alr_transform(resized_image)
 
     # Print the values of the first pixel before and after transformation
-    print(f'Original Pixel Value: {resized_image[125, 125]}')
-    print(f'ALR Transformed Pixel Value: {alr_image[125, 125]}')
+    # print(f'Original Pixel Value: {resized_image[125, 125]}')
+    # print(f'ALR Transformed Pixel Value: {alr_image[125, 125]}')
 
     # Apply SLIC segmentation on the transformed image (now shape is (256, 256, 3))
-    segments = segmentation.slic(alr_image, n_segments=400, compactness=10, sigma=1)
+    # segments = segmentation.slic(alr_image, n_segments=400, compactness=10, sigma=1)
 
-    # Apply custom SLIC segmentation using cosine distance metric
-    # segments = custom_slic(resized_image, n_segments=400, compactness=10, sigma=1)
+    # Apply custom SLIC for 4-channel data
+    segments = slic_4channel(resized_image, n_segments=200, compactness=20)
 
     # -------------------------------------------------------------------------------
 
